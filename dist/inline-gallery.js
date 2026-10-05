@@ -25,6 +25,7 @@
    const raf=fn=>schedule(owner,fn),cancel=id=>tasks.delete(id);
    const scopedWindow=new Proxy(window,{get(target,key){
     if(key==='requestAnimationFrame')return raf;if(key==='cancelAnimationFrame')return cancel;
+    if(key==='ResizeObserver')return CardResizeObserver;
     if(key==='addEventListener')return(name,fn)=>{if(name==='resize')owner.resize=fn};
     const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;
    }});
@@ -34,8 +35,14 @@
     unobserve(target){this.targets.get(target)?.disconnect();this.targets.delete(target)}
     disconnect(){for(const observer of this.targets.values())observer.disconnect();this.targets.clear()}
    }
+   class CardResizeObserver{
+    constructor(callback){this.callback=callback;this.targets=new Map()}
+    observe(target){const observer=new ResizeObserver(entries=>this.callback(entries.map(e=>({...e,target,contentRect:target.getBoundingClientRect()}))));this.targets.set(target,observer);observer.observe(owner.host)}
+    unobserve(target){this.targets.get(target)?.disconnect();this.targets.delete(target)}
+    disconnect(){for(const observer of this.targets.values())observer.disconnect();this.targets.clear()}
+   }
    for(const script of scripts){const code=script.src?await fetch(new URL(script.getAttribute('src'),'https://local.invalid/studies/').pathname.slice(1)).then(r=>r.text()):script.textContent;
-    new Function('document','window','requestAnimationFrame','cancelAnimationFrame','IntersectionObserver',code)(scopedDocument,scopedWindow,raf,cancel,CardIntersectionObserver);
+    new Function('document','window','requestAnimationFrame','cancelAnimationFrame','IntersectionObserver','ResizeObserver',code)(scopedDocument,scopedWindow,raf,cancel,CardIntersectionObserver,CardResizeObserver);
    }
    const item=owner.host.dataset.item;
    if(item!==undefined){
