@@ -6,6 +6,8 @@ signals are simulated. this is a visual archive, not a real audio-analysis engin
 
 [explore the live gallery](https://kagan.in/iwrzwr/visual-archive/). see [deployment.md](DEPLOYMENT.md) for hosting configuration.
 
+like it? [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive) — it helps others discover these experiments.
+
 ## draft studies
 
 these are exploratory drafts from the iwrzwr design process, not our polished or final animations. they are shared to document ideas and experiments, not as production-ready components.
