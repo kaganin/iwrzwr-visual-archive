@@ -1,6 +1,6 @@
 # iwrzwr / visual archive
 
-moving fields, mechanical signals, particle patterns, and studies in rhythm and memory. all 155 previews run from html, css, javascript, and canvas — no video playback or iframes in the main gallery.
+155 experimental sound and music visualizer studies built with javascript and html canvas. this sound visualization archive explores waveforms, spectrum-inspired patterns, matrix displays, particles, rhythm, and memory — all running from code, with no video playback or iframes in the main gallery.
 
 signals are simulated. this is a visual archive, not a real audio-analysis engine or the native iwrzwr app.
 
@@ -20,6 +20,12 @@ timing, transitions, visual details, and behavior may still be rough. the verifi
 - preserved standalone studies and earlier iterations in `sources/`; not all are shown in the current gallery.
 
 shared as-is. this is not an actively maintained library; there is no commitment to support, compatibility updates, or new features.
+
+## sound and music visualization experiments
+
+if you're exploring a sound visualizer, music visualiser, or audio visualization for a creative-coding project, these drafts offer drawing code and live examples to study and adapt. the archive includes waveform animations, spectrum-inspired displays, particle fields, and mechanical motion studies.
+
+“visualizer” and “visualiser” refer to the same kind of visual exploration here. these are simulated animation studies, not a microphone visualizer, fft analyzer, music player, or production-ready audio-reactive library. connecting the drawings to real audio analysis is a separate implementation step.
 
 ## run it
 

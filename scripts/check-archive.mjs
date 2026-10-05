@@ -9,11 +9,20 @@ assert.equal(cards.length,155,'visible card count');
 assert.equal(new Set(cards.map(c=>c[1])).size,28,'visible collections');
 assert(!/<(?:iframe|video)\b/i.test(html),'main gallery must run code');
 assert(html.includes('164 alternatives · 28 collections'),'editorial count');
+assert(html.includes('<meta name="description"'),'search description');
+assert(html.includes('<link rel="canonical" href="https://www.kagan.in/iwrzwr/visual-archive/">'),'canonical portfolio URL');
+assert.equal((html.match(/<h1\b/g)||[]).length,1,'one semantic page heading');
+const structured=JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+assert.equal(structured['@type'],'CollectionPage');
+assert(fs.readFileSync(path.join(root,'sitemap.xml'),'utf8').includes(structured.url),'sitemap canonical URL');
 for(const match of html.matchAll(/<(?:h2|figcaption|title)>([^<]*)<\/[^>]+>|aria-label="([^"]+)"/g)){
  const text=match[1]??match[2];
  assert.equal(text,text.toLowerCase(),'gallery copy must be lowercase: '+text);
 }
-for(const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g))new vm.Script(script[1]);
+for(const script of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)){
+ if(script[1].includes('application/ld+json'))JSON.parse(script[2]);
+ else new vm.Script(script[2]);
+}
 let scripts=0,payloads=0;
 let originalStudies=0;
 function redAccents(text){return text.replace(/#([\da-f]{6})([\da-f]{2})?\b/gi,(hex,rgb,alpha='')=>{const r=parseInt(rgb.slice(0,2),16),g=parseInt(rgb.slice(2,4),16),b=parseInt(rgb.slice(4,6),16);return r>180&&g>=70&&g<220&&b<g*.8?'#FF0000'+alpha:hex;});}
