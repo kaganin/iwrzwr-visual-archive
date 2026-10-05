@@ -31,6 +31,6 @@ button,[class*="controls"],.viz-controls{display:none!important}
 .animation-card:not([data-ready]){visibility:hidden}
 body>header{display:flex!important;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--page);visibility:hidden;transform:translateY(-100%);opacity:0;transition:transform 220ms cubic-bezier(.23,1,.32,1),opacity 220ms cubic-bezier(.23,1,.32,1),visibility 0s linear 220ms;border-color:rgb(255 255 255 / 8%)}
 body>header[data-visible]{visibility:visible;transform:translateY(0);opacity:1;transition-delay:0s}
-@media(prefers-reduced-motion:reduce){body>header{transform:none;transition:opacity 150ms ease,visibility 0s linear 150ms}body>header[data-visible]{transition-delay:0s}}
+@media(prefers-reduced-motion:reduce){body>header{transform:none;transition:none}}
 @media(max-width:620px){header{gap:12px}.brand,header .brand{font-size:18px}}
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:.5px!important;border-color:rgb(255 255 255 / 10%)!important}
