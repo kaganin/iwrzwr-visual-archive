@@ -2,9 +2,9 @@
 
 | collection | video | drawing source |
 | --- | --- | --- |
-| 26 — signal assembly | [mp4](26-signal-assembly.mp4) | [javascript](../dist/signal-assembly.js) |
-| 27 — phase mechanics | [mp4](27-phase-mechanics.mp4) | [javascript](../dist/phase-mechanics.js) |
-| 28 — orbital memory | [mp4](28-orbital-memory.mp4) | [javascript](../dist/orbital-memory.js) |
+| signal assembly | [mp4](signal-assembly.mp4) | [javascript](../dist/signal-assembly.js) |
+| phase mechanics | [mp4](phase-mechanics.mp4) | [javascript](../dist/phase-mechanics.js) |
+| orbital memory | [mp4](orbital-memory.mp4) | [javascript](../dist/orbital-memory.js) |
 
 1080 × 1080, 30 fps, 20 seconds, h.264, silent. these are code-rendered examples, not website dependencies. timing is unchanged; the end-to-start boundary is not guaranteed to loop seamlessly.
 
