@@ -31,6 +31,7 @@ for(const id of new Set(cards.map(c=>c[1]))){
 assert.equal(originalStudies,152,'all individual drawings match preserved source code');
 for(const id of ['signal-assembly','phase-mechanics','orbital-memory'])assert.equal(fs.readFileSync(path.join(root,id+'.js'),'utf8'),fs.readFileSync(path.join('sources/latest-site/public',id+'.js'),'utf8'),'composition source: '+id);
 for(const name of ['inline-gallery.js','single-page.css','typography.css'])assert(fs.existsSync(path.join(root,name)),name);
+new vm.Script(fs.readFileSync(path.join(root,'inline-gallery.js'),'utf8'),{filename:'inline-gallery.js'});
 const config=JSON.parse(fs.readFileSync('vercel.json','utf8'));
 assert.equal(config.outputDirectory,'dist');
 assert(config.rewrites.some(r=>r.source==='/iwrzwr/visual-archive/:path*'),'subpath assets');
