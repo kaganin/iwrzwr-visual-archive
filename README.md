@@ -19,7 +19,7 @@ timing, transitions, visual details, and behavior may still be rough. the verifi
 - the header's “164 alternatives” uses the agreed editorial count: 152 studies plus 12 alternatives assigned to the compositions. there are 155 cards, not 164 individual demos.
 - preserved standalone studies and earlier iterations in `sources/`; not all are shown in the current gallery.
 
-shared as-is. this is not an actively maintained library; there is no commitment to support, compatibility updates, or new features.
+this is an experimental archive, not a polished library. if there's interest, i'd be happy to keep developing and maintaining it. feedback and ideas are welcome; there is no fixed roadmap or release schedule yet.
 
 ## sound and music visualization experiments
 
