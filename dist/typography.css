@@ -3,7 +3,7 @@
 :root{--page:#000;--ink:#f7f7f4;--muted:#777671;background:var(--page);color:var(--ink)}
 body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
 body{background:var(--page);color:var(--ink)}
-.brand,header .brand{font-size:20px;line-height:24px;font-weight:300;letter-spacing:-.075px;color:var(--ink)}
+.brand,header .brand{font-size:20px;line-height:24px;font-weight:400;letter-spacing:-.075px;color:var(--ink)}
 .brand span{color:var(--muted)}
 .archive-intro h1{margin:0 0 10px}
 header h1.brand{margin:0}
@@ -22,14 +22,15 @@ header,header .brand span{color:var(--muted)}
 header{border-bottom:.5px solid #ffffff1a}
 iframe{border:.5px solid #ffffff1a}
 header{padding:16px max(32px,calc((100% - 1216px)/2));flex-wrap:nowrap}
-main{padding:32px;padding-top:76px}
+main{padding:32px;padding-top:54px}
 .all-grid{gap:32px}
 /* Archive is a gallery; demo transport and recording selectors are hidden. */
 button,[class*="controls"],.viz-controls{display:none!important}
 .animation-card{min-height:240px;border:.5px solid rgb(255 255 255 / 10%);background:#000;overflow:hidden;contain:layout paint}
 .collection-card{min-height:320px}
 .animation-card:not([data-ready]){visibility:hidden}
-body>header{display:flex!important;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--page);visibility:hidden;border-color:rgb(255 255 255 / 8%)}
-body>header[data-visible]{visibility:visible}
+body>header{display:flex!important;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--page);visibility:hidden;transform:translateY(-100%);opacity:0;transition:transform 220ms cubic-bezier(.23,1,.32,1),opacity 220ms cubic-bezier(.23,1,.32,1),visibility 0s linear 220ms;border-color:rgb(255 255 255 / 8%)}
+body>header[data-visible]{visibility:visible;transform:translateY(0);opacity:1;transition-delay:0s}
+@media(prefers-reduced-motion:reduce){body>header{transform:none;transition:opacity 150ms ease,visibility 0s linear 150ms}body>header[data-visible]{transition-delay:0s}}
 @media(max-width:620px){header{gap:12px}.brand,header .brand{font-size:18px}}
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:.5px!important;border-color:rgb(255 255 255 / 10%)!important}
