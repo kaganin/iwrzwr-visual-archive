@@ -30,7 +30,7 @@
    }});
    class CardIntersectionObserver{
     constructor(callback){this.callback=callback;this.targets=new Map()}
-    observe(target){const observer=new IntersectionObserver(entries=>this.callback(entries.map(e=>({target,isIntersecting:e.isIntersecting,time:e.time,intersectionRatio:e.intersectionRatio}))),{rootMargin:'240px'});this.targets.set(target,observer);observer.observe(owner.host)}
+    observe(target){const observer=new IntersectionObserver(entries=>this.callback(entries.map(e=>{const selected=!owner.panel||target===owner.panel||target.contains(owner.panel);return {target,isIntersecting:e.isIntersecting&&selected,time:e.time,intersectionRatio:selected?e.intersectionRatio:0}})),{rootMargin:'240px'});this.targets.set(target,observer);observer.observe(owner.host)}
     unobserve(target){this.targets.get(target)?.disconnect();this.targets.delete(target)}
     disconnect(){for(const observer of this.targets.values())observer.disconnect();this.targets.clear()}
    }
@@ -42,6 +42,9 @@
     const options=[...shadow.querySelectorAll('button[data-style]')];options[Number(item)]?.click();
     const art=shadow.querySelectorAll('canvas')[options.length?0:Number(item)]||shadow.querySelector('svg');
     if(!art)throw Error('Missing artwork');
+    // Preserve the source panel identity after moving its canvas. Hidden sibling
+    // panels must not draw merely because their shared gallery host is visible.
+    owner.panel=art.closest('figure');
     art.setAttribute('aria-label',owner.host.getAttribute('aria-label'));
     const surface=document.createElement('div');surface.className='direct-surface';surface.append(art);shadow.append(surface);
     const isolate=document.createElement('style');isolate.textContent=':host{display:block} :host> *{display:none!important} :host>.direct-surface{display:flex!important;align-items:center;justify-content:center;width:100%;height:240px;background:#000} .direct-surface canvas{display:block!important;width:70%!important;height:44px!important;max-width:360px!important;min-width:0!important}';shadow.append(isolate);

@@ -4,7 +4,7 @@ moving fields, mechanical signals, particle patterns, and studies in rhythm and 
 
 signals are simulated. this is a visual archive, not a real audio-analysis engine or the native iwrzwr app.
 
-the intended public address is [kagan.in/iwrzwr/visual-archive](https://kagan.in/iwrzwr/visual-archive/). see [deployment.md](DEPLOYMENT.md) for setup and publication status.
+[explore the live gallery](https://kagan.in/iwrzwr/visual-archive/). see [deployment.md](DEPLOYMENT.md) for hosting configuration.
 
 ## what's inside
 
