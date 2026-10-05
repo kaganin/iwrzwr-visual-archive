@@ -18,7 +18,7 @@ timing, transitions, visual details, and behavior may still be rough. the verifi
 
 - 152 individual studies and 3 square compositions: signal assembly, phase mechanics, and orbital memory.
 - 28 visible collections: 25 study collections and 3 compositions.
-- the header's “164 alternatives” uses the agreed editorial count: 152 studies plus 12 alternatives assigned to the compositions. there are 155 cards, not 164 individual demos.
+- the introduction's “164 experiments” uses the agreed editorial count: 152 studies plus 12 alternatives assigned to the compositions. there are 155 cards, not 164 individual demos.
 - preserved standalone studies and earlier iterations in `sources/`; not all are shown in the current gallery.
 
 this is an experimental archive, not a polished library. if there's interest, i'd be happy to keep developing and maintaining it. feedback and ideas are welcome; there is no fixed roadmap or release schedule yet.
@@ -74,7 +74,17 @@ the separate lifecycle check confirms offscreen pausing, resuming, hidden-panel 
 
 ## exports
 
-videos are optional presentation assets, not needed to run or reuse these animations. large exports should stay outside git. the historical orbital memory mp4 is preserved as a reference, but the gallery now uses javascript.
+### video examples
+
+three silent, 20-second, 1080 × 1080 h.264 previews exported directly from the composition code at 30 fps:
+
+- [26 — signal assembly](examples/26-signal-assembly.mp4)
+- [27 — phase mechanics](examples/27-phase-mechanics.mp4)
+- [28 — orbital memory](examples/28-orbital-memory.mp4)
+
+these downloadable presentation examples are not used by the website. the live gallery runs the javascript versions. their original timing is preserved; a seamless boundary at 20 seconds is not guaranteed.
+
+videos are optional presentation assets, not needed to run or reuse these animations. large additional exports should stay outside git. the historical orbital memory mp4 is preserved as a reference, but the gallery now uses javascript.
 
 [thermal_core.md](THERMAL_CORE.md) describes the optional thermal core export workflow. that workflow requires playwright and a macos encoder; unlike the gallery, it has extra dependencies. historical export/check pages are not supported gallery entry points.
 
