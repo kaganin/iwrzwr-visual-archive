@@ -3,7 +3,7 @@ import AppKit
 import CoreVideo
 
 let fps: Int32 = 30
-let frameCount = 300
+let frameCount = Int(ProcessInfo.processInfo.environment["EXPORT_FRAME_COUNT"] ?? "300") ?? 300
 let width = 1080
 let height = 1080
 let arguments = CommandLine.arguments
@@ -14,7 +14,9 @@ let outputPath = arguments.count > 2
 let framesDirectory = URL(fileURLWithPath: framesPath)
 let outputURL = URL(fileURLWithPath: outputPath)
 
-try? FileManager.default.removeItem(at: outputURL)
+guard !FileManager.default.fileExists(atPath: outputPath) else {
+    fatalError("Refusing to overwrite existing output: \(outputPath)")
+}
 let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
 let settings: [String: Any] = [
     AVVideoCodecKey: AVVideoCodecType.h264,

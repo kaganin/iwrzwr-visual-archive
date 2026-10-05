@@ -21,6 +21,7 @@ function call(method,params={}){return new Promise((resolve,reject)=>{const id=+
 async function evaluate(expression){const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.text+': '+r.exceptionDetails.exception?.description);return r.result.value;}
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 await call('Runtime.enable');await call('Page.enable');await call('Network.enable');
+await call('Page.bringToFront');
 await call('Network.setCacheDisabled',{cacheDisabled:true});
 const results=[];
 const indices=process.env.QA_INDICES?.split(',').map(Number)||Array.from({length:155},(_,i)=>i);

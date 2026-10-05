@@ -4,6 +4,7 @@ node_modules/
 .cache/
 *.mp4
 !sources/echo-orbit-parity.mp4
+!examples/*.mp4
 *.mov
 *.webm
 frames/

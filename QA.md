@@ -1,5 +1,15 @@
 # verification — 2026-10-05
 
+## current production recheck
+
+production drawing and style revision `968b513` was rechecked through the real portfolio URL. the entry page (apart from its deployment base path) and all 35 runtime, stylesheet and collection payload files match the repository byte for byte.
+
+all 155 cards were sampled again at desktop and mobile-layout sizes: 310/310 animated, zero permanently blank cards, zero captured browser errors and no horizontal overflow. all 16 three-frame contact sheets were visually inspected. current artifacts: `/tmp/iwrzwr-gallery-qa-20261005/current/`. quiet beat-triggered moments are not treated as frozen previews.
+
+the lifecycle retest passes: 14 selected draws, zero hidden-sibling draws, zero offscreen draws and 15 resumed draws. canvas resizing without navigation passes. the first attempted recheck was interrupted by a foreground export tab; its background-throttled results were discarded and the complete run repeated after exports finished. the test now explicitly brings its tab to the front.
+
+collections 26–28 were exported from the same production javascript using their `compositionPreview.renderAt()` interfaces, without screen recording or changing timing. all three mp4 files were checked as 20-second, 1080 × 1080, 30 fps videos; extracted frames were visually inspected. they are optional GitHub examples and are not loaded by the gallery. actual iPhone/Safari and Firefox remain outside this verification scope.
+
 ## findings
 
 | Before | After | Why |
@@ -236,4 +246,3 @@ COMPOSITION_URL=http://localhost:8000/studies/orbital-memory.html node scripts/c
 | 153 | Signal Assembly | signal-assembly | Pass | Pass |
 | 154 | Phase Mechanics | phase-mechanics | Pass | Pass |
 | 155 | Orbital Memory | orbital-memory | Pass | Pass |
-
