@@ -16,17 +16,17 @@ like it? [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archi
 
 video examples — 20 seconds, 1080 × 1080, 30 fps, silent.
 
-### 26 — signal assembly
-
 https://github.com/user-attachments/assets/3c562edf-f039-4f97-9b2b-23967390c4df
 
-### 27 — phase mechanics
+signal assembly
 
 https://github.com/user-attachments/assets/85ce9b2a-076d-4d9b-bbe3-24c8f8fcdcb3
 
-### 28 — orbital memory
+phase mechanics
 
 https://github.com/user-attachments/assets/9da2bee4-0f7c-45a1-9a4e-ffc95380485e
+
+orbital memory
 
 the videos are exported from the same drawing code. the website runs the javascript versions, not mp4 playback.
 
