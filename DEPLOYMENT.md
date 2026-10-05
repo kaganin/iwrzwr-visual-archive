@@ -52,3 +52,5 @@ vercel git connect https://github.com/kaganin/iwrzwr-visual-archive.git --scope 
 ```
 
 keep credentials in vercel's local auth storage; never commit tokens, `.env.local`, or `.vercel/`. production aliases are publicly readable while generated deployment urls retain the team's protection. the portfolio's protection settings were not changed.
+
+the git author must correspond to the project owner's verified github identity. this checkout's automatic `@Kagans-Mac-mini.local` address was corrected in repository-local git settings; earlier commits are preserved, not rewritten. vercel blocked those unmatched-author deployments rather than building them.
