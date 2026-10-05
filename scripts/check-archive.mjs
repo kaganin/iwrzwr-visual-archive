@@ -9,7 +9,7 @@ assert.equal(cards.length,155,'visible card count');
 assert.equal(new Set(cards.map(c=>c[1])).size,28,'visible collections');
 assert(!/<(?:iframe|video)\b/i.test(html),'main gallery must run code');
 assert(html.includes('164 sound visualization experiments'),'editorial count');
-assert(html.includes('class="header-repo"'),'persistent repository link');
+assert(html.includes('class="header-repo repo-button"'),'persistent repository link');
 const numberedHeadings=[...html.matchAll(/<h2>(\d{2}) — /g)];
 assert.equal(numberedHeadings.length,28,'numbered collections');
 numberedHeadings.forEach((heading,index)=>assert.equal(heading[1],String(index+1).padStart(2,'0'),'sequential collection numbers'));
