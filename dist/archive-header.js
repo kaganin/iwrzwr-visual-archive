@@ -1,4 +1,4 @@
-// Show the sticky repository link once its introductory counterpart passes it.
+// Reveal the complete fixed header only after the introductory button exits above.
 (() => {
   const header = document.querySelector('body > header');
   const source = document.querySelector('.intro-repo');
@@ -7,10 +7,12 @@
   let observer;
   const observe = () => {
     observer?.disconnect();
-    const edge = header.getBoundingClientRect().height;
     observer = new IntersectionObserver(([entry]) => {
-      target.toggleAttribute('data-visible', entry.boundingClientRect.bottom <= edge);
-    }, { rootMargin: `-${edge}px 0px 0px 0px`, threshold: [0, 1] });
+      const visible = entry.boundingClientRect.bottom <= 0;
+      header.toggleAttribute('data-visible', visible);
+      header.toggleAttribute('inert', !visible);
+      header.setAttribute('aria-hidden', String(!visible));
+    }, { threshold: [0, 1] });
     observer.observe(source);
   };
   new ResizeObserver(observe).observe(header);

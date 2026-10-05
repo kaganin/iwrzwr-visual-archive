@@ -3,14 +3,14 @@
 :root{--page:#000;--ink:#f7f7f4;--muted:#777671;background:var(--page);color:var(--ink)}
 body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
 body{background:var(--page);color:var(--ink)}
-header .brand{font-size:20px;line-height:24px;font-weight:400;letter-spacing:-.005em}
+.brand,header .brand{font-size:20px;line-height:24px;font-weight:300;letter-spacing:-.075px;color:var(--ink)}
+.brand span{color:var(--muted)}
+.archive-intro h1{margin:0 0 10px}
 header h1.brand{margin:0}
 .archive-intro{max-width:720px}
-.archive-intro p{color:var(--muted);margin:0 0 16px}
+.archive-intro p{color:var(--muted);margin:0 0 32px;font-weight:300}
 .archive-intro a,.header-repo{color:var(--ink);text-decoration:none;text-underline-offset:3px}
-.repo-label{text-decoration:underline}
-.header-repo{font-size:15px;line-height:24px;white-space:nowrap;visibility:hidden}
-.header-repo[data-visible]{visibility:visible}
+.repo-button,.archive-intro a.repo-button{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:#000;padding:8px 16px;border-radius:100px;font-size:13px;line-height:19px;font-weight:400;letter-spacing:-.075px;white-space:nowrap;text-decoration:none}
 .header-repo:focus-visible,.intro-repo:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
 header>span:last-child{line-height:24px}
 .series h2,figcaption{font-size:15px;line-height:24px;font-weight:400;letter-spacing:-.005em}
@@ -21,13 +21,15 @@ header,header .brand span{color:var(--muted)}
 /* Shared hairlines for the archive chrome and study frames. */
 header{border-bottom:.5px solid #ffffff1a}
 iframe{border:.5px solid #ffffff1a}
-header{padding:24px max(32px,calc((100% - 1216px)/2))}
-main{padding:32px}
+header{padding:16px max(32px,calc((100% - 1216px)/2));flex-wrap:nowrap}
+main{padding:32px;padding-top:327px}
 .all-grid{gap:32px}
 /* Archive is a gallery; demo transport and recording selectors are hidden. */
 button,[class*="controls"],.viz-controls{display:none!important}
 .animation-card{min-height:240px;border:.5px solid rgb(255 255 255 / 10%);background:#000;overflow:hidden;contain:layout paint}
 .collection-card{min-height:320px}
 .animation-card:not([data-ready]){visibility:hidden}
-body>header{display:flex!important;position:sticky;top:0;z-index:10;background:var(--page)}
+body>header{display:flex!important;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--page);visibility:hidden;border-color:rgb(255 255 255 / 8%)}
+body>header[data-visible]{visibility:visible}
+@media(max-width:620px){main{padding-top:160px}header{gap:12px}.brand,header .brand{font-size:18px}}
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:.5px!important;border-color:rgb(255 255 255 / 10%)!important}
