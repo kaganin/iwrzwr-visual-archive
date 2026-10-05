@@ -7,7 +7,7 @@ body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
 body{background:var(--page);color:var(--ink)}
 .brand,header .brand{font-size:20px;line-height:24px;font-weight:300;letter-spacing:calc(1em * .2 / 15);color:var(--muted)}
 .brand span{color:var(--ink)}
-.archive-intro h1{margin:0 0 10px}
+.archive-intro h1{margin:0 0 16px}
 header h1.brand{margin:0}
 .archive-intro{max-width:720px;margin-bottom:72px}
 .archive-intro p{color:var(--muted);margin:0 0 32px;font-weight:400}
