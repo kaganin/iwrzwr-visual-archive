@@ -71,12 +71,6 @@ GALLERY_URL=http://localhost:8000/ node scripts/verify-gallery-lifecycle.mjs
 
 the separate lifecycle check confirms offscreen pausing, resuming, hidden-panel isolation, and canvas resizing without a page reload. both checks require a dedicated debugging browser, not your everyday browser session.
 
-## exports
-
-videos are optional presentation assets, not needed to run the gallery. example timing is preserved; a seamless boundary at 20 seconds is not guaranteed. see [examples](examples/README.md) for the video export workflow.
-
-[thermal_core.md](THERMAL_CORE.md) describes the optional thermal core export workflow. that workflow requires playwright and a macos encoder; unlike the gallery, it has extra dependencies. historical export/check pages are not supported gallery entry points.
-
 ## license
 
 original code and original assets use the [mit license](LICENSE), which permits personal and commercial use. retain copyright and license notices. provided without warranty.
