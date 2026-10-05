@@ -14,19 +14,19 @@ like it? [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archi
 
 [explore all studies on the website](https://www.kagan.in/iwrzwr/visual-archive/).
 
-animated previews — click to open the full-quality mp4 (20 seconds, 1080 × 1080, 30 fps, silent).
+video examples — 20 seconds, 1080 × 1080, 30 fps, silent.
 
 ### 26 — signal assembly
 
-[![signal assembly animated preview](examples/26-signal-assembly.gif)](examples/26-signal-assembly.mp4)
+https://github.com/user-attachments/assets/3c562edf-f039-4f97-9b2b-23967390c4df
 
 ### 27 — phase mechanics
 
-[![phase mechanics animated preview](examples/27-phase-mechanics.gif)](examples/27-phase-mechanics.mp4)
+https://github.com/user-attachments/assets/85ce9b2a-076d-4d9b-bbe3-24c8f8fcdcb3
 
 ### 28 — orbital memory
 
-[![orbital memory animated preview](examples/28-orbital-memory.gif)](examples/28-orbital-memory.mp4)
+https://github.com/user-attachments/assets/9da2bee4-0f7c-45a1-9a4e-ffc95380485e
 
 the videos are exported from the same drawing code. the website runs the javascript versions, not mp4 playback.
 
