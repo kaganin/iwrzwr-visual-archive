@@ -1,15 +1,19 @@
 @font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:swap;src:url("https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf") format("truetype")}
 :root{font-family:"SF Pro","SF Pro Text",Inter,-apple-system,BlinkMacSystemFont,Arial,sans-serif;font-size:15px;font-weight:400;line-height:24px;letter-spacing:-.005em;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:root{--page:#26251f;--ink:#f7f7f4;--muted:#777671;background:var(--page);color:var(--ink)}
 body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
+body{background:var(--page);color:var(--ink)}
 header .brand{font-size:20px;line-height:32px;font-weight:400;letter-spacing:-.005em}
 header h1.brand{margin:0}
 .archive-intro{max-width:720px}
-.archive-intro p{color:#999;margin:0 0 16px}
+.archive-intro p{color:var(--muted);margin:0 0 16px}
 .archive-intro a{color:inherit;text-underline-offset:3px}
 header>span:last-child{line-height:24px}
 .series h2,figcaption{font-size:15px;line-height:24px;font-weight:400;letter-spacing:-.005em}
-.series h2{color:#fff}
-figcaption{color:#999;margin-top:10px}
+.series h2{color:var(--muted)}
+figcaption{color:var(--ink);margin-top:10px}
+header .brand{color:var(--ink)}
+header,header .brand span{color:var(--muted)}
 /* Shared hairlines for the archive chrome and study frames. */
 header{border-bottom:.5px solid #ffffff1a}
 iframe{border:.5px solid #ffffff1a}
@@ -21,5 +25,5 @@ button,[class*="controls"],.viz-controls{display:none!important}
 .animation-card{min-height:240px;border:.5px solid rgb(255 255 255 / 10%);background:#000;overflow:hidden;contain:layout paint}
 .collection-card{min-height:320px}
 .animation-card:not([data-ready]){visibility:hidden}
-body>header{display:flex!important;position:sticky;top:0;z-index:10;background:#000}
+body>header{display:flex!important;position:sticky;top:0;z-index:10;background:var(--page)}
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:.5px!important;border-color:rgb(255 255 255 / 10%)!important}
