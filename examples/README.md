@@ -18,4 +18,4 @@ node scripts/export-composition-examples.mjs
 
 the default source is the live gallery. set `GALLERY_URL` to another served build if needed. existing video outputs are never overwritten; preserve or move them before re-exporting. temporary png frames are removed only after successful encoding; failed exports preserve their frames for recovery.
 
-the mp4 files total approximately 4.8 mb. matching 540 × 540, 15 fps gifs provide inline animated previews in the main readme. the main gallery requires neither the video nor gif files.
+the mp4 files total approximately 4.8 mb. the main readme embeds original mp4 attachments hosted by github via the closed [video asset issue](https://github.com/kaganin/iwrzwr-visual-archive/issues/1). older gif previews remain preserved but are no longer used. the main gallery requires neither the video nor gif files.
