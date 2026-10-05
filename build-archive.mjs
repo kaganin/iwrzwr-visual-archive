@@ -93,8 +93,10 @@ const englishTitles={
  'orbital-memory':'Orbital Memory'
 };
 for(const s of [...originals,...extra])s.title=englishTitles[s.id]||s.title;
-const cards=originals.map(s=>`<section class="series"><h2>${esc(s.title)}</h2><div class="all-grid">${s.names.map((name,i)=>`<figure><div class="animation-card" data-series="${s.id}" data-item="${i}" aria-label="${esc(name)}"></div><figcaption>${esc(name)}</figcaption></figure>`).join('')}</div></section>`).join('');
-const extraCards=extra.map(s=>`<section class="series"><h2>${esc(s.title)}</h2><div class="animation-card collection-card" data-series="${s.id}" aria-label="${esc(s.title)}"></div></section>`).join('');
+// Lowercase gallery copy without changing preserved drawing programs or names.
+const label=text=>esc(text.toLowerCase());
+const cards=originals.map(s=>`<section class="series"><h2>${label(s.title)}</h2><div class="all-grid">${s.names.map((name,i)=>`<figure><div class="animation-card" data-series="${s.id}" data-item="${i}" aria-label="${label(name)}"></div><figcaption>${label(name)}</figcaption></figure>`).join('')}</div></section>`).join('');
+const extraCards=extra.map(s=>`<section class="series"><h2>${label(s.title)}</h2><div class="animation-card collection-card" data-series="${s.id}" aria-label="${label(s.title)}"></div></section>`).join('');
 for(const s of [...originals,...extra])fs.writeFileSync(path.join(out,'studies',s.id+'.json'),JSON.stringify(inlineSources[s.id]));
 // Count the three compositions as 12 alternatives, following the archive's editorial convention.
 const compositionAlternatives=12;
