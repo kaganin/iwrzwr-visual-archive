@@ -1,5 +1,7 @@
 /* Apple HIG SF Pro tracking values; no additional EtEyo tracking. */
-:root{font-family:"SF Pro",-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;font-weight:400;line-height:24px;letter-spacing:-.23px;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:swap;src:url("https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf") format("truetype")}
+@font-face{font-family:Inter;font-style:normal;font-weight:300;font-display:swap;src:url("https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf") format("truetype")}
+:root{font-family:"SF Pro",-apple-system,BlinkMacSystemFont,Inter,sans-serif;font-size:15px;font-weight:400;line-height:24px;letter-spacing:-.23px;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 :root{--page:#000;--ink:#f7f7f4;--muted:#777671;background:var(--page);color:var(--ink)}
 body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
 body{background:var(--page);color:var(--ink)}
