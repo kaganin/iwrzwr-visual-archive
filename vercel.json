@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "echo 'Static archive: no dependencies required'",
   "buildCommand": "IWRZWR_BASE_PATH=/iwrzwr/visual-archive/ node build-archive.mjs",
