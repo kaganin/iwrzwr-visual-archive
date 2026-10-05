@@ -4,30 +4,27 @@
 
 signals are simulated. this is a visual archive, not a real audio-analysis engine or the native iwrzwr app.
 
-[explore the live gallery](https://kagan.in/iwrzwr/visual-archive/). see [deployment.md](DEPLOYMENT.md) for hosting configuration.
-
 like it? [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive) — it helps others discover these experiments.
-
-## draft studies
-
-these are exploratory drafts from the iwrzwr design process, not our polished or final animations. they are shared to document ideas and experiments, not as production-ready components.
-
-timing, transitions, visual details, and behavior may still be rough. the verification checks confirm that the previews run; they do not mean the animations have been polished.
 
 ## what's inside
 
-- 152 individual studies and 3 square compositions: signal assembly, phase mechanics, and orbital memory.
-- 28 visible collections: 25 study collections and 3 compositions.
-- the introduction's “164 experiments” uses the agreed editorial count: 152 studies plus 12 alternatives assigned to the compositions. there are 155 cards, not 164 individual demos.
-- preserved standalone studies and earlier iterations in `sources/`; not all are shown in the current gallery.
+155 coded animation studies across 28 study collections, built with javascript and html canvas.
 
-this is an experimental archive, not a polished library. if there's interest, i'd be happy to keep developing and maintaining it. feedback and ideas are welcome; there is no fixed roadmap or release schedule yet.
+## examples
+
+[explore all studies on the website](https://www.kagan.in/iwrzwr/visual-archive/).
+
+video previews — 20 seconds, 1080 × 1080, 30 fps, silent:
+
+- [26 — signal assembly](examples/26-signal-assembly.mp4)
+- [27 — phase mechanics](examples/27-phase-mechanics.mp4)
+- [28 — orbital memory](examples/28-orbital-memory.mp4)
+
+the videos are exported from the same drawing code. the website runs the javascript versions, not mp4 playback.
 
 ## sound and music visualization experiments
 
-if you're exploring a sound visualizer, music visualiser, or audio visualization for a creative-coding project, these drafts offer drawing code and live examples to study and adapt. the archive includes waveform animations, spectrum-inspired displays, particle fields, and mechanical motion studies.
-
-“visualizer” and “visualiser” refer to the same kind of visual exploration here. these are simulated animation studies, not a microphone visualizer, fft analyzer, music player, or production-ready audio-reactive library. connecting the drawings to real audio analysis is a separate implementation step.
+if you're exploring a sound visualizer, music visualizer, or audio visualization for a creative-coding project, these experiments offer drawing code and live examples to study and adapt. the archive includes waveform animations, spectrum-inspired displays, particle fields, and mechanical motion studies.
 
 ## run it
 
@@ -54,8 +51,6 @@ no dependency installation is needed for the gallery build. `npm run build` and 
 - `vercel.json` — static build and subpath routing.
 - [qa.md](QA.md) — verification scope, results, and limitations.
 
-the gallery isolates each study in shadow dom and pauses offscreen drawing through a shared scheduler. original transport/recording controls are hidden. older iframe-based standalone tooling is preserved but does not power the main gallery.
-
 ## browser verification
 
 start a chromium-based browser with `--remote-debugging-port=9224`, run the local server, then:
@@ -74,17 +69,7 @@ the separate lifecycle check confirms offscreen pausing, resuming, hidden-panel 
 
 ## exports
 
-### video examples
-
-three silent, 20-second, 1080 × 1080 h.264 previews exported directly from the composition code at 30 fps:
-
-- [26 — signal assembly](examples/26-signal-assembly.mp4)
-- [27 — phase mechanics](examples/27-phase-mechanics.mp4)
-- [28 — orbital memory](examples/28-orbital-memory.mp4)
-
-these downloadable presentation examples are not used by the website. the live gallery runs the javascript versions. their original timing is preserved; a seamless boundary at 20 seconds is not guaranteed.
-
-videos are optional presentation assets, not needed to run or reuse these animations. large additional exports should stay outside git. the historical orbital memory mp4 is preserved as a reference, but the gallery now uses javascript.
+videos are optional presentation assets, not needed to run the gallery. example timing is preserved; a seamless boundary at 20 seconds is not guaranteed. see [examples](examples/README.md) for the video export workflow.
 
 [thermal_core.md](THERMAL_CORE.md) describes the optional thermal core export workflow. that workflow requires playwright and a macos encoder; unlike the gallery, it has extra dependencies. historical export/check pages are not supported gallery entry points.
 
