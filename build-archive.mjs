@@ -95,8 +95,9 @@ const englishTitles={
 for(const s of [...originals,...extra])s.title=englishTitles[s.id]||s.title;
 // Lowercase gallery copy without changing preserved drawing programs or names.
 const label=text=>esc(text.toLowerCase());
-const cards=originals.map(s=>`<section class="series"><h2>${label(s.title)}</h2><div class="all-grid">${s.names.map((name,i)=>`<figure><div class="animation-card" data-series="${s.id}" data-item="${i}" aria-label="${label(name)}"></div><figcaption>${label(name)}</figcaption></figure>`).join('')}</div></section>`).join('');
-const extraCards=extra.map(s=>`<section class="series"><h2>${label(s.title)}</h2><div class="animation-card collection-card" data-series="${s.id}" aria-label="${label(s.title)}"></div></section>`).join('');
+const collectionHeading=(title,index)=>`${String(index+1).padStart(2,'0')} — ${label(title)}`;
+const cards=originals.map((s,index)=>`<section class="series"><h2>${collectionHeading(s.title,index)}</h2><div class="all-grid">${s.names.map((name,i)=>`<figure><div class="animation-card" data-series="${s.id}" data-item="${i}" aria-label="${label(name)}"></div><figcaption>${label(name)}</figcaption></figure>`).join('')}</div></section>`).join('');
+const extraCards=extra.map((s,index)=>`<section class="series"><h2>${collectionHeading(s.title,originals.length+index)}</h2><div class="animation-card collection-card" data-series="${s.id}" aria-label="${label(s.title)}"></div></section>`).join('');
 for(const s of [...originals,...extra])fs.writeFileSync(path.join(out,'studies',s.id+'.json'),JSON.stringify(inlineSources[s.id]));
 // Count the three compositions as 12 alternatives, following the archive's editorial convention.
 const compositionAlternatives=12;
