@@ -18,4 +18,4 @@ node scripts/export-composition-examples.mjs
 
 the default source is the live gallery. set `GALLERY_URL` to another served build if needed. existing video outputs are never overwritten; preserve or move them before re-exporting. temporary png frames are removed only after successful encoding; failed exports preserve their frames for recovery.
 
-these optional assets total approximately 4.8 mb. the main gallery requires no video downloads.
+the mp4 files total approximately 4.8 mb. matching 540 × 540, 15 fps gifs provide inline animated previews in the main readme. the main gallery requires neither the video nor gif files.
