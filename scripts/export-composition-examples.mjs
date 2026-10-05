@@ -15,8 +15,8 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 await call('Page.enable');await call('Runtime.enable');
 await call('Emulation.setDeviceMetricsOverride',{width:1080,height:1080,deviceScaleFactor:1,mobile:false});
 try{
- for(const [number,id] of [[26,'signal-assembly'],[27,'phase-mechanics'],[28,'orbital-memory']]){
-  const output=path.join(examples,`${number}-${id}.mp4`);
+ for(const id of ['signal-assembly','phase-mechanics','orbital-memory']){
+  const output=path.join(examples,`${id}.mp4`);
   try{await fs.access(output);throw Error(`Output exists: ${output}`);}catch(error){if(error.code!=='ENOENT')throw error;}
   await call('Page.navigate',{url:new URL(`studies/${id}.html`,base).href});
   let ready=false;for(let i=0;i<100;i++){ready=await evaluate(`!!document.getElementById('${id}')?.compositionPreview`);if(ready)break;await wait(100);}if(!ready)throw Error(`Composition missing: ${id}`);
