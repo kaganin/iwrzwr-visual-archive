@@ -6,6 +6,12 @@ signals are simulated. this is a visual archive, not a real audio-analysis engin
 
 [explore the live gallery](https://kagan.in/iwrzwr/visual-archive/). see [deployment.md](DEPLOYMENT.md) for hosting configuration.
 
+## draft studies
+
+these are exploratory drafts from the iwrzwr design process, not our polished or final animations. they are shared to document ideas and experiments, not as production-ready components.
+
+timing, transitions, visual details, and behavior may still be rough. the verification checks confirm that the previews run; they do not mean the animations have been polished.
+
 ## what's inside
 
 - 152 individual studies and 3 square compositions: signal assembly, phase mechanics, and orbital memory.
