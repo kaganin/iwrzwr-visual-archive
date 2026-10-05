@@ -1,6 +1,6 @@
 # iwrzwr / visual archive
 
-155 experimental sound and music visualizer studies built with javascript and html canvas. this sound visualization archive explores waveforms, spectrum-inspired patterns, matrix displays, particles, rhythm, and memory — all running from code, with no video playback or iframes in the main gallery.
+155 experimental sound and music visualizer studies built with javascript and html canvas. explore waveform animations, spectrum-inspired displays, matrix patterns, particle fields, rhythm, memory, and mechanical motion — with drawing code and live examples to study and adapt for creative-coding projects. all gallery animations run from code, with no video playback or iframes.
 
 signals are simulated. this is a visual archive, not a real audio-analysis engine or the native iwrzwr app.
 
@@ -29,10 +29,6 @@ animated previews — click to open the full-quality mp4 (20 seconds, 1080 × 10
 [![orbital memory animated preview](examples/28-orbital-memory.gif)](examples/28-orbital-memory.mp4)
 
 the videos are exported from the same drawing code. the website runs the javascript versions, not mp4 playback.
-
-## sound and music visualization experiments
-
-if you're exploring a sound visualizer, music visualizer, or audio visualization for a creative-coding project, these experiments offer drawing code and live examples to study and adapt. the archive includes waveform animations, spectrum-inspired displays, particle fields, and mechanical motion studies.
 
 ## run it
 
