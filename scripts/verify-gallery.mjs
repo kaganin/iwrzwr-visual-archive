@@ -51,6 +51,11 @@ for(const [label,width,height] of [['desktop',1280,900],['mobile',390,844]]){
   if(!result.animated||!result.ink||result.error)console.log('CHECK',JSON.stringify(result));
   if((index+1)%20===0||index===154)console.log(`${label}: ${index+1}/155 sampled`);
  }
+ // A focused retest keeps an inspectable frame for each requested card.
+ if(indices.length!==155)for(const index of indices){
+  const png=await evaluate(`window.__qaShots[${index}].frames[1]`);
+  await fs.writeFile(path.join(output,`${label}-${index+1}.png`),Buffer.from(png.split(',')[1],'base64'));
+ }
  // Three actual frames for every card: contact sheets for human visual review.
  for(let start=0;start<155;start+=20){
   if(indices.length!==155)continue;

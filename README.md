@@ -52,6 +52,12 @@ GALLERY_URL=http://localhost:8000/ node scripts/verify-gallery.mjs
 
 this checks every card at desktop and mobile sizes, saves three frames per preview for visual review, and reports browser errors. screenshots are temporary qa outputs, not repository assets. automated motion checks are not a substitute for looking at the frames.
 
+```sh
+GALLERY_URL=http://localhost:8000/ node scripts/verify-gallery-lifecycle.mjs
+```
+
+the separate lifecycle check confirms offscreen pausing, resuming, hidden-panel isolation, and canvas resizing without a page reload. both checks require a dedicated debugging browser, not your everyday browser session.
+
 ## exports
 
 videos are optional presentation assets, not needed to run or reuse these animations. large exports should stay outside git. the historical orbital memory mp4 is preserved as a reference, but the gallery now uses javascript.
