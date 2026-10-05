@@ -9,6 +9,10 @@ assert.equal(cards.length,155,'visible card count');
 assert.equal(new Set(cards.map(c=>c[1])).size,28,'visible collections');
 assert(!/<(?:iframe|video)\b/i.test(html),'main gallery must run code');
 assert(html.includes('164 alternatives · 28 collections'),'editorial count');
+for(const match of html.matchAll(/<(?:h2|figcaption|title)>([^<]*)<\/[^>]+>|aria-label="([^"]+)"/g)){
+ const text=match[1]??match[2];
+ assert.equal(text,text.toLowerCase(),'gallery copy must be lowercase: '+text);
+}
 for(const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g))new vm.Script(script[1]);
 let scripts=0,payloads=0;
 let originalStudies=0;

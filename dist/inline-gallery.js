@@ -61,7 +61,7 @@
    }
    owner.resize?.();owner.mounted=true;owner.host.dataset.ready='true';
    shadow.querySelectorAll('canvas').forEach(art=>art.setAttribute('aria-label',owner.host.getAttribute('aria-label')));
-  }catch(error){owner.host.textContent='Preview could not load.';console.error(owner.host.dataset.series,error)}finally{owner.loading=false}
+  }catch(error){owner.host.textContent='preview could not load.';console.error(owner.host.dataset.series,error)}finally{owner.loading=false}
  }
  const owners=new Map();
  const observer=new IntersectionObserver(entries=>{for(const e of entries){const owner=owners.get(e.target);owner.active=e.isIntersecting;if(owner.active)mount(owner);}},{rootMargin:'240px'});
