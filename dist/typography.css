@@ -22,7 +22,7 @@ header,header .brand span{color:var(--muted)}
 header{border-bottom:.5px solid #ffffff1a}
 iframe{border:.5px solid #ffffff1a}
 header{padding:16px max(32px,calc((100% - 1216px)/2));flex-wrap:nowrap}
-main{padding:32px;padding-top:96px}
+main{padding:32px;padding-top:76px}
 .all-grid{gap:32px}
 /* Archive is a gallery; demo transport and recording selectors are hidden. */
 button,[class*="controls"],.viz-controls{display:none!important}
