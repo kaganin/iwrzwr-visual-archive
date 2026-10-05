@@ -41,7 +41,7 @@
     "group": "İlk denemeler",
     "count": 5,
     "names": [
-      "Siri Ribbon",
+      "Spectrum Ribbon",
       "Mono Wave",
       "Silk Layers",
       "Liquid Wave",
@@ -533,36 +533,44 @@
     "url": "studies/profile-reference.html"
   },
   {
-    "id": "twitter-010305",
+    "id": "signal-assembly",
     "title": "01–03–05 · kare",
     "group": "Kare kompozisyonlar",
     "count": 3,
     "names": [],
-    "url": "studies/twitter-010305.html"
+    "url": "studies/signal-assembly.html"
   },
   {
-    "id": "twitter-020406",
+    "id": "phase-mechanics",
     "title": "02–04–06 · kare",
     "group": "Kare kompozisyonlar",
     "count": 3,
     "names": [],
-    "url": "studies/twitter-020406.html"
+    "url": "studies/phase-mechanics.html"
   },
   {
-    "id": "tweet-square-01-03-05",
+    "id": "orbital-memory",
+    "title": "Echo · Orbit · Parity · kare",
+    "group": "Kare kompozisyonlar",
+    "count": 3,
+    "names": [],
+    "url": "studies/orbital-memory.html"
+  },
+  {
+    "id": "square-signal-assembly",
     "title": "Kare · ilk hız",
     "group": "Kare kompozisyonlar",
     "count": 3,
     "names": [],
-    "url": "studies/tweet-square-01-03-05.html"
+    "url": "studies/square-signal-assembly.html"
   },
   {
-    "id": "tweet-square-01-03-05-slow",
+    "id": "square-signal-assembly-slow",
     "title": "Kare · yavaş deneme",
     "group": "Kare kompozisyonlar",
     "count": 3,
     "names": [],
-    "url": "studies/tweet-square-01-03-05-slow.html"
+    "url": "studies/square-signal-assembly-slow.html"
   },
   {
     "id": "settings-icons",

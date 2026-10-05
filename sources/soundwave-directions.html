@@ -14,7 +14,7 @@
             <div class="iwr-circle" aria-hidden="true"></div>
             <div class="iwr-activity">
               <div class="iwr-rec" hidden><span class="iwr-dot"></span><span data-time>00:00</span></div>
-              <canvas class="iwr-wave" role="img" aria-label="Siri Ribbon: renkli, üst üste akan dalgalar"></canvas>
+              <canvas class="iwr-wave" role="img" aria-label="Spectrum Ribbon: renkli, üst üste akan dalgalar"></canvas>
             </div>
             <div class="iwr-circle" aria-hidden="true"></div>
           </div>
@@ -24,14 +24,14 @@
       <div class="text-small text-muted iwr-dimensions">126px header · 44px dalga alanı · 24px boşluk</div>
     </div>
     <div class="iwr-options" role="group" aria-label="Animasyon seçenekleri">
-      <button type="button" class="btn btn-block" data-style="ribbon" aria-pressed="true">1 · Siri Ribbon</button>
+      <button type="button" class="btn btn-block" data-style="ribbon" aria-pressed="true">1 · Spectrum Ribbon</button>
       <button type="button" class="btn btn-block" data-style="mono" aria-pressed="false">2 · Mono Wave</button>
       <button type="button" class="btn btn-block" data-style="silk" aria-pressed="false">3 · Silk Layers</button>
       <button type="button" class="btn btn-block" data-style="liquid" aria-pressed="false">4 · Liquid Wave</button>
       <button type="button" class="btn btn-block" data-style="spectrum" aria-pressed="false">5 · Fine Spectrum</button>
     </div>
   </div>
-  <div class="iwr-caption" aria-live="polite"><span data-caption>Renkli, yarı saydam dalgalar; akışkan Siri hissi.</span></div>
+  <div class="iwr-caption" aria-live="polite"><span data-caption>Renkli, yarı saydam dalgalar; akışkan, canlı bir his.</span></div>
 </div>
 <style>
   #iwr-wave-directions .iwr-comparison { display:grid; grid-template-columns:minmax(0,402px) minmax(150px,1fr); gap:24px; align-items:center; margin-top:20px; }
@@ -66,13 +66,13 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const state = { style:'ribbon', phase:'playback', paused:false, monochrome:false, intensity:0.75 };
   const descriptions = {
-    ribbon:'Renkli, yarı saydam dalgalar; akışkan Siri hissi.',
+    ribbon:'Renkli, yarı saydam dalgalar; akışkan, canlı bir his.',
     mono:'1px beyaz ana dalga ve hafif izleri; sade, yumuşak ve merkezde.',
     silk:'İnce paralel katmanlar; sesle birlikte açılan ipeksi çizgiler.',
     liquid:'Dolu, organik dalga; konuşmayla esneyen tek bir ışık formu.',
     spectrum:'1px keskin çubuklar; merkeze hizalı, birlikte akan frekans hissi.'
   };
-  const names = {ribbon:'Siri Ribbon',mono:'Mono Wave',silk:'Silk Layers',liquid:'Liquid Wave',spectrum:'Fine Spectrum'};
+  const names = {ribbon:'Spectrum Ribbon',mono:'Mono Wave',silk:'Silk Layers',liquid:'Liquid Wave',spectrum:'Fine Spectrum'};
   let w=226, h=44, elapsed=0, last=0, smoothLevel=0.5, drawTime=0;
   const palette=['#47cfff','#6f72ff','#cb65ff','#ff789f'];
   function sync() {

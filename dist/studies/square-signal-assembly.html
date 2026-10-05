@@ -1,20 +1,20 @@
-<div id="tweet-square-010305">
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kare · ilk hız · iwrzwr</title><style>:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body><div id="square-signal-assembly">
   <div class="viz-controls">
     <button class="btn" type="button" data-pause aria-pressed="false">Duraklat</button>
     <span class="text-small" data-status role="status" aria-live="polite">10 saniye · 1:1 · sessiz</span>
   </div>
-  <div class="tweet-frame">
+  <div class="square-frame">
     <canvas width="1080" height="1080" role="img" aria-label="Yazısız siyah bir kare içinde, yukarıdan aşağı Slice Loupe, Delay Vernier ve Splice Loom. Birlikte tekrar eden 10 saniyelik animasyon."></canvas>
   </div>
 </div>
 <style>
-#tweet-square-010305 .tweet-frame{width:100%;max-width:540px;aspect-ratio:1;margin:16px auto 0;background:#000;overflow:hidden}
-#tweet-square-010305 canvas{display:block;width:100%;height:auto;aspect-ratio:1}
+#square-signal-assembly .square-frame{width:100%;max-width:540px;aspect-ratio:1;margin:16px auto 0;background:#000;overflow:hidden}
+#square-signal-assembly canvas{display:block;width:100%;height:auto;aspect-ratio:1}
 </style>
 <script>
 (()=>{
 'use strict';
-const root=document.getElementById('tweet-square-010305');
+const root=document.getElementById('square-signal-assembly');
 const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
 const button=root.querySelector('[data-pause]'),status=root.querySelector('[data-status]');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
@@ -131,7 +131,7 @@ reduced.addEventListener('change',e=>{paused=e.matches;sync();schedule();});
 document.addEventListener('visibilitychange',()=>{last=0;schedule();});
 new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;last=0;schedule();}).observe(root);
 // Deterministic frame access for checking the seam and a later approved export.
-root.tweetPreview={
+root.squarePreview={
  duration,width:1080,height:1080,
  renderAt(seconds){paused=true;time=mod(seconds,duration);paint();sync();},
  play(){paused=false;sync();schedule();},
@@ -140,3 +140,4 @@ root.tweetPreview={
 sync();paint();schedule();
 })();
 </script>
+</body></html>

@@ -1,57 +1,65 @@
 # iwrzwr / visual archive
 
-Experimental sound visualizations: moving fields, mechanical signals, particle patterns, and small studies in rhythm and memory.
+moving fields, mechanical signals, particle patterns, and studies in rhythm and memory. all 155 previews run from html, css, javascript, and canvas — no video playback or iframes in the main gallery.
 
-[Explore the gallery](https://iwrzwr-visual-archive.kaganyaldizkaya.chatgpt.site/)
+signals are simulated. this is a visual archive, not a real audio-analysis engine or the native iwrzwr app.
 
-Shared as-is. This is an experimental archive, not an actively maintained library. There is no commitment to support, new features, or compatibility updates.
+the intended public address is [kagan.in/iwrzwr/visual-archive](https://kagan.in/iwrzwr/visual-archive/). see [deployment.md](DEPLOYMENT.md) for setup and publication status.
 
-## What's inside
+## what's inside
 
-- 28 visible collections: 25 study collections and three square compositions.
-- The header counts 164 alternatives: 152 individual studies plus 12 alternatives assigned to the compositions as an editorial counting convention. The page renders 155 cards, not 164 separate demos.
-- **Signal Assembly**, **Phase Mechanics**, and **Orbital Memory** are the three square compositions.
-- HTML, CSS, JavaScript, Canvas drawing code, and the script that assembles the gallery—not just video exports.
+- 152 individual studies and 3 square compositions: signal assembly, phase mechanics, and orbital memory.
+- 28 visible collections: 25 study collections and 3 compositions.
+- the header's “164 alternatives” uses the agreed editorial count: 152 studies plus 12 alternatives assigned to the compositions. there are 155 cards, not 164 individual demos.
+- preserved standalone studies and earlier iterations in `sources/`; not all are shown in the current gallery.
 
-Most previews run live in the browser. Orbital Memory uses a small, bundled MP4 of Echo Orchard, Orbit Register, and Parity Bloom; the other two square compositions run from JavaScript.
+shared as-is. this is not an actively maintained library; there is no commitment to support, compatibility updates, or new features.
 
-The main gallery mounts studies in Shadow DOM rather than iframes, with a shared frame scheduler and offscreen pausing. Historical standalone pages and earlier iframe-based tooling remain in the archive, but are not used by the main page.
+## run it
 
-These are visual prototypes with simulated signals, not a production audio-analysis engine or the native iwrzwr application.
-
-## Run locally
-
-The standalone `iwrzwr-visual-archive` repository contains the website only. The native iOS application and its Git history are not included.
+with node.js 22 or newer and python 3:
 
 ```sh
 git clone https://github.com/kaganin/iwrzwr-visual-archive.git
 cd iwrzwr-visual-archive
-```
-
-With Node.js and Python 3 installed, run from the archive root:
-
-```sh
 node build-archive.mjs
+node scripts/check-archive.mjs
 python3 -m http.server 8000 --directory dist
 ```
 
-Open `http://localhost:8000`. Use an HTTP server: opening `index.html` directly will not work reliably because the gallery fetches study files.
+open [localhost:8000](http://localhost:8000/). use an http server; opening `index.html` directly won't work because the gallery fetches study files.
 
-There is no dependency installation needed for the static gallery build. You can also serve the checked-in `dist/` directly without rebuilding.
+no dependency installation is needed for the gallery build. `npm run build` and `npm run check` are equivalent shortcuts. you can also serve the checked-in `dist/` without rebuilding.
 
-## Layout
+## layout
 
-- `sources/` — original studies and preserved iterations.
-- `build-archive.mjs` — assembles the current gallery and study catalog.
-- `dist/` — static website, study payloads, gallery runtime, and styles.
-- `sources/echo-orbit-parity.mp4` — the video needed to reproduce Orbital Memory.
+- `sources/` — original drawing code and preserved iterations.
+- `build-archive.mjs` — assembles the gallery and study payloads.
+- `dist/` — static site, gallery runtime, styles, and generated payloads.
+- `scripts/` — static checks and browser verification.
+- `vercel.json` — static build and subpath routing.
+- [qa.md](QA.md) — verification scope, results, and limitations.
 
-Some preserved sources are not included in the current visible selection. The generated catalog also contains historical entries, so its total is not the main gallery's collection count.
+the gallery isolates each study in shadow dom and pauses offscreen drawing through a shared scheduler. original transport/recording controls are hidden. older iframe-based standalone tooling is preserved but does not power the main gallery.
 
-## Media and reuse
+## browser verification
 
-The live gallery is the main preview. A video export of every study is unnecessary; the source code is the useful part of this repository. Keep large exports outside Git and link to them when needed.
+start a chromium-based browser with `--remote-debugging-port=9224`, run the local server, then:
 
-Original code and accompanying original assets are released under the [MIT License](LICENSE), including permission for commercial use. Copyright and license notices must be retained. The software is provided without warranty.
+```sh
+GALLERY_URL=http://localhost:8000/ node scripts/verify-gallery.mjs
+```
 
-The license does not grant rights to third-party trademarks, reference material, or assets owned by others. Visual inspiration does not imply affiliation or endorsement.
+this checks every card at desktop and mobile sizes, saves three frames per preview for visual review, and reports browser errors. screenshots are temporary qa outputs, not repository assets. automated motion checks are not a substitute for looking at the frames.
+
+## exports
+
+videos are optional presentation assets, not needed to run or reuse these animations. large exports should stay outside git. the historical orbital memory mp4 is preserved as a reference, but the gallery now uses javascript.
+
+[thermal_core.md](THERMAL_CORE.md) describes the optional thermal core export workflow. that workflow requires playwright and a macos encoder; unlike the gallery, it has extra dependencies. historical export/check pages are not supported gallery entry points.
+
+## license
+
+original code and original assets use the [mit license](LICENSE), which permits personal and commercial use. retain copyright and license notices. provided without warranty.
+
+this does not grant rights to third-party trademarks, reference images, or others' assets. visual inspiration does not imply affiliation or endorsement.

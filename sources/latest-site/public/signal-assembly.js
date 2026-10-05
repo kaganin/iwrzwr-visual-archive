@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const root=document.getElementById('twitter-010305');
+const root=document.getElementById('signal-assembly');
 if(!root)return;
 const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
@@ -76,6 +76,6 @@ function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnecte
 reduced.addEventListener('change',e=>{paused=e.matches;schedule();});
 document.addEventListener('visibilitychange',()=>{last=0;schedule();});
 new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;last=0;schedule();}).observe(root);
-root.twitterPreview={duration,width:1080,height:1080,renderAt(seconds){paused=true;time=mod(seconds,duration);paint();},play(){paused=false;schedule();},pause(){paused=true;}};
+root.compositionPreview={duration,width:1080,height:1080,renderAt(seconds){paused=true;time=mod(seconds,duration);paint();},play(){paused=false;schedule();},pause(){paused=true;}};
 paint();schedule();
 })();
