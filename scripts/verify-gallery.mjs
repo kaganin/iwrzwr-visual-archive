@@ -41,10 +41,12 @@ for(const [label,width,height] of [['desktop',1280,900],['mobile',390,844]]){
   }
   if(!ready)throw Error('Card did not mount: '+index);
   const frames=[];
-  for(let frame=0;frame<3;frame++){
-   await wait(delays[frame]);
+  for(let frame=0;frame<6;frame++){
+   if(frame===3&&new Set(frames.map(f=>f.hash)).size>1&&frames.some(f=>f.ink>0))break;
+   await wait(delays[frame]||1500);
    frames.push(await evaluate(`(()=>{const host=document.querySelectorAll('.animation-card')[${index}],canvas=host.shadowRoot.querySelector('.direct-surface canvas,.composition-square canvas');if(!canvas)return {error:'Missing visible canvas'};const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;let ink=0,hash=2166136261;for(let i=0;i<pixels.length;i+=4){if(pixels[i]+pixels[i+1]+pixels[i+2]>0)ink++;for(let channel=0;channel<4;channel++)hash=Math.imul(hash^pixels[i+channel],16777619);}const png=canvas.toDataURL();window.__qaShots[${index}]=window.__qaShots[${index}]||{name:host.getAttribute('aria-label'),frames:[]};window.__qaShots[${index}].frames.push(png);return {name:host.getAttribute('aria-label'),series:host.dataset.series,item:host.dataset.item,width:canvas.width,height:canvas.height,ink,hash:hash>>>0};})()`));
   }
+  await evaluate(`(()=>{const f=window.__qaShots[${index}].frames;window.__qaShots[${index}].frames=[f[0],f[Math.floor(f.length/2)],f[f.length-1]];})()`);
   const result={viewport:label,index,...frames[0],animated:new Set(frames.map(f=>f.hash)).size>1,visible:frames.some(f=>f.ink>0),frames:frames.map(({hash,ink})=>({hash,ink}))};results.push(result);
   if(!result.animated||!result.ink||result.error)console.log('CHECK',JSON.stringify(result));
   if((index+1)%20===0||index===154)console.log(`${label}: ${index+1}/155 sampled`);
