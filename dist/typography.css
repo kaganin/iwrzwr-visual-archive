@@ -10,7 +10,7 @@ header h1.brand{margin:0}
 .archive-intro{max-width:720px}
 .archive-intro p{color:var(--muted);margin:0 0 32px;font-weight:400}
 .archive-intro a,.header-repo{color:var(--ink);text-decoration:none;text-underline-offset:3px}
-.repo-button,.archive-intro a.repo-button{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:#000;padding:8px 16px;border-radius:100px;font-size:13px;line-height:19px;font-weight:400;letter-spacing:-.075px;white-space:nowrap;text-decoration:none}
+.repo-button,.archive-intro a.repo-button{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:#000;padding:8px 16px;border-radius:100px;font-size:15px;line-height:20px;font-weight:400;letter-spacing:calc(1em * .2 / 15);white-space:nowrap;text-decoration:none}
 .header-repo:focus-visible,.intro-repo:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
 header>span:last-child{line-height:24px}
 .series h2,figcaption{font-size:15px;line-height:24px;font-weight:400;letter-spacing:-.005em}
