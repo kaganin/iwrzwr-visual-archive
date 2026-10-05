@@ -1,0 +1,13 @@
+{
+  "position": { "placement": "start" },
+  "route": {
+    "name": "iwrzwr visual archive",
+    "description": "Serve the standalone archive beneath the portfolio prefix; preserve other routes.",
+    "enabled": true,
+    "srcSyntax": "regex",
+    "route": {
+      "src": "^/iwrzwr/visual-archive(?:/(.*))?$",
+      "dest": "https://iwrzwr-visual-archive.vercel.app/iwrzwr/visual-archive/$1"
+    }
+  }
+}
