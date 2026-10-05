@@ -5,6 +5,8 @@ const source=process.env.IWRZWR_VISUAL_SOURCE || path.resolve('sources');
 const out=path.resolve('dist');
 fs.mkdirSync(path.join(out,'studies'),{recursive:true});
 const esc=s=>s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
+const basePath=process.env.IWRZWR_BASE_PATH||'';
+if(basePath&&!/^\/[a-zA-Z0-9/_-]*\/$/.test(basePath))throw Error('Invalid IWRZWR_BASE_PATH');
 const theme=`:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}`;
 function wrap(title,body,css=''){return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)} · iwrzwr</title><style>${theme}${css}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body>${body}</body></html>`;}
 const sets=[];
@@ -99,3 +101,4 @@ for(const s of [...originals,...extra])fs.writeFileSync(path.join(out,'studies',
 // Count the three compositions as 12 alternatives, following the archive's editorial convention.
 const compositionAlternatives=12;
 fs.writeFileSync(path.join(out,'index.html'),`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>iwrzwr/visual arcive</title><link rel="stylesheet" href="single-page.css"><link rel="stylesheet" href="typography.css"></head><body><header><span class="brand">iwrzwr<span>/visual arcive</span></span><span>${total+compositionAlternatives} alternatives · ${originals.length+extra.length} collections</span></header><main>${cards}${extraCards}</main><script src="inline-gallery.js"></script></body></html>`);
+if(basePath){const file=path.join(out,'index.html');fs.writeFileSync(file,fs.readFileSync(file,'utf8').replace('<head>','<head><base href="'+esc(basePath)+'">'));}
