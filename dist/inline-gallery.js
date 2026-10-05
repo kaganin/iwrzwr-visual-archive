@@ -46,15 +46,15 @@
     const surface=document.createElement('div');surface.className='direct-surface';surface.append(art);shadow.append(surface);
     const isolate=document.createElement('style');isolate.textContent=':host{display:block} :host> *{display:none!important} :host>.direct-surface{display:flex!important;align-items:center;justify-content:center;width:100%;height:240px;background:#000} .direct-surface canvas{display:block!important;width:70%!important;height:44px!important;max-width:360px!important;min-width:0!important}';shadow.append(isolate);
    }else{
-    const chrome=document.createElement('style');chrome.textContent=':host{display:grid!important;place-items:center;padding:32px;min-height:0!important}button,[class*="controls"],.viz-controls{display:none!important} img{max-width:100%} .twitter-export,video{display:block!important;width:min(70%,560px)!important;min-height:0!important;max-width:560px!important;height:auto!important;aspect-ratio:1;margin:0!important;padding:0!important;background:#000}.twitter-square{display:block!important;width:100%!important;height:100%!important;aspect-ratio:1;margin:0!important}.twitter-square canvas{display:block;width:100%!important;height:100%!important}video{object-fit:contain}canvas{max-width:100%}';shadow.append(chrome);
+    const chrome=document.createElement('style');chrome.textContent=':host{display:grid!important;place-items:center;padding:32px;min-height:0!important}button,[class*="controls"],.viz-controls{display:none!important} img{max-width:100%} .composition-export{display:block!important;width:min(70%,560px)!important;min-height:0!important;max-width:560px!important;height:auto!important;aspect-ratio:1;margin:0!important;padding:0!important;background:#000}.composition-square{display:block!important;width:100%!important;height:100%!important;aspect-ratio:1;margin:0!important}.composition-square canvas{display:block;width:100%!important;height:100%!important}canvas{max-width:100%}';shadow.append(chrome);
     shadow.querySelectorAll('img').forEach(img=>{img.src=img.getAttribute('src').replace(/^\.\.\//,'')});
    }
    owner.resize?.();owner.mounted=true;owner.host.dataset.ready='true';
-   shadow.querySelectorAll('canvas,video').forEach(art=>art.setAttribute('aria-label',owner.host.getAttribute('aria-label')));
+   shadow.querySelectorAll('canvas').forEach(art=>art.setAttribute('aria-label',owner.host.getAttribute('aria-label')));
   }catch(error){owner.host.textContent='Preview could not load.';console.error(owner.host.dataset.series,error)}finally{owner.loading=false}
  }
  const owners=new Map();
- const observer=new IntersectionObserver(entries=>{for(const e of entries){const owner=owners.get(e.target);owner.active=e.isIntersecting;if(owner.active)mount(owner);const video=owner.host.shadowRoot?.querySelector('video');if(video){if(owner.active)video.play().catch(()=>{});else video.pause()}}},{rootMargin:'240px'});
+ const observer=new IntersectionObserver(entries=>{for(const e of entries){const owner=owners.get(e.target);owner.active=e.isIntersecting;if(owner.active)mount(owner);}},{rootMargin:'240px'});
  document.querySelectorAll('.animation-card').forEach(host=>{const owner={host,active:false,mounted:false};owners.set(host,owner);observer.observe(host)});
  window.addEventListener('resize',()=>{for(const owner of owners.values())if(owner.mounted)owner.resize?.()});
 })();

@@ -2512,7 +2512,7 @@ document.getElementById('study-14')?.querySelector('[data-style="vernier"]').cli
   function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
   function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
   function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
-  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
   function relay(time) {
     const count=Math.max(3,Math.min(6,Math.floor(w/33))),pitch=(w-4)/count,step=Math.floor(time*4),phase=fract(time*4);
     for(let i=0;i<count;i++) {
@@ -2667,8 +2667,8 @@ document.getElementById('study-15')?.querySelector('[data-style="loom"]').click(
     ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]);
   }
   function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
-  function ring(x,y,r,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
-  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function ring(x,y,r,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
   function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
   function pointOn(path,progress) {
     const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
@@ -2867,8 +2867,8 @@ document.getElementById('study-16')?.querySelector('[data-style="coupled"]').cli
     ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]);
   }
   function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
-  function ring(x,y,r,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
-  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function ring(x,y,r,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
   function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
   function pointOn(path,progress) {
     const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
@@ -3067,8 +3067,8 @@ document.getElementById('study-17')?.querySelector('[data-style="bearing"]').cli
     ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]);
   }
   function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
-  function ring(x,y,r,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
-  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function ring(x,y,r,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
   function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
   function pointOn(path,progress) {
     const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));

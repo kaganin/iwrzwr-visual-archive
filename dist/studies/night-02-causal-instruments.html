@@ -83,8 +83,8 @@
     ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]);
   }
   function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
-  function ring(x,y,r,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
-  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function ring(x,y,r,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { if(r<=0)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
   function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
   function pointOn(path,progress) {
     const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));

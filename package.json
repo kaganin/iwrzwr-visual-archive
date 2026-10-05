@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node build-archive.mjs",
+    "check": "node scripts/check-archive.mjs",
+    "verify:gallery": "node scripts/verify-gallery.mjs",
     "export:thermal-core": "node export-thermal-core.mjs"
   },
   "devDependencies": {
