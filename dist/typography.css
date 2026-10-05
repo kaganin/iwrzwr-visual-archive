@@ -30,8 +30,8 @@ button,[class*="controls"],.viz-controls{display:none!important}
 .collection-card{min-height:320px}
 .animation-card:not([data-ready]){visibility:hidden}
 /* Exit is the time-reversed entrance curve: (1-x2,1-y2,1-x1,1-y1). */
-body>header{display:flex!important;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--page);visibility:hidden;transform:translateY(-100%);opacity:0;transition:transform 220ms cubic-bezier(.68,0,.77,0),opacity 220ms cubic-bezier(.68,0,.77,0),visibility 0s linear 220ms;border-color:rgb(255 255 255 / 8%)}
-body>header[data-visible]{visibility:visible;transform:translateY(0);opacity:1;transition-timing-function:cubic-bezier(.23,1,.32,1),cubic-bezier(.23,1,.32,1),linear;transition-delay:0s}
+body>header{display:flex!important;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--page);visibility:hidden;transform:translateY(-100%);opacity:1;transition:transform 220ms cubic-bezier(.68,0,.77,0),visibility 0s linear 220ms;border-color:rgb(255 255 255 / 8%)}
+body>header[data-visible]{visibility:visible;transform:translateY(0);transition-timing-function:cubic-bezier(.23,1,.32,1),linear;transition-delay:0s}
 @media(prefers-reduced-motion:reduce){body>header{transform:none;transition:none}}
 @media(max-width:620px){header{gap:12px}.brand,header .brand{font-size:18px}}
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:.5px!important;border-color:rgb(255 255 255 / 10%)!important}
