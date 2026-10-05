@@ -9,7 +9,7 @@ header h1.brand{margin:0}
 header>span:last-child{line-height:24px}
 .series h2,figcaption{font-size:15px;line-height:24px;font-weight:400;letter-spacing:-.005em}
 .series h2{color:#fff}
-figcaption{color:#999}
+figcaption{color:#999;margin-top:10px}
 /* Shared hairlines for the archive chrome and study frames. */
 header{border-bottom:.5px solid #ffffff1a}
 iframe{border:.5px solid #ffffff1a}
