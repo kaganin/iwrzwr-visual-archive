@@ -3,8 +3,8 @@
 :root{--page:#000;--ink:#f7f7f4;--muted:#777671;background:var(--page);color:var(--ink)}
 body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
 body{background:var(--page);color:var(--ink)}
-.brand,header .brand{font-size:20px;line-height:24px;font-weight:400;letter-spacing:calc(1em * .2 / 15);color:var(--ink)}
-.brand span{color:var(--muted)}
+.brand,header .brand{font-size:20px;line-height:24px;font-weight:400;letter-spacing:calc(1em * .2 / 15);color:var(--muted)}
+.brand span{color:var(--ink)}
 .archive-intro h1{margin:0 0 10px}
 header h1.brand{margin:0}
 .archive-intro{max-width:720px}
@@ -16,8 +16,9 @@ header>span:last-child{line-height:24px}
 .series h2,figcaption{font-size:15px;line-height:24px;font-weight:400;letter-spacing:calc(1em * .2 / 15)}
 .series h2{color:var(--muted);margin-bottom:16px}
 figcaption{color:var(--ink);margin-top:10px}
-header .brand{color:var(--ink)}
-header,header .brand span{color:var(--muted)}
+header .brand{color:var(--muted)}
+header{color:var(--muted)}
+header .brand span{color:var(--ink)}
 /* Shared hairlines for the archive chrome and study frames. */
 header{border-bottom:.5px solid #ffffff1a}
 iframe{border:.5px solid #ffffff1a}
