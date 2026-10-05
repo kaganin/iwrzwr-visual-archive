@@ -17,7 +17,10 @@ function drawMatrixStudy(w,style,t){
     ctx.fillStyle=hot?accent:white;
     ctx.fillRect(left+c*4,y+r*4,2,2);
   };
-  ctx.clearRect(0,0,w,44);
+  // Keep the square opaque: clearing reveals the gallery's gray canvas backdrop.
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#000';
+  ctx.fillRect(0,0,w,44);
   if(style==='echo-orchard'){
     // Snare events of the original 108 BPM sample, including its quiet tail.
     const step=60/108/2,span=Math.round(step*32*32000)/32000;
