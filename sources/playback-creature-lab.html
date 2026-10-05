@@ -1,0 +1,222 @@
+<div id="playback-creature-lab" aria-label="Ten playback character animation concepts">
+  <div class="creature-controls"><button type="button" aria-label="Pause all animations">Pause</button><span>Simulated beat · silent demo</span></div>
+  <div class="creature-grid"></div>
+</div>
+<style>
+#playback-creature-lab{font-family:system-ui,sans-serif;color:light-dark(#242424,#eee)}
+#playback-creature-lab .creature-controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+#playback-creature-lab button{font:inherit;color:inherit;background:transparent;border:1px solid light-dark(#aaa,#555);border-radius:8px;padding:9px 17px;min-height:44px;cursor:pointer}
+#playback-creature-lab .creature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 22px}
+#playback-creature-lab figure{margin:0;min-width:0;text-align:center}
+#playback-creature-lab canvas{display:block;aspect-ratio:1;width:100%;max-width:240px;margin:auto;border:1px solid #ffffff29;border-radius:50%;box-sizing:border-box;background:#000}
+#playback-creature-lab figcaption{margin-top:13px;font-weight:500}
+#playback-creature-lab .mapping{margin-top:5px;color:light-dark(#565656,#aaa);font-size:12px;line-height:1.5}
+@media(max-width:420px){#playback-creature-lab .creature-grid{grid-template-columns:1fr;gap:30px}}
+</style>
+<script>
+(()=>{
+'use strict';
+const root=document.getElementById('playback-creature-lab');
+const descriptions=[
+ ['Tape Goblin','Bass → head nod · snare → fingers'],
+ ['Punch Clock','Kick → left jab · snare → right hook'],
+ ['Tape Eater','Envelope → jaw · playback → tape feed'],
+ ['Eight Arm Dub','Kick / snare / hats → separate arms'],
+ ['Resonant Bird','Midrange → throat · treble → beak'],
+ ['Moonwalk Unit','Kick → float · hats → thrusters'],
+ ['Moth Choir','Bass → wings · treble → antennae'],
+ ['X-Ray Hound','Bass → heart · mids → signal digestion'],
+ ['Reel Rider','Playback → shell reels · kick → crawl'],
+ ['Ghost Conductor','Envelope → gesture · snare → baton']
+];
+const C={white:'#e5e6df',red:'#f6486b',blue:'#7d92ed',mint:'#00d4ad',violet:'#9b79d4',dim:'#474b60',tan:'#ad8c74'};
+const opts={speed:1,energy:1,monochrome:false};
+const media=matchMedia('(prefers-reduced-motion: reduce)');
+let playing=!media.matches,time=2.87,last=0,request=0,onScreen=true;
+const tau=Math.PI*2;
+const panels=descriptions.map(([name,desc],i)=>{
+ const figure=document.createElement('figure'),canvas=document.createElement('canvas'),title=document.createElement('figcaption'),sub=document.createElement('div');
+ canvas.width=canvas.height=720;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',name+'. '+desc+'. Simulated audio response.');
+ title.textContent=String(i+1).padStart(2,'0')+' · '+name;sub.className='mapping';sub.textContent=desc;figure.append(canvas,title,sub);root.querySelector('.creature-grid').append(figure);
+ return {canvas,g:canvas.getContext('2d'),visible:true};
+});
+function color(c){return opts.monochrome&&c!==C.red&&c!==C.dim?'#e5e6df':c}
+function path(g,d,c=C.white,fill=false,w=1.35){const p=new Path2D(d);if(fill){g.fillStyle='#000';g.fill(p)}g.strokeStyle=color(c);g.lineWidth=w;g.stroke(p)}
+function poly(g,points,c=C.white,w=1.35){g.beginPath();g.moveTo(...points[0]);points.slice(1).forEach(p=>g.lineTo(...p));g.strokeStyle=color(c);g.lineWidth=w;g.stroke()}
+function line(g,x,y,xx,yy,c=C.white,w=1.35){poly(g,[[x,y],[xx,yy]],c,w)}
+function ellipse(g,x,y,rx,ry,c=C.white,fill=false,rotation=0){g.beginPath();g.ellipse(x,y,rx,ry,rotation,0,tau);if(fill){g.fillStyle='#000';g.fill()}g.strokeStyle=color(c);g.lineWidth=1.35;g.stroke()}
+function dot(g,x,y,r,c=C.white){g.beginPath();g.arc(x,y,r,0,tau);g.fillStyle=color(c);g.fill()}
+function box(g,x,y,w,h,c=C.white,fill=false){if(fill){g.fillStyle='#000';g.fillRect(x,y,w,h)}g.strokeStyle=color(c);g.lineWidth=1.2;g.strokeRect(x,y,w,h)}
+function group(g,x,y,a,draw,sx=1,sy=1){g.save();g.translate(x,y);g.rotate(a);g.scale(sx,sy);draw();g.restore()}
+function ticks(g,x,y,n,level,c=C.mint){for(let i=0;i<n;i++)line(g,x,y-i*5,x+6,y-i*5,i<level*n?c:C.dim,1)}
+function sparks(g,x,y,amount,c=C.red){g.save();g.globalAlpha=Math.min(1,amount*1.7);for(let j=0;j<3;j++){const a=-1+j*.8;line(g,x+Math.cos(a)*8,y+Math.sin(a)*8,x+Math.cos(a)*(12+amount*7),y+Math.sin(a)*(12+amount*7),c)}g.restore()}
+function reel(g,x,y,r,a,c=C.blue){ellipse(g,x,y,r,r,c,true);ellipse(g,x,y,3,3,c);for(let j=0;j<3;j++){const z=a+j*tau/3;line(g,x+Math.cos(z)*5,y+Math.sin(z)*5,x+Math.cos(z)*(r-3),y+Math.sin(z)*(r-3),c,1)}}
+function hit(t,period,offset=0){const d=((t-offset)%period+period)%period;return Math.max(0,(Math.exp(-d/.15)-Math.exp(-d/.012))*1.35)}
+function signals(t){const b=60/104;return {k:Math.min(1,hit(t,b)*opts.energy),s:Math.min(1,hit(t,b*2,b)*opts.energy),h:Math.min(1,hit(t,b/2,b/4)*opts.energy),v:(.25+.32*Math.sin(t*2.1)**2+.2*Math.sin(t*5.4)**2)*opts.energy}}
+
+// 01: pointed ears, reel eyes, and articulated fader fingers.
+function goblin(g,t,s){
+ path(g,'M60 160 Q65 126 88 125 L103 116 H139 L154 126 Q179 134 180 160',C.mint);
+ path(g,'M91 126 L110 145 L120 136 L130 145 L149 126 M111 149 V163 M129 149 V163',C.mint);
+ group(g,120,101,Math.sin(t*2.7)*.055,()=>{
+  path(g,'M-31 -23 L-47 -31 L-39 -5 L-30 0 M31 -23 L47 -31 L39 -5 L30 0',C.blue,true);
+  path(g,'M-29 -26 Q-25 -44 0 -41 Q25 -44 29 -26 L29 6 Q24 27 0 30 Q-24 27 -29 6 Z',C.mint,true);
+  path(g,'M-33 -8 V-24 Q-34 -51 0 -51 Q34 -51 33 -24 V-8',C.blue);
+  box(g,-37,-19,7,22,C.blue,true);box(g,30,-19,7,22,C.blue,true);
+  reel(g,-13,-9,9,t*1.8,C.red);reel(g,13,-9,9,-t*1.8,C.red);line(g,-4,-9,4,-9,C.red);
+  path(g,'M-3 0 L-6 9 H2 M-11 17 Q0 22 11 17',C.white);
+  line(g,-7,19,-5,23,C.white);line(g,5,20,7,23,C.white);
+ },1,1+s.k*.035);
+ path(g,'M43 165 H197 L190 191 H50 Z',C.blue,true);
+ for(let j=0;j<7;j++){line(g,73+j*12,170,73+j*12,184,C.dim);line(g,70+j*12,175+3*Math.sin(t+j),76+j*12,175+3*Math.sin(t+j),j===4?C.red:C.white)}
+ group(g,78,160-s.s*7,-s.s*.12,()=>{path(g,'M-14 -11 Q-19 0 -8 3 L-4 2 V12 Q-1 16 1 12 V0 L6 2 V10 Q9 13 11 9 L12 -2 Q6 -9 -2 -11 Z',C.red,true)});
+ group(g,166,161-s.h*5,s.h*.15,()=>{path(g,'M-11 -9 Q-16 1 -6 3 L-3 2 V9 Q0 13 2 9 V0 L7 2 L10 -1 Q12 -10 3 -11 Z',C.red,true)});
+}
+
+// 02: the kick and snare are distinct punches, not a vibrating silhouette.
+function boxer(g,t,s){
+ group(g,0,s.k*3,-.02+s.s*.025,()=>{
+  path(g,'M95 112 Q76 118 69 143 L78 175 L107 181 L151 176 L164 139 Q157 119 139 114',C.mint);
+  path(g,'M80 144 Q106 157 139 136 M88 164 Q118 170 145 157 M111 177 L109 195 M143 176 L160 193',C.mint);
+  group(g,121,87,-.04+s.k*.1,()=>{
+   path(g,'M-24 -18 Q-17 -37 4 -33 Q27 -33 27 -8 L23 10 L13 26 L-2 30 L-18 19 L-24 3 Z',C.mint,true);
+   path(g,'M-26 -15 Q-23 -34 -7 -37 L4 -31 L14 -37 L26 -24',C.blue);
+   poly(g,[[-16,-6],[-7,-3],[-3,-6]],C.white);poly(g,[[8,-7],[17,-10],[20,-6]],C.white);
+   path(g,'M2 -5 L-2 8 H5 M-6 16 Q4 21 13 13',C.red);
+  });
+  group(g,72-s.k*15,147-s.k*18,-.3-s.k*.55,()=>{path(g,'M-14 19 L-18 -9 Q-19 -22 -3 -23 L9 -19 Q18 -13 13 1 L20 8 L15 21 Z',C.red,true);path(g,'M-14 10 L13 10 M-9 15 H9 M10 -9 Q-1 -12 0 0 L10 6',C.white)} ,1+s.k*.2,1+s.k*.2);
+  group(g,167+s.s*12,137-s.s*20,.3+s.s*.4,()=>{path(g,'M-17 19 V-6 Q-17 -25 2 -24 Q23 -22 22 -5 L17 5 L18 20 Z',C.red,true);path(g,'M-16 10 H18 M-11 15 H12 M-7 -11 Q2 -5 -7 3',C.white)},1+s.s*.15,1+s.s*.15);
+ });
+ sparks(g,51-s.k*10,110-s.k*10,s.k);sparks(g,187,102,s.s);
+ ticks(g,188,164,7,s.v,C.violet);
+}
+
+// 03: a cassette-jawed reptile physically consumes the playhead.
+function eater(g,t,s){
+ line(g,20,123,113,123,C.dim);for(let j=0;j<18;j++){const x=23+((j*7-t*27)%91+91)%91;line(g,x,123-(2+6*Math.sin(j*2)**2),x,123+(2+6*Math.sin(j*2)**2),j%3===0?C.red:C.blue,1)}
+ path(g,'M164 111 Q201 115 202 152 Q201 171 185 181 L193 188 L177 191 L163 181 L141 188 L133 182 L146 170 Q131 150 140 132',C.mint,true);
+ path(g,'M192 154 Q222 146 211 121 Q208 131 201 129',C.mint);
+ group(g,145,111,-s.k*.035,()=>{
+  path(g,'M-44 0 L-51 -12 L-36 -18 L-28 -38 L-9 -43 L1 -35 Q34 -43 36 -17 L28 11 L-14 19 Z',C.mint,true);
+  path(g,'M-39 -8 H-17 L-18 -1 L-10 -8 H3 L4 0 L12 -8 H23',C.white);
+  ellipse(g,-17,-29,10,9,C.red,true);line(g,-23,-30,-11,-30,C.white);dot(g,-15,-28,1.8,C.white);
+  path(g,'M6 -26 Q19 -27 21 -16 M-37 -14 L-36 -12',C.blue);
+ });
+ group(g,155,121,s.v*.38,()=>{path(g,'M6 0 L-52 3 L-40 22 L-8 27 L11 14 Z',C.mint,true);path(g,'M-43 5 L-37 12 L-32 5 L-26 12 L-21 5 L-15 12 L-10 5',C.white)});
+ reel(g,173,153,13,t*1.5,C.blue);path(g,'M148 175 L142 184 M176 178 L184 186',C.white);sparks(g,106,105,s.h,C.red);
+}
+
+// 04: tentacles are a miniature multiband rhythm section.
+function octopus(g,t,s){
+ const arms=[[-53,-27,s.h],[-47,4,s.s],[-33,23,s.k],[-13,35,s.k],[16,35,s.k*.5],[33,23,s.s],[47,4,s.s],[54,-24,s.h]];
+ arms.forEach(([x,y,v],j)=>{const ex=120+x*1.4,ey=137+y-v*22;path(g,`M${103+j*5} 126 C${98+x*.3} 155 ${ex-15} ${ey+10} ${ex} ${ey}`,j%2?C.blue:C.mint);group(g,ex,ey,j<4?-.5-v:.5+v,()=>{line(g,0,0,0,-21,C.white);dot(g,0,-21,1.6,C.red)})});
+ group(g,120,97+s.k*4,Math.sin(t*2)*.035,()=>{path(g,'M-31 26 Q-45 16 -39 -8 Q-39 -40 -7 -44 Q30 -48 38 -18 Q48 10 31 28 Q13 37 0 25 Q-13 38 -31 26 Z',C.mint,true);ellipse(g,-14,1,7,10,C.white,true);ellipse(g,14,1,7,10,C.white,true);dot(g,-12,3,2,C.red);dot(g,12,3,2,C.red);path(g,'M-10 20 Q0 28 10 20',C.red);path(g,'M-24 -22 Q-18 -35 -4 -34',C.blue)});
+ ellipse(g,120,185,28,24,C.red,true);ellipse(g,120,185,21,18,C.dim);reel(g,120,185,10,-t,C.white);
+ box(g,64,155,26,21,C.blue,true);ellipse(g,77,155,13,4,C.blue,true);box(g,151,155,26,21,C.blue,true);ellipse(g,164,155,13,4,C.blue,true);
+ group(g,47,134,s.h*.2,()=>{ellipse(g,0,0,19,4,C.white);line(g,0,4,0,36,C.dim)});group(g,195,134,-s.h*.2,()=>{ellipse(g,0,0,17,4,C.white);line(g,0,4,0,36,C.dim)});
+}
+
+// 05: a long-necked bird turns vocal formants into a resonating throat.
+function bird(g,t,s){
+ path(g,'M72 184 L101 158 L140 155 L165 181 M102 160 L98 200 L110 205 M140 157 L142 196 L155 201',C.blue);
+ group(g,117,129,-.04+s.k*.04,()=>{
+  path(g,'M-21 27 Q-57 22 -54 -1 Q-54 -20 -27 -32 Q-8 -42 -10 -66 Q-10 -89 13 -89 Q36 -86 29 -67 Q20 -55 15 -54 Q5 -28 17 -20 Q51 -5 27 20 Q9 39 -21 27 Z',C.mint,true);
+  path(g,'M-39 2 Q-14 -13 23 -2 Q9 14 -20 18 L-39 2 M-24 2 L-13 11 M-11 -2 L1 8',C.blue);
+  group(g,22,-73,-s.h*.08,()=>{path(g,'M0 -5 L57 3 L0 6',C.white,true);line(g,4,1,53,3,C.red)});
+  group(g,22,-67,s.v*.14,()=>{path(g,'M0 0 L51 -1 L5 10',C.red,true)});
+  ellipse(g,9,-75,4,4,C.red,true);dot(g,10,-75,1.3,C.white);
+  ellipse(g,2,-44,6+s.v*5,13+s.v*5,C.red);
+  path(g,'M-9 -83 L-26 -96 L-13 -92 M-5 -86 L-13 -106',C.blue);
+ });
+ for(let j=0;j<3;j++){g.save();g.globalAlpha=(.3+s.h*.7)*(1-j*.25);path(g,`M${182+j*8} 59 Q${191+j*8} 68 ${182+j*8} 77`,C.red);g.restore()}
+}
+
+// 06: weightless astronaut, elastic tether and separate rhythmic jets.
+function astronaut(g,t,s){
+ path(g,`M36 171 C63 ${138+s.k*20} 38 ${89+s.k*15} 94 130`,C.violet);
+ group(g,123,119-s.k*10,.1*Math.sin(t*1.4),()=>{
+  box(g,-40,-14,17,45,C.blue,true);
+  path(g,'M-23 -20 Q-38 -2 -31 30 L-24 43 H22 L33 22 L26 -15 Z',C.white,true);
+  ellipse(g,0,-39,30,32,C.white,true);path(g,'M-23 -46 Q0 -57 24 -45 L22 -24 Q0 -12 -22 -25 Z',C.blue,true);
+  path(g,'M-14 -41 L-4 -46 M-14 -36 L2 -44',C.white);line(g,-19,-14,19,-14,C.red);
+  box(g,-13,3,27,24,C.blue,true);dot(g,-6,11,2,C.red);line(g,2,10,8,10,C.mint);line(g,-6,19,8,19,C.white);
+  group(g,-27,-2,-.35-s.s*.4,()=>{path(g,'M0 0 L-15 15 L-28 7 L-33 15 L-16 30 L7 14',C.white,true);path(g,'M-31 6 L-39 1 L-43 7 L-36 18 L-29 15 Z',C.red,true)});
+  group(g,27,0,.25+s.h*.3,()=>{path(g,'M0 0 L17 11 L27 -1 L34 5 L21 27 L-4 13',C.white,true);ellipse(g,31,-1,7,9,C.red,true)});
+  group(g,-15,42,.16+s.k*.18,()=>{path(g,'M-9 0 L-12 30 L-19 38 L-16 44 L4 43 L8 28 L8 0',C.white,true);line(g,-11,24,7,24,C.blue)});
+  group(g,15,42,-.18-s.s*.2,()=>{path(g,'M-8 0 L-4 30 L2 43 L23 42 L25 36 L12 28 L9 0',C.white,true);line(g,-5,24,10,24,C.blue)});
+  for(let j=0;j<3;j++)line(g,-39+j*5,35,-43+j*5,42+s.h*20,C.red,1);
+ });
+ ellipse(g,41,174,7,7,C.blue,true);line(g,33,181,46,184,C.dim);
+}
+
+// 07: wings carry the band structure instead of a separate equalizer.
+function moth(g,t,s){
+ const open=.7+s.k*.22+s.v*.15;
+ [-1,1].forEach(side=>{group(g,120,120,side*(.04+s.s*.025),()=>{
+  g.scale(side*open,1);
+  path(g,'M7 -3 C21 -48 54 -78 73 -68 C93 -59 88 -22 53 -7 C84 13 74 60 49 64 C32 68 21 28 6 13 Z',C.blue,true);
+  path(g,'M9 0 Q42 -26 77 -48 M11 5 Q51 3 66 45 M30 -20 L40 -50 M46 -25 L61 -54 M23 21 L45 47 M31 7 L59 26',C.violet);
+  ellipse(g,54,-33,14,18,C.mint);ellipse(g,54,-33,5+s.h*4,7+s.h*3,C.red,true);
+  ellipse(g,48,31,10,13,C.mint);line(g,20,-7,44,-8,C.white);
+ },1,1)});
+ path(g,'M114 111 Q109 130 117 157 L120 170 L124 157 Q131 130 126 111 Z',C.mint,true);
+ for(let j=0;j<5;j++)line(g,116,125+j*6,125,125+j*6,C.white,1);
+ ellipse(g,120,106,9,12,C.white,true);dot(g,116,103,1.7,C.red);dot(g,124,103,1.7,C.red);
+ path(g,`M115 96 Q${104-s.h*7} 72 97 66 M125 96 Q${136+s.h*7} 72 143 66`,C.red);
+ dot(g,97,66,2,C.red);dot(g,143,66,2,C.red);
+}
+
+// 08: a living signal chain in a hound's chest.
+function hound(g,t,s){
+ path(g,'M55 104 L77 100 Q95 105 117 101 L172 102 Q193 103 197 121 L194 151 L202 182 L190 185 L179 151 L142 151 L129 178 L115 183 L120 172 L122 153 L88 151 L77 181 L65 184 L66 173 L73 137 L58 125 Z',C.tan,true);
+ path(g,`M196 119 Q${217+s.h*3} 105 206 ${82-s.h*8}`,C.tan);
+ group(g,66,97,-s.k*.12,()=>{path(g,'M6 9 L-5 -20 L-24 -24 L-32 -10 L-47 -1 L-47 10 L-29 20 L-8 20 Z',C.tan,true);path(g,'M-10 -20 Q5 -38 7 -15 L0 8 L-9 -4 Z',C.blue,true);dot(g,-26,-5,2,C.white);path(g,'M-43 7 L-39 5 M-37 15 H-27',C.red)});
+ ellipse(g,126,126,35,22,C.dim);ellipse(g,112,122,10+s.k*3,9+s.k*3,C.red,true);
+ path(g,'M105 121 L110 118 L115 126 L120 122 M87 111 L94 111 L99 116 M127 121 H143 V136 H165',C.mint);
+ reel(g,157,125,12,t*2,C.blue);for(let j=0;j<5;j++){const x=124+((t*18+j*7)%35);line(g,x,131,x,135+(j%2)*4,j%2?C.mint:C.red,1)}
+ line(g,52,193,203,193,C.dim);for(let j=0;j<6;j++)line(g,72+j*21,190,72+j*21,193,C.blue,1);
+}
+
+// 09: shell as a two-reel tape machine, antennae as play indicators.
+function snail(g,t,s){
+ group(g,0,-s.k*2,0,()=>{
+  path(g,'M44 169 Q68 161 85 145 L168 148 Q175 141 173 126 Q172 109 185 108 Q201 107 198 129 L192 155 L205 174 Q188 188 143 188 H68 Q48 185 44 169 Z',C.mint,true);
+  path(g,'M52 174 Q113 169 147 178 Q181 186 195 171',C.blue);
+  path(g,`M182 114 Q${171-s.h*5} 99 173 86 M192 112 Q${205+s.s*5} 96 204 81`,C.mint);
+  ellipse(g,173,84,5,6,C.red,true);ellipse(g,205,79,5,6,C.red,true);dot(g,174,83,1.5,C.white);dot(g,206,78,1.5,C.white);
+  path(g,'M184 143 Q191 147 195 140',C.white);
+  path(g,'M73 151 Q59 123 74 98 Q88 70 119 67 Q152 65 166 94 Q177 123 156 151 Z',C.blue,true);
+  path(g,'M76 147 L155 147 L164 110 L157 88 L132 72 L104 76 L82 92 Z',C.dim);
+  reel(g,97,111,20,t*1.8,C.white);reel(g,143,110,17,-t*1.8,C.red);
+  path(g,'M97 90 L143 92 M97 132 L106 143 H145 L150 125',C.mint);box(g,111,131,25,7,C.blue,true);
+ });
+ for(let j=0;j<7;j++){const x=28+((j*18-t*14)%130+130)%130;line(g,x,198,x+6,198,j%3===0?C.red:C.dim,1)}
+}
+
+// 10: conductor's hands describe musical phrasing; the ghost retains its mass.
+function conductor(g,t,s){
+ const sway=Math.sin(t*1.8)*.07;
+ group(g,120,126,sway,()=>{
+  path(g,'M-39 59 Q-34 27 -31 4 L-28 -25 Q-35 -54 -11 -69 Q7 -82 27 -63 Q38 -49 29 -26 L33 7 Q38 32 44 59 L28 48 L18 63 L3 51 L-10 65 L-22 49 Z',C.white,true);
+  path(g,'M-26 -32 Q-30 -55 -10 -65 Q11 -74 26 -54 M-21 -17 Q0 -2 24 -18',C.blue);
+  ellipse(g,-10,-34,4,6+s.v*2,C.red,true);ellipse(g,12,-34,4,6+s.v*2,C.red,true);
+  path(g,'M-8 -15 L1 -8 L10 -16 M1 -8 L-1 24 M-7 -3 L-13 13 M8 -3 L16 12',C.mint);
+  const left=-.35-s.v*.65,right=.25+s.s*.85;
+  group(g,-29,1,left,()=>{path(g,'M0 0 Q-20 15 -31 -2 L-38 5 Q-26 34 6 15',C.white,true);path(g,'M-31 -1 L-39 -12 L-43 -9 L-40 -1 L-47 -6 L-50 -2 L-39 10 L-33 8 Z',C.red,true)});
+  group(g,30,0,right,()=>{path(g,'M0 0 Q21 17 29 -5 L36 -2 Q37 28 3 16',C.white,true);ellipse(g,32,-5,7,6,C.red,true);line(g,31,-5,41,-42,C.mint);dot(g,41,-42,2,C.white)});
+ });
+ for(let j=0;j<3;j++){const x=67+j*49;ellipse(g,x,202,7,3,C.blue);line(g,x+7,201,x+7,187-s.h*4,C.blue,1)}
+}
+const renderers=[goblin,boxer,eater,octopus,bird,astronaut,moth,hound,snail,conductor];
+function render(force=false){const s=signals(time);panels.forEach((p,i)=>{if(!p.visible&&!force)return;const g=p.g;g.setTransform(3,0,0,3,0,0);g.clearRect(0,0,240,240);g.save();g.lineCap='round';g.lineJoin='round';g.beginPath();g.arc(120,120,118,0,tau);g.clip();renderers[i](g,time,s);g.restore()})}
+function schedule(){if(!request&&playing&&onScreen&&!document.hidden)request=requestAnimationFrame(frame)}
+function frame(now){request=0;if(last)time+=Math.min(.05,(now-last)/1000)*opts.speed;last=now;render();schedule()}
+const button=root.querySelector('button');function sync(){button.textContent=playing?'Pause':'Play';button.setAttribute('aria-label',playing?'Pause all animations':'Play all animations');if(!playing){cancelAnimationFrame(request);request=0;last=0}render(true);schedule()}
+button.onclick=()=>{playing=!playing;sync()};
+document.addEventListener('visibilitychange',()=>{last=0;if(document.hidden){cancelAnimationFrame(request);request=0}else schedule()});
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.target===root)onScreen=e.isIntersecting;else{const p=panels.find(p=>p.canvas===e.target);if(p)p.visible=e.isIntersecting}});if(!onScreen){cancelAnimationFrame(request);request=0;last=0}else schedule()},{rootMargin:'120px'});observer.observe(root);panels.forEach(p=>observer.observe(p.canvas));
+media.addEventListener('change',()=>{if(media.matches){playing=false;sync()}});
+sync();
+if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>render(true)});tweak.addSlider(opts,'speed',{label:'Tempo',min:.5,max:1.5,step:.1});tweak.addSlider(opts,'energy',{label:'Audio energy',min:.25,max:1.5,step:.05});tweak.addToggle(opts,'monochrome',{label:'White + red only'})}
+})();
+</script>

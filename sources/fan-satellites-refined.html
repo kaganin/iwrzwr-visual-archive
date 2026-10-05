@@ -1,0 +1,231 @@
+<div id="fan-satellites-refined">
+  <div class="viz-controls">
+    <button class="btn" type="button" data-audio aria-pressed="false">Örnek sesi aç</button>
+    <button class="btn" type="button" data-pause aria-pressed="false">Duraklat</button>
+    <span class="text-small" data-status role="status" aria-live="polite">Sessiz önizleme · 108 BPM</span>
+  </div>
+  <div data-series></div>
+</div>
+<style>
+#fan-satellites-refined .sound-series{margin-top:28px}
+#fan-satellites-refined h3{margin:0 0 14px}
+#fan-satellites-refined .sound-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 24px}
+#fan-satellites-refined figure{margin:0;min-width:0}
+#fan-satellites-refined .sound-screen{background:#000;padding:26px 12px}
+#fan-satellites-refined canvas{display:block;width:100%;height:44px}
+#fan-satellites-refined figcaption{margin-top:8px;color:var(--foreground)}
+#fan-satellites-refined .sound-mapping{display:block;margin-top:3px;color:var(--muted-foreground)}
+@media(max-width:520px){#fan-satellites-refined .sound-grid{grid-template-columns:1fr}}
+</style>
+<script>
+(()=>{
+'use strict';
+const root=document.getElementById('fan-satellites-refined');
+const series=[
+ {name:'',items:[
+ ['Spectral Fan','8 frekans bandı · hücresel yelpaze'],
+ ['Band Satellites','Bas / orta / tiz · yumuşak yörüngeler']]}
+];
+const container=root.querySelector('[data-series]'),panels=[];
+series.forEach((group,g)=>{
+ const section=document.createElement('section'),heading=document.createElement('h3'),grid=document.createElement('div');
+ section.className='sound-series';heading.textContent=group.name;grid.className='sound-grid';if(group.name)section.append(heading);section.append(grid);container.append(section);
+ group.items.forEach(([name,mapping],i)=>{
+  const figure=document.createElement('figure'),screen=document.createElement('div'),c=document.createElement('canvas'),caption=document.createElement('figcaption'),label=document.createElement('span');
+  screen.className='sound-screen';c.setAttribute('role','img');c.setAttribute('aria-label',name+'. '+mapping);caption.textContent=String(i+1).padStart(2,'0')+' · '+name;label.className='sound-mapping text-small';label.textContent=mapping;caption.append(label);screen.append(c);figure.append(screen,caption);grid.append(figure);
+  panels.push({id:g*5+i,c,figure,ctx:c.getContext('2d'),w:300,visible:true});
+ });
+});
+// One original, local stereo sound loop. The silent preview and audible mode
+// read the SAME PCM-derived envelopes, spectra and waveform samples.
+const rate=32000,step=60/108/2,N=Math.round(step*32*rate),duration=N/rate;
+const pcm=[new Float32Array(N),new Float32Array(N)],mono=new Float32Array(N);
+const events={kick:[0,6,8,16,22],snare:[4,12,20],hat:[2,3,6,10,11,14,18,19,22],note:[1,7,9,15,17,23]};
+const notes=[146.83,220,196,293.66,164.81,220];
+let seed=17471;
+function noise(){seed=(Math.imul(seed,1664525)+1013904223)|0;return (seed>>>0)/2147483648-1;}
+function voice(type,at,index){
+ const length=type==='note'?.85:type==='kick'?.6:type==='snare'?.28:.1;
+ const first=Math.round(at*rate),count=Math.round(length*rate),pan=type==='note'?(index%2?.65:-.65):type==='hat'?(index%2?.4:-.4):0;
+ const gainL=Math.sqrt((1-pan)/2),gainR=Math.sqrt((1+pan)/2);
+ let previousNoise=0;
+ for(let j=0;j<count&&first+j<N;j++){
+  const t=j/rate,rise=Math.min(1,t/.003);let value=0;
+  if(type==='kick')value=Math.sin(2*Math.PI*(48*t+120/32*(1-Math.exp(-32*t))))*Math.exp(-12*t)*.8*rise;
+  if(type==='snare')value=(noise()*.68+Math.sin(2*Math.PI*185*t)*.25)*Math.exp(-23*t)*rise*.5;
+  if(type==='hat'){const n=noise();value=(n-previousNoise)*Math.exp(-65*t)*rise*.17;previousNoise=n;}
+  if(type==='note'){const f=notes[index%notes.length];value=(Math.sin(2*Math.PI*f*t)+.3*Math.sin(2*Math.PI*f*2*t)+.12*Math.sin(2*Math.PI*f*4*t))*Math.exp(-6.8*t)*rise*.35;}
+  pcm[0][first+j]+=value*gainL;pcm[1][first+j]+=value*gainR;
+ }
+}
+Object.entries(events).forEach(([kind,steps])=>steps.forEach((s,i)=>voice(kind,s*step,i)));
+let peak=0;for(let i=0;i<N;i++)peak=Math.max(peak,Math.abs(pcm[0][i]),Math.abs(pcm[1][i]));
+for(let i=0;i<N;i++){pcm[0][i]*=.24/peak;pcm[1][i]*=.24/peak;mono[i]=(pcm[0][i]+pcm[1][i])*.5;}
+const hop=400,frameCount=Math.ceil(N/hop),frameTime=hop/rate;
+const cutoffs=[100,220,480,1000,2200,4800,9600],coeff=cutoffs.map(f=>1-Math.exp(-2*Math.PI*f/rate));
+const filtered=new Float64Array(7),frames=[],maxima=new Float64Array(8);
+let peakRms=0;
+for(let start=0;start<N;start+=hop){
+ const sums=new Float64Array(8);let all=0,l=0,r=0;
+ for(let i=start;i<Math.min(start+hop,N);i++){
+  const sample=mono[i];let previous=0;
+  for(let b=0;b<7;b++){filtered[b]+=coeff[b]*(sample-filtered[b]);const band=filtered[b]-previous;sums[b]+=band*band;previous=filtered[b];}
+  sums[7]+=(sample-previous)**2;all+=sample*sample;l+=pcm[0][i]**2;r+=pcm[1][i]**2;
+ }
+ const bins=Array.from(sums,v=>Math.sqrt(v/hop));bins.forEach((v,i)=>maxima[i]=Math.max(maxima[i],v));
+ const rms=Math.sqrt(all/hop);peakRms=Math.max(peakRms,rms);frames.push({bins,rms,l:Math.sqrt(l/hop),r:Math.sqrt(r/hop),travel:0});
+}
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),mod=(v,n)=>(v%n+n)%n,frac=v=>v-Math.floor(v),tau=Math.PI*2,tri=v=>1-4*Math.abs(frac(v)-.5);
+let travel=0;
+frames.forEach(f=>{
+ f.bins=f.bins.map((v,i)=>clamp(v/(maxima[i]*.8||1)));f.amp=clamp(f.rms/(peakRms*.8));
+ f.low=(f.bins[0]+f.bins[1])/2;f.mid=(f.bins[2]+f.bins[3]+f.bins[4])/3;f.high=(f.bins[5]+f.bins[6]+f.bins[7])/3;
+ f.balance=(f.r-f.l)/(f.l+f.r+.0001);f.left=clamp(f.l/(peakRms*.9));f.right=clamp(f.r/(peakRms*.9));
+ travel+=Math.max(0,f.amp-.025)*frameTime;f.travel=travel;
+});
+const cycleTravel=travel;
+function signal(t){
+ const cycle=Math.floor(t/duration),pos=mod(t,duration)/frameTime,i=Math.min(frameCount-1,Math.floor(pos)),j=Math.min(frameCount-1,i+1),q=pos-i,a=frames[i],b=frames[j];
+ const f={bins:a.bins.map((v,k)=>v+(b.bins[k]-v)*q)};
+ for(const key of ['low','mid','high','amp','balance','left','right','travel'])f[key]=a[key]+(b[key]-a[key])*q;
+ f.travel+=cycle*cycleTravel;return f;
+}
+function hit(t,kind){const sequence=events[kind],local=mod(t,duration);let index=-1;for(let i=0;i<sequence.length;i++)if(sequence[i]*step<=local)index=i;return {age:index<0?local+duration-sequence[sequence.length-1]*step:local-sequence[index]*step,n:Math.floor(t/duration)*sequence.length+index+1};}
+function wave(t,u){const at=Math.floor(mod(t-.032+u*.032,duration)*rate);return mono[Math.min(N-1,at)]/(peakRms*3);}
+const reduced=matchMedia('(prefers-reduced-motion: reduce)'),soundButton=root.querySelector('[data-audio]'),pauseButton=root.querySelector('[data-pause]'),status=root.querySelector('[data-status]');
+let time=1.72,last=0,raf=0,paused=reduced.matches,visible=true,audible=false,context=null,source=null,buffer=null,startTime=0,startOffset=0,audioPending=false;
+function sync(){soundButton.textContent=audible?'Sesi kapat':'Örnek sesi aç';soundButton.setAttribute('aria-pressed',String(audible));pauseButton.textContent=paused?'Devam et':'Duraklat';pauseButton.setAttribute('aria-pressed',String(paused));status.textContent=paused?'Duraklatıldı':audible?'Örnek ses açık · 108 BPM':'Sessiz önizleme · 108 BPM';}
+function clock(){return audible&&context&&source?startOffset+context.currentTime-startTime:time;}
+function stopSound(){if(audible)time=clock();if(source){try{source.stop();}catch(e){}source.disconnect();source=null;}audible=false;sync();}
+async function startSound(){
+ if(audioPending)return;audioPending=true;soundButton.disabled=true;
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)throw new Error('audio-unavailable');
+  if(!context)context=new AC();await context.resume();
+  if(context.state!=='running')throw new Error('audio-blocked');
+  if(!root.isConnected)return;
+  if(!buffer){buffer=context.createBuffer(2,N,rate);buffer.copyToChannel(pcm[0],0);buffer.copyToChannel(pcm[1],1);}
+  source=context.createBufferSource();source.buffer=buffer;source.loop=true;source.connect(context.destination);
+  startOffset=time;startTime=context.currentTime;source.start(0,mod(time,duration));audible=true;paused=false;sync();schedule();
+ }catch(error){stopSound();status.textContent='Ses burada açılamadı; sessiz önizleme devam ediyor.';}
+ finally{audioPending=false;soundButton.disabled=false;}
+}
+// A periodic envelope follower keeps audio-hop changes out of geometry.
+// Warm-up passes settle the follower before storing the final cyclic trace.
+const softFrames=[];
+const follower=new Float64Array(8);
+for(let pass=0;pass<4;pass++){
+ for(let i=0;i<frames.length;i++){
+  const dt=Math.min(frameTime,duration-i*frameTime);
+  if(pass===3)softFrames.push({bins:Array.from(follower)});
+  frames[i].bins.forEach((target,k)=>{
+   const seconds=target>follower[k] ? .08 : .28;
+   follower[k]+=(target-follower[k])*(1-Math.exp(-dt/seconds));
+  });
+ }
+}
+const phaseTotal=[0,0,0];
+softFrames.forEach((f,i)=>{
+ f.bands=[(f.bins[0]+f.bins[1])/2,(f.bins[2]+f.bins[3]+f.bins[4])/3,(f.bins[5]+f.bins[6]+f.bins[7])/3];
+ f.phase=phaseTotal.slice();
+ const dt=Math.min(frameTime,duration-i*frameTime);
+ f.bands.forEach((level,k)=>{phaseTotal[k]+=Math.sqrt(level)*1.6*(.85+k*.15)*dt;});
+});
+function softSignal(t){
+ const cycle=Math.floor(t/duration),local=mod(t,duration);
+ const i=Math.min(softFrames.length-1,Math.floor(local/frameTime));
+ const last=i===softFrames.length-1,a=softFrames[i],b=softFrames[last?0:i+1];
+ const q=(local-i*frameTime)/(last?duration-i*frameTime:frameTime);
+ return {
+  bins:a.bins.map((v,k)=>v+(b.bins[k]-v)*q),
+  bands:a.bands.map((v,k)=>v+(b.bands[k]-v)*q),
+  phase:a.phase.map((v,k)=>cycle*phaseTotal[k]+v+((last?phaseTotal[k]:b.phase[k])-v)*q)
+ };
+}
+function drawPanel(panel,t){
+ const {ctx,w,id}=panel,f=softSignal(t);
+ ctx.clearRect(0,0,w,44);
+ const cols=Math.max(2,Math.floor((w-4)/4)),rows=10;
+ const ox=Math.round((w-((cols-1)*4+2))/2),oy=3;
+ if(id===0){
+  // Filled angular fields: eight separated wedges, never vector spokes.
+  const spread=1.23,sector=spread*2/8;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+   const dx=(c/(cols-1)*2-1)*1.05,dy=(rows-1-r)/9+.035;
+   const radius=Math.hypot(dx,dy),angle=Math.atan2(dx,dy);
+   const band=Math.floor((angle+spread)/sector);
+   if(band<0||band>7)continue;
+   const gap=Math.min(angle+spread-band*sector,(band+1)*sector-angle-spread);
+   const gapAlpha=clamp((gap-.025)/.025);
+   if(!gapAlpha)continue;
+   const e=f.bins[band],front=.19+.97*Math.sqrt(e);
+   const coverage=clamp((front-radius)/.085);
+   if(!coverage)continue;
+   const edge=clamp(1-Math.abs(front-radius-.045)/.13);
+   const body=(.15+.58*Math.sqrt(e))*(.8+.2*clamp(radius/front));
+   const alpha=coverage*gapAlpha*(body*(1-edge)+edge*.98);
+   const white=Math.round(255*(1-edge));
+   ctx.globalAlpha=alpha;
+   ctx.fillStyle='rgb(255,'+white+','+white+')';
+   ctx.fillRect(ox+c*4,oy+r*4,2,2);
+  }
+ }else{
+  // Light is distributed between fixed neighboring square cells. The heads
+  // move continuously, but the cell size and lattice never swim or blur.
+  const lights=new Float32Array(cols*rows*3);
+  function cell(c,r,power,redness){
+   if(c<0||c>=cols||r<0||r>=rows)return;
+   const k=(r*cols+c)*3;
+   lights[k]+=power;lights[k+1]+=power*(1-redness);lights[k+2]+=power*(1-redness);
+  }
+  function splat(x,y,power,redness=0){
+   const gx=(x+1)*.5*(cols-1),gy=(y+1)*.5*(rows-1);
+   const c=Math.floor(gx),r=Math.floor(gy),fx=gx-c,fy=gy-r;
+   cell(c,r,power*(1-fx)*(1-fy),redness);
+   cell(c+1,r,power*fx*(1-fy),redness);
+   cell(c,r+1,power*(1-fx)*fy,redness);
+   cell(c+1,r+1,power*fx*fy,redness);
+  }
+  for(let band=0;band<3;band++){
+   const rx=.30+band*.27,ry=.24+band*.28,level=f.bands[band];
+   const phase=f.phase[band]+band*2;
+   // Guides stay still; only the satellites move.
+   const count=28+band*20;
+   for(let n=0;n<count;n++){
+    const a=n/count*tau;
+    splat(Math.cos(a)*rx,Math.sin(a)*ry,.30);
+   }
+   for(let j=20;j>=0;j--){
+    const a=phase-j*.038;
+    const fade=Math.exp(-j*.16)*(.42+Math.sqrt(level)*1.15);
+    const redness=Math.exp(-j*.5);
+    splat(Math.cos(a)*rx,Math.sin(a)*ry,fade,redness);
+   }
+   splat(Math.cos(phase)*rx,Math.sin(phase)*ry,1.25,1);
+  }
+  ctx.globalAlpha=1;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+   const k=(r*cols+c)*3,max=Math.max(lights[k],lights[k+1],lights[k+2]);
+   if(max<.002)continue;
+   const scale=255/(1+max*.32);
+   ctx.fillStyle='rgb('+Math.round(clamp(lights[k]*scale,0,255))+','+Math.round(clamp(lights[k+1]*scale,0,255))+','+Math.round(clamp(lights[k+2]*scale,0,255))+')';
+   ctx.fillRect(ox+c*4,oy+r*4,2,2);
+  }
+ }
+ ctx.globalAlpha=1;
+}
+function draw(){panels.forEach(p=>{if(p.visible)drawPanel(p,time);});}
+function resize(){const dpr=Math.min(devicePixelRatio||1,2);panels.forEach(p=>{p.w=Math.max(1,p.c.getBoundingClientRect().width);p.c.width=Math.round(p.w*dpr);p.c.height=44*dpr;p.ctx.setTransform(dpr,0,0,dpr,0,0);drawPanel(p,time);});}
+function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
+function frame(now){raf=0;if(!root.isConnected){stopSound();if(context)context.close();return;}if(paused||!visible||document.hidden)return;if(!last)last=now;const dt=now-last;if(dt>=1000/60-1){time=audible?clock():time+Math.min(dt/1000,.08);last=now;draw();}raf=requestAnimationFrame(frame);}
+soundButton.addEventListener('click',()=>audible?stopSound():startSound());
+pauseButton.addEventListener('click',()=>{if(!paused)stopSound();paused=!paused;sync();schedule();});
+reduced.addEventListener('change',e=>{if(e.matches)stopSound();paused=e.matches;sync();schedule();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopSound();else schedule();});
+window.addEventListener('pagehide',()=>{stopSound();if(context)context.close();});
+new ResizeObserver(resize).observe(container);
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{const panel=panels.find(p=>p.figure===e.target);if(panel){panel.visible=e.isIntersecting;if(panel.visible)drawPanel(panel,time);}else{visible=e.isIntersecting;if(!visible)stopSound();}});schedule();});
+observer.observe(root);panels.forEach(p=>observer.observe(p.figure));
+sync();resize();schedule();
+})();
+</script>

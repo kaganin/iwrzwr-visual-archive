@@ -1,0 +1,234 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Voice Head · 10 alternatif · iwrzwr</title><style>:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body><div id="voice-head-studies" aria-label="Ten upright vector head studies for recording and playback">
+  <div class="vh-controls">
+    <div class="vh-modes" role="group" aria-label="Audio activity">
+      <button type="button" data-mode="record" aria-pressed="true">Recording</button>
+      <button type="button" data-mode="play" aria-pressed="false">Playback</button>
+    </div>
+    <button type="button" class="vh-pause" aria-label="Pause animations">Pause</button>
+    <span class="vh-status" aria-live="polite">Simulated voice · silent demo</span>
+  </div>
+  <div class="vh-grid"></div>
+</div>
+<style>
+#voice-head-studies{font-family:system-ui,sans-serif;color:light-dark(#242424,#efefed)}
+#voice-head-studies .vh-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+#voice-head-studies .vh-modes{display:flex;gap:5px}
+#voice-head-studies button{font:inherit;cursor:pointer;min-height:44px;padding:8px 13px;border:1px solid light-dark(#b7b7b3,#51514e);border-radius:8px;background:transparent;color:inherit}
+#voice-head-studies button[aria-pressed="true"]{color:light-dark(#fff,#161616);background:light-dark(#242424,#e7e7e2);border-color:light-dark(#242424,#e7e7e2)}
+#voice-head-studies .vh-status{font-size:12px;color:light-dark(#5d5d5a,#aaa9a3)}
+#voice-head-studies .vh-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 24px}
+#voice-head-studies figure{margin:0;min-width:0;text-align:center}
+#voice-head-studies svg.vh-scene{display:block;width:100%;max-width:280px;aspect-ratio:1;margin:auto;background:#000;border:1px solid #ffffff29;border-radius:50%;box-sizing:border-box}
+#voice-head-studies figcaption{font-weight:500;margin-top:13px}
+#voice-head-studies .vh-note{margin-top:5px;font-size:12px;line-height:1.5;color:light-dark(#5d5d5a,#aaa9a3)}
+@media(max-width:430px){#voice-head-studies .vh-grid{grid-template-columns:1fr}}
+</style>
+<script>
+(()=>{
+'use strict';
+const root=document.getElementById('voice-head-studies');
+const NS='http://www.w3.org/2000/svg',TAU=Math.PI*2;
+const options={tempo:1,energy:1,palette:'Amber',stroke:1.5};
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+let playing=!reduced.matches,mode='record',blend=0,time=1.35,previous=0,raf=0,visible=true,env=.4,bodyEnv=.3;
+const choices=[
+ {name:'Signal Stem',throat:0,rec:'Vocal cords 01 · line + vibrating node',play:'Ear node catches expanding echoes'},
+ {name:'Twin Folds',throat:1,rec:'Vocal cords 02 · two opening folds',play:'Ear folds breathe with the low end'},
+ {name:'Reed Stack',throat:2,rec:'Vocal cords 03 · three vibrating reeds',play:'Three frequency registers behind the ear'},
+ {name:'Phoneme Prints',throat:0,rec:'Each syllable leaves a little sound packet',play:'Sound packets arrive at the ear'},
+ {name:'Formant Loom',throat:1,rec:'Three voice bands unfurl from the mouth',play:'Three bands converge into the ear'},
+ {name:'Echo Chamber',throat:0,rec:'The throat excites a resonating cavity',play:'The head holds a fading echo'},
+ {name:'Ear Aperture',throat:1,rec:'A quiet profile; the mouth carries the voice',play:'A bright ear opens into expanding wavefronts'},
+ {name:'Bone Relay',throat:2,rec:'A signal travels from throat to jaw',play:'Ear → temple → jaw: a signal circuit'},
+ {name:'Breath Bellows',throat:1,rec:'Air rises through an expanding throat',play:'The ear pulses; the neck settles'},
+ {name:'Duplex Organ',throat:0,rec:'A complete path from vocal cords to open air',play:'A complete path from open air to hearing'}
+];
+const themes={
+ 'Amber':{outline:'#FF0000',feature:'#FF0000',voice:'#FF0000',ear:'#88dbdc',quiet:'#5b4937',white:'#ede6d9'},
+ 'White + red':{outline:'#9b9b98',feature:'#e9e9e4',voice:'#ff3b30',ear:'#ff3b30',quiet:'#454545',white:'#eeeae2'},
+ 'Instrument':{outline:'#8f87b6',feature:'#ced0e5',voice:'#ff6a88',ear:'#00dcaf',quiet:'#414056',white:'#e8e8e0'}
+};
+let C=themes[options.palette];
+const f=n=>Number(n).toFixed(2);
+const path=(d,c,w=options.stroke,a=1,fill='none')=>`<path d="${d}" fill="${fill}" stroke="${c}" stroke-width="${f(w)}" opacity="${f(Math.max(0,Math.min(1,a)))}" stroke-linecap="round" stroke-linejoin="round"/>`;
+const line=(x,y,xx,yy,c,w=options.stroke,a=1)=>path(`M${f(x)} ${f(y)}L${f(xx)} ${f(yy)}`,c,w,a);
+const dot=(x,y,r,c,a=1)=>`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${c}" opacity="${f(Math.max(0,a))}"/>`;
+const ring=(x,y,r,c,w=options.stroke,a=1)=>`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="none" stroke="${c}" stroke-width="${f(w)}" opacity="${f(Math.max(0,a))}"/>`;
+const poly=(points,c,w=options.stroke,a=1)=>path(points.map((p,i)=>(i?'L':'M')+f(p[0])+' '+f(p[1])).join(' '),c,w,a);
+const fract=n=>n-Math.floor(n);
+function arc(cx,cy,r,a,b,c,w=options.stroke,opacity=1){return path(`M${f(cx+Math.cos(a)*r)} ${f(cy+Math.sin(a)*r)}A${f(r)} ${f(r)} 0 ${b-a>Math.PI?1:0} 1 ${f(cx+Math.cos(b)*r)} ${f(cy+Math.sin(b)*r)}`,c,w,opacity)}
+function envelope(t){
+ const q=((t%8.8)+8.8)%8.8;
+ const syllables=[[.38,.11,.45],[.76,.14,.83],[1.2,.19,.53],[1.73,.13,.98],[2.03,.11,.45],[2.48,.22,.76],[3.46,.16,.67],[3.81,.12,.9],[4.27,.22,.52],[4.91,.18,.85],[5.18,.09,.35],[6.06,.16,.97],[6.53,.25,.76],[7.12,.17,.61],[7.68,.12,.44]];
+ let v=.015;for(const [at,width,height] of syllables)v+=height*Math.exp(-.5*((q-at)/width)**2);
+ return Math.min(1,v)*(.83+.17*Math.sin(t*28)**2);
+}
+function beat(t){const period=60/88,q=((t%period)+period)%period;return Math.max(0,(Math.exp(-q/.22)-Math.exp(-q/.02))*1.5)}
+function headContour(gap){return `M74 216 L79 187 C82 173 79 164 73 152 C62 134 58 114 62 94 C66 56 88 34 119 34 C152 32 174 49 176 80 C178 97 173 105 181 118 L192 131 Q194 134 189 137 L179 140 Q178 144 182 147 L177 150 Q181 ${f(151+gap)} 177 ${f(155+gap)} C178 ${f(164+gap)} 165 ${f(168+gap)} 155 ${f(165+gap)} C146 180 148 198 157 216 Z`}
+const earPath='M120 112 C106 105 99 117 102 131 C104 144 117 146 123 135 L127 122 M119 119 C111 114 106 122 111 130 L116 131';
+const eyeOpen='M151 100 Q158 96 166 100 Q159 104 153 101';
+const panels=choices.map((choice,i)=>{
+ const figure=document.createElement('figure'),svg=document.createElementNS(NS,'svg'),caption=document.createElement('figcaption'),note=document.createElement('div');
+ svg.classList.add('vh-scene');svg.setAttribute('viewBox','0 0 280 280');svg.setAttribute('role','img');svg.setAttribute('aria-label',choice.name+'. Upright profile, no letter or outer contour. '+choice.rec+'. Simulated voice.');
+ svg.innerHTML=`<defs><clipPath id="vh-clip-${i}"><circle cx="140" cy="140" r="138"/></clipPath></defs><g clip-path="url(#vh-clip-${i})"><g data-layer="behind"></g><path data-layer="head" fill="#000" stroke-linecap="round" stroke-linejoin="round"/><g data-layer="ear"></g><g data-layer="eye"></g><g data-layer="mouth"></g><g data-layer="throat"></g><g data-layer="front"></g></g>`;
+ caption.textContent=String(i+1).padStart(2,'0')+' · '+choice.name;note.className='vh-note';note.textContent=choice.rec;
+ figure.append(svg,caption,note);root.querySelector('.vh-grid').append(figure);
+ const layers={};svg.querySelectorAll('[data-layer]').forEach(el=>layers[el.dataset.layer]=el);
+ return {svg,layers,note,choice,visible:true};
+});
+function stem(style,t,a,opacity=1){
+ const col=C.voice;
+ if(style===0){
+  const y=183+(reduced.matches?0:Math.sin(t*24)*a*1.4);
+  return line(124,210,124,171,C.quiet,1,opacity)+line(124,210,124,y,col,options.stroke,opacity)+dot(124,y,3.1+a*1.35,col,opacity)+ring(124,y,7+a*3,col,.8,opacity*a*.3);
+ }
+ if(style===1){
+  const spread=2+a*7,v=reduced.matches?0:Math.sin(t*30)*a*.8;
+  return line(124,210,124,201,C.quiet,1,opacity)+path(`M124 171 C${f(124-spread)} 179 ${f(119-spread+v)} 192 124 201 M124 171 C${f(124+spread)} 179 ${f(129+spread-v)} 192 124 201`,col,options.stroke,opacity)+dot(124,171,1.7,C.white,opacity)+dot(124,201,1.7,C.white,opacity);
+ }
+ let out=line(110,171,110,203,C.quiet,.9,opacity)+line(137,171,137,203,C.quiet,.9,opacity);
+ for(let j=0;j<3;j++){
+  const y=177+j*10,v=(reduced.matches?0:Math.sin(t*(20+j*3)))*a*(2+j*.55);
+  out+=path(`M110 ${y} Q117 ${f(y-v)} 123.5 ${f(y+v)} Q130 ${f(y-v)} 137 ${y}`,j===1?col:C.white,options.stroke,opacity)+dot(110,y,1.4,col,opacity)+dot(137,y,1.4,col,opacity);
+ }
+ return out;
+}
+function outgoing(t,a,type=0,weight=1){
+ let out='';
+ for(let j=0;j<4;j++){
+  const p=fract(t*.55-j/4),x=185+p*76,sample=envelope(t-p*1.8)*options.energy;
+  const alpha=(1-p)*Math.min(1,sample*2)*weight;
+  if(type===0){const h=3+sample*10;out+=path(`M${f(x)} ${f(152-h)}Q${f(x+4)} 152 ${f(x)} ${f(152+h)}`,C.voice,options.stroke,alpha)}
+  else if(type===1){for(let k=-1;k<=1;k++)out+=line(x,152+k*(4+sample*3),x+7+sample*4,152+k*(4+sample*3),k===0?C.white:C.voice,1.2,alpha)}
+  else {const pts=[];for(let k=0;k<11;k++){const z=k/10;pts.push([x+z*14,152+Math.sin(z*TAU)*Math.sin(z*Math.PI)*sample*12])}out+=poly(pts,C.voice,1.3,alpha)}
+ }
+ return out;
+}
+function echoBack(t,a,type=0,weight=1){
+ let out='';
+ for(let j=0;j<4;j++){
+  const p=fract(t*.43-j/4),r=42+p*70,alpha=(1-p)*(.2+a*.8)*weight;
+  if(type===0)out+=arc(114,124,r,2.25,4.13,C.ear,options.stroke,alpha);
+  else if(type===1){for(let k=-1;k<=1;k++){const x=72-p*65,y=124+k*(8+a*10);out+=line(x-5,y,x+5,y,C.ear,options.stroke,alpha)}}
+  else {const x=74-p*63,h=3+a*12;out+=poly([[x-9,124],[x-6,124-h*.5],[x-3,124+h],[x,124-h],[x+3,124+h*.5],[x+6,124]],C.ear,1.2,alpha)}
+ }
+ return out;
+}
+function bezier(p0,p1,p2,p3,t){const q=1-t;return [q*q*q*p0[0]+3*q*q*t*p1[0]+3*q*t*t*p2[0]+t*t*t*p3[0],q*q*q*p0[1]+3*q*q*t*p1[1]+3*q*t*t*p2[1]+t*t*t*p3[1]]}
+function traveling(points,t,count,c,a=1){let out='';for(let j=0;j<count;j++){const p=fract(t-j/count),v=bezier(...points,p);out+=dot(v[0],v[1],1.8,c,a*(.35+.65*Math.sin(p*Math.PI)))}return out}
+function details(index,t,a,r,p){
+ let behind='',front='',throat=stem(choices[index].throat,t,a,.32+.68*r);
+ switch(index){
+ case 0:
+  front=outgoing(t,a,0,r);behind=echoBack(t,a,0,p);break;
+ case 1:
+  front=outgoing(t*.8,a,0,r);behind=echoBack(t*.8,a,0,p);
+  front+=arc(113,126,8+a*4,1.2,5.3,C.ear,1.2,p*.7);
+  break;
+ case 2:
+  front=outgoing(t,a,1,r);
+  for(let j=0;j<3;j++){
+   const y=99+j*24,x=43-3*Math.sin(t*1.3+j),h=2+envelope(t-j*.1)*11;
+   behind+=line(x,y-h,x,y+h,C.ear,1.4,p)+line(x-6,y-h*.6,x-6,y+h*.6,C.ear,.9,p*.45)+line(x+6,y-h*.6,x+6,y+h*.6,C.ear,.9,p*.45);
+  }
+  break;
+ case 3:
+  front=outgoing(t,a,2,r);
+  for(let j=0;j<4;j++){
+   const q=fract(t*.4-j*.25),x=13+q*98,h=envelope(t-q*1.4)*13;
+   behind+=poly([[x-9,124],[x-6,124-h*.4],[x-3,124+h],[x,124-h*.7],[x+4,124+h*.3],[x+8,124]],C.ear,1.1,p*Math.sin(q*Math.PI));
+  }
+  break;
+ case 4:
+  for(let j=-1;j<=1;j++){
+   const pts=[];for(let k=0;k<=34;k++){const q=k/34,x=184+q*73;pts.push([x,151+q*j*25+Math.sin(q*7-t*3+j)*Math.sin(q*Math.PI)*a*7])}
+   front+=poly(pts,j===0?C.white:C.voice,1.2,r*(j===0?.85:.65));
+   const back=[];for(let k=0;k<=34;k++){const q=k/34;back.push([13+q*101,124+(1-q)*j*31+Math.sin(q*7+t*3+j)*Math.sin(q*Math.PI)*a*6])}
+   behind+=poly(back,j===0?C.white:C.ear,1.2,p*(j===0?.8:.6));
+  }
+  break;
+ case 5:{
+  const route='M124 183 C128 157 94 136 113 124 C141 103 143 82 126 75 C106 65 92 91 110 108 C129 126 161 124 175 151';
+  front+=path(route,C.quiet,.9,.65)+traveling([[124,183],[100,139],[137,135],[175,151]],t*.3,3,C.voice,r*(.25+a*.65));
+  for(let j=0;j<3;j++){
+   const q=fract(t*.32-j/3),rx=8+q*18,ry=5+q*13;
+   front+=path(`M${f(126-rx)} 87 C${f(126-rx)} ${f(87-ry)} ${f(126+rx)} ${f(87-ry)} ${f(126+rx)} 87 C${f(126+rx)} ${f(87+ry)} ${f(126-rx)} ${f(87+ry)} ${f(126-rx)} 87`,p>.5?C.ear:C.voice,1,(1-q)*(.2+a*.4));
+  }
+  front+=outgoing(t,a,0,r*.7);behind=echoBack(t,a,0,p*.8);break;
+ }
+ case 6:
+  front=outgoing(t*.8,a,0,r);
+  behind=echoBack(t*1.15,a,0,p);
+  for(let j=0;j<3;j++){const radius=9+j*5+a*2;front+=arc(113,125,radius,-1.3,1.7,C.ear,1.1,p*(.75-j*.2))}
+  front+=dot(114,124,2+a*2,C.white,p);break;
+ case 7:{
+  const nodes=[[124,201],[124,181],[155,166],[160,101],[113,124]];
+  front+=poly(nodes,C.quiet,.9,.8);
+  for(let j=0;j<nodes.length;j++)front+=ring(...nodes[j],2.3,C.feature,.8,.45);
+  for(let j=0;j<5;j++){
+   const q=fract(t*.22-j/5),u=(p>.5?1-q:q)*4,k=Math.min(3,Math.floor(u)),v=u-k;
+   const x=nodes[k][0]*(1-v)+nodes[k+1][0]*v,y=nodes[k][1]*(1-v)+nodes[k+1][1]*v;
+   front+=dot(x,y,1.8,p>.5?C.ear:C.voice,.2+a*.8);
+  }
+  front+=outgoing(t*.7,a,1,r);behind=echoBack(t*.8,a,2,p);break;
+ }
+ case 8:
+  throat='';
+  for(let j=0;j<5;j++){
+   const y=202-j*7,w=3+envelope(t-j*.07)*7;
+   throat+=path(`M${f(124-w)} ${y}Q124 ${f(y-3-a*2)} ${f(124+w)} ${y}`,C.voice,1.3,r*(.35+j*.12)+p*.13);
+  }
+  front=outgoing(t*.7,a,1,r);behind=echoBack(t*.7,a,0,p);
+  front+=path(`M105 114 Q${f(101-a*4)} 127 109 137`,C.ear,2,p*.8);
+  break;
+ case 9:{
+  const voiceRoute='M124 208 V185 C124 163 145 153 173 151',earRoute='M113 124 C128 101 140 112 139 131 C137 150 115 156 124 183';
+  front+=path(voiceRoute,C.voice,1,r*(.18+a*.32))+path(earRoute,C.ear,1,p*(.18+a*.32));
+  front+=traveling([[124,205],[117,175],[141,150],[174,151]],t*.58,4,C.voice,r*(.3+a*.7));
+  front+=traveling([[113,124],[150,86],[148,147],[124,183]],t*.45,4,C.ear,p*(.3+a*.7));
+  front+=outgoing(t,a,2,r);behind=echoBack(t,a,0,p);break;
+ }
+ }
+ return {behind,front,throat};
+}
+function draw(force=false){
+ C=themes[options.palette];
+ const r=1-blend,p=blend,a=Math.min(1.2,env),gap=r*a*6.5;
+ const blink=reduced.matches?0:Math.exp(-Math.pow((fract(time/6.2)*6.2-5.7)/.09,2));
+ panels.forEach((panel,i)=>{
+  if(!force&&!panel.visible)return;
+  const layer=panel.layers,result=details(i,time,a,r,p);
+  layer.behind.innerHTML=result.behind;
+  layer.head.setAttribute('d',headContour(gap));layer.head.setAttribute('stroke',C.outline);layer.head.setAttribute('stroke-width',options.stroke);layer.head.setAttribute('opacity',1);
+  const earOpacity=.8+.2*p;
+  layer.ear.innerHTML=path(earPath,p>.5?C.ear:C.feature,options.stroke+.3*p,earOpacity)+dot(115,124,2.4+a*p*1.3,p>.5?C.ear:C.feature);
+  layer.eye.innerHTML=path('M152 93 Q160 90 168 95',C.feature,1,.5)+path(blink>.3?'M152 101 Q159 104 166 100':eyeOpen,C.feature,1.2)+dot(162,100,1.1,C.white,1-blink);
+  layer.mouth.innerHTML=path(`M177 150 Q166 149 158 151 M177 ${f(155+gap)} Q165 ${f(156+gap*.6)} 158 151`,r>.5?C.voice:C.feature,1.2,.75+r*a*.25)+line(182,136,185,136,C.feature,1,.7);
+  layer.throat.innerHTML=result.throat;layer.front.innerHTML=result.front;
+ });
+}
+function schedule(){if(!raf&&playing&&visible&&!document.hidden)raf=requestAnimationFrame(frame)}
+function frame(now){
+ raf=0;
+ if(previous){const dt=Math.min(.05,(now-previous)/1000);time+=dt*options.tempo;blend+=((mode==='play'?1:0)-blend)*(1-Math.exp(-dt/.085));const raw=Math.min(1,(mode==='record'?envelope(time):.16+beat(time)*.6+envelope(time)*.35)*options.energy);env+=(raw-env)*(1-Math.exp(-dt/(raw>env?.035:.13)));bodyEnv+=(env-bodyEnv)*(1-Math.exp(-dt/.25))}
+ previous=now;draw();schedule();
+}
+function sync(){
+ root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+ root.querySelector('.vh-status').textContent=mode==='record'?'Simulated voice · silent demo':'Simulated playback · silent demo';
+ const b=root.querySelector('.vh-pause');b.textContent=playing?'Pause':'Play';b.setAttribute('aria-label',playing?'Pause animations':'Play animations');
+ panels.forEach(panel=>{panel.note.textContent=mode==='record'?panel.choice.rec:panel.choice.play;panel.svg.setAttribute('aria-label',panel.choice.name+'. '+panel.note.textContent+'. Silent simulated audio.')});
+ if(!playing){cancelAnimationFrame(raf);raf=0;previous=0;blend=mode==='play'?1:0}
+ draw(true);schedule();
+}
+root.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;sync()}));
+root.querySelector('.vh-pause').addEventListener('click',()=>{playing=!playing;sync()});
+document.addEventListener('visibilitychange',()=>{previous=0;if(document.hidden){cancelAnimationFrame(raf);raf=0}else schedule()});
+const observer=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.target===root)visible=entry.isIntersecting;else{const panel=panels.find(p=>p.svg===entry.target);if(panel)panel.visible=entry.isIntersecting}}if(!visible){cancelAnimationFrame(raf);raf=0;previous=0}else schedule()},{rootMargin:'120px'});
+observer.observe(root);panels.forEach(p=>observer.observe(p.svg));
+reduced.addEventListener('change',()=>{if(reduced.matches){playing=false;sync()}});
+sync();
+if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>draw(true)});tweak.addSlider(options,'tempo',{label:'Travel speed',min:.4,max:1.6,step:.1});tweak.addSlider(options,'energy',{label:'Voice intensity',min:.25,max:1.5,step:.05});tweak.addSlider(options,'stroke',{label:'Contour weight',min:1,max:2.5,step:.25});tweak.addSelect(options,'palette',{label:'Palette',options:['Amber','White + red','Instrument']})}
+})();
+</script>
+</body></html>

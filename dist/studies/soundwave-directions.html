@@ -1,0 +1,181 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Soundwave Directions · iwrzwr</title><style>:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body><div id="iwr-wave-directions" aria-label="Beş soundwave animasyonu karşılaştırması">
+  <div class="viz-controls">
+    <button type="button" class="btn" data-phase="playback" aria-pressed="true">Çalma</button>
+    <button type="button" class="btn" data-phase="recording" aria-pressed="false">Kayıt</button>
+    <button type="button" class="btn btn-ghost" data-pause aria-pressed="false">Duraklat</button>
+    <span class="text-small text-muted">Örnek ses ritmi · sessiz demo</span>
+  </div>
+  <div class="iwr-comparison">
+    <div class="iwr-preview-wrap">
+      <div class="iwr-phone" aria-label="iwrzwr üst alan önizlemesi">
+        <div class="iwr-header">
+          <div class="iwr-status" aria-hidden="true"><span>9:41</span><span>••• &nbsp; ▰</span></div>
+          <div class="iwr-controls">
+            <div class="iwr-circle" aria-hidden="true"></div>
+            <div class="iwr-activity">
+              <div class="iwr-rec" hidden><span class="iwr-dot"></span><span data-time>00:00</span></div>
+              <canvas class="iwr-wave" role="img" aria-label="Siri Ribbon: renkli, üst üste akan dalgalar"></canvas>
+            </div>
+            <div class="iwr-circle" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="iwr-pads" aria-hidden="true"><div><i data-lucide="mic"></i></div><div><i data-lucide="mic"></i></div></div>
+      </div>
+      <div class="text-small text-muted iwr-dimensions">126px header · 44px dalga alanı · 24px boşluk</div>
+    </div>
+    <div class="iwr-options" role="group" aria-label="Animasyon seçenekleri">
+      <button type="button" class="btn btn-block" data-style="ribbon" aria-pressed="true">1 · Siri Ribbon</button>
+      <button type="button" class="btn btn-block" data-style="mono" aria-pressed="false">2 · Mono Wave</button>
+      <button type="button" class="btn btn-block" data-style="silk" aria-pressed="false">3 · Silk Layers</button>
+      <button type="button" class="btn btn-block" data-style="liquid" aria-pressed="false">4 · Liquid Wave</button>
+      <button type="button" class="btn btn-block" data-style="spectrum" aria-pressed="false">5 · Fine Spectrum</button>
+    </div>
+  </div>
+  <div class="iwr-caption" aria-live="polite"><span data-caption>Renkli, yarı saydam dalgalar; akışkan Siri hissi.</span></div>
+</div>
+<style>
+  #iwr-wave-directions .iwr-comparison { display:grid; grid-template-columns:minmax(0,402px) minmax(150px,1fr); gap:24px; align-items:center; margin-top:20px; }
+  #iwr-wave-directions .iwr-options { display:grid; gap:8px; }
+  #iwr-wave-directions .iwr-preview-wrap { min-width:0; }
+  #iwr-wave-directions .iwr-phone { background:#cdcdcd; border-radius:30px; overflow:hidden; width:100%; color:#fff; font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
+  #iwr-wave-directions .iwr-header { position:relative; height:126px; background:#000; border-radius:0 0 32px 40px; }
+  #iwr-wave-directions .iwr-status { position:absolute; top:24px; left:28px; right:28px; display:flex; justify-content:space-between; font-size:13px; font-weight:500; line-height:16px; }
+  #iwr-wave-directions .iwr-controls { position:absolute; top:62px; left:20px; right:20px; display:flex; gap:24px; align-items:center; height:44px; }
+  #iwr-wave-directions .iwr-circle { width:44px; height:44px; border-radius:50%; background:#141414; box-shadow:inset 0 0 0 1px #303030; flex:none; }
+  #iwr-wave-directions .iwr-activity { min-width:0; flex:1; display:flex; align-items:center; gap:8px; height:44px; }
+  #iwr-wave-directions .iwr-wave { display:block; min-width:0; width:100%; height:44px; flex:1; }
+  #iwr-wave-directions .iwr-rec { flex:none; display:flex; align-items:center; gap:6px; width:60px; color:#fff; font-family:ui-monospace,monospace; font-size:11px; line-height:14px; font-variant-numeric:tabular-nums; }
+  #iwr-wave-directions .iwr-rec[hidden] { display:none; }
+  #iwr-wave-directions .iwr-dot { width:6px; height:6px; border-radius:50%; background:#ff413a; flex:none; }
+  #iwr-wave-directions .iwr-pads { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:#b4b4b4; }
+  #iwr-wave-directions .iwr-pads>div { height:120px; display:grid; place-items:center; color:#909090; background:#cdcdcd; }
+  #iwr-wave-directions .iwr-pads svg { width:18px; height:18px; }
+  #iwr-wave-directions .iwr-dimensions { margin-top:10px; }
+  #iwr-wave-directions .iwr-caption { margin-top:18px; min-height:24px; }
+  @media(max-width:610px) { #iwr-wave-directions .iwr-comparison { grid-template-columns:minmax(0,1fr); gap:18px; } #iwr-wave-directions .iwr-preview-wrap { width:100%; max-width:402px; margin:auto; } #iwr-wave-directions .iwr-options { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+</style>
+<script>
+(() => {
+  const root = document.getElementById('iwr-wave-directions');
+  const canvas = root.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  const badge = root.querySelector('.iwr-rec');
+  const timer = root.querySelector('[data-time]');
+  const caption = root.querySelector('[data-caption]');
+  const pauseButton = root.querySelector('[data-pause]');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const state = { style:'ribbon', phase:'playback', paused:false, monochrome:false, intensity:0.75 };
+  const descriptions = {
+    ribbon:'Renkli, yarı saydam dalgalar; akışkan Siri hissi.',
+    mono:'1px beyaz ana dalga ve hafif izleri; sade, yumuşak ve merkezde.',
+    silk:'İnce paralel katmanlar; sesle birlikte açılan ipeksi çizgiler.',
+    liquid:'Dolu, organik dalga; konuşmayla esneyen tek bir ışık formu.',
+    spectrum:'1px keskin çubuklar; merkeze hizalı, birlikte akan frekans hissi.'
+  };
+  const names = {ribbon:'Siri Ribbon',mono:'Mono Wave',silk:'Silk Layers',liquid:'Liquid Wave',spectrum:'Fine Spectrum'};
+  let w=226, h=44, elapsed=0, last=0, smoothLevel=0.5, drawTime=0;
+  const palette=['#47cfff','#6f72ff','#cb65ff','#ff789f'];
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(b => b.setAttribute('aria-pressed',String(b.dataset.style===state.style)));
+    root.querySelectorAll('[data-phase]').forEach(b => b.setAttribute('aria-pressed',String(b.dataset.phase===state.phase)));
+    badge.hidden = state.phase!=='recording';
+    caption.textContent = descriptions[state.style];
+    canvas.setAttribute('aria-label',names[state.style]+': '+descriptions[state.style]);
+    pauseButton.textContent = state.paused?'Devam et':'Duraklat';
+    pauseButton.setAttribute('aria-pressed',String(state.paused));
+    resize();
+  }
+  function resize() {
+    const box=canvas.getBoundingClientRect();
+    w=Math.max(1,box.width); h=44;
+    const dpr=Math.min(devicePixelRatio||1,3);
+    canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw(drawTime);
+  }
+  root.querySelectorAll('[data-style]').forEach(b=>b.addEventListener('click',()=>{state.style=b.dataset.style;sync();}));
+  root.querySelectorAll('[data-phase]').forEach(b=>b.addEventListener('click',()=>{state.phase=b.dataset.phase;sync();}));
+  pauseButton.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  function envelope(x) {return Math.pow(Math.sin(Math.PI*Math.max(0,Math.min(1,x))),1.25);}
+  function signal(t) {return 0.13+0.5*Math.pow(Math.sin(t*1.65),4)+0.28*Math.pow(Math.sin(t*3.15+0.7),8);}
+  function wave(x,t,layer) {
+    const drift=state.phase==='recording'?t*2.4:t*1.5;
+    return Math.sin(x*Math.PI*(3.1+layer*0.11)-drift+layer*0.6)*0.72+Math.sin(x*Math.PI*5.3+t*0.9-layer*0.4)*0.28;
+  }
+  function stroke(fn,color,width,alpha=1) {
+    ctx.beginPath();
+    for(let i=0;i<=110;i++){const x=i/110,y=fn(x);if(!i)ctx.moveTo(1+x*(w-2),y);else ctx.lineTo(1+x*(w-2),y);}
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.globalAlpha=alpha;ctx.lineCap='butt';ctx.stroke();ctx.globalAlpha=1;
+  }
+  function draw(t) {
+    ctx.clearRect(0,0,w,h);
+    const gain=reduced.matches?0.3+smoothLevel*0.2:smoothLevel;
+    const amp=3+gain*15;
+    const motion=reduced.matches?1.4:t;
+    if(state.style==='ribbon') {
+      ctx.globalCompositeOperation='screen';
+      for(let layer=0;layer<4;layer++) {
+        const color=state.monochrome?'#eeeeee':palette[layer];
+        const mid=x=>22+envelope(x)*amp*wave(x,motion,layer);
+        const thick=x=>envelope(x)*(1.2+gain*2.8)*(0.65+0.35*Math.sin(x*9+motion+layer));
+        ctx.beginPath();
+        for(let i=0;i<=110;i++){let x=i/110,y=mid(x)-thick(x);if(!i)ctx.moveTo(x*w,y);else ctx.lineTo(x*w,y);}
+        for(let i=110;i>=0;i--){let x=i/110;ctx.lineTo(x*w,mid(x)+thick(x));}
+        ctx.closePath();ctx.fillStyle=color;ctx.globalAlpha=0.32;ctx.fill();ctx.globalAlpha=1;
+        stroke(mid,color,0.8,0.78);
+      }
+      ctx.globalCompositeOperation='source-over';
+    } else if(state.style==='mono') {
+      for(let layer=3;layer>=0;layer--)stroke(x=>22+envelope(x)*amp*wave(x,motion-layer*0.09,0)*(1-layer*0.18),'#fff',1,layer===0?0.95:0.26-layer*0.04);
+    } else if(state.style==='silk') {
+      for(let layer=0;layer<8;layer++) {
+        const offset=(layer-3.5)*0.9;
+        stroke(x=>22+envelope(x)*(amp*0.72*wave(x,motion,layer*0.33)+offset*(0.6+gain*1.8)),'#fff',0.65,0.25+0.45*(1-Math.abs(layer-3.5)/4));
+      }
+    } else if(state.style==='liquid') {
+      const thickness=x=>envelope(x)*(3+gain*12)*(0.72+0.2*Math.sin(x*12-motion*1.8)+0.08*Math.sin(x*21+motion));
+      const axis=x=>22+envelope(x)*Math.sin(x*7+motion)*gain*3;
+      ctx.beginPath();
+      for(let i=0;i<=110;i++){let x=i/110,y=axis(x)-thickness(x);if(!i)ctx.moveTo(x*w,y);else ctx.lineTo(x*w,y);}
+      for(let i=110;i>=0;i--){let x=i/110;ctx.lineTo(x*w,axis(x)+thickness(x));}
+      ctx.closePath();
+      const gradient=ctx.createLinearGradient(0,5,w,39);
+      gradient.addColorStop(0,state.monochrome?'#c5c5c5':'#a3deee');gradient.addColorStop(0.45,'#fff');gradient.addColorStop(1,state.monochrome?'#777':'#8c83ae');
+      ctx.fillStyle=gradient;ctx.globalAlpha=0.85;ctx.fill();ctx.globalAlpha=1;
+      stroke(x=>axis(x)-thickness(x),'#fff',0.7,0.85);
+    } else {
+      const count=Math.max(2,Math.floor(w/4));
+      ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.lineCap='butt';
+      for(let col=0;col<count;col++) {
+        const x=col/(count-1);
+        const sample=state.phase==='recording'?signal(motion-(1-x)*2.4):gain*(0.3+0.7*Math.abs(wave(x,motion,0)));
+        const size=1+Math.min(18,sample*18)*(0.28+0.72*envelope(x));
+        ctx.globalAlpha=0.9;ctx.beginPath();ctx.moveTo(1+x*(w-2),22-size);ctx.lineTo(1+x*(w-2),22+size);ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+    }
+  }
+  function frame(now) {
+    if(!root.isConnected)return;
+    const dt=last?Math.min(0.05,(now-last)/1000):0;last=now;
+    if(!state.paused&&!document.hidden) {
+      elapsed+=dt;
+      const target=signal(elapsed)*state.intensity/0.75;
+      const response=target>smoothLevel?0.08:0.24;
+      smoothLevel+=(target-smoothLevel)*(1-Math.exp(-dt/response));
+      drawTime=elapsed;draw(drawTime);
+      const stamp=Math.floor(elapsed*100)%6000;
+      timer.textContent=String(Math.floor(stamp/100)).padStart(2,'0')+':'+String(stamp%100).padStart(2,'0');
+    }
+    requestAnimationFrame(frame);
+  }
+  new ResizeObserver(resize).observe(canvas);
+  sync(); requestAnimationFrame(frame);
+  if(globalThis.Tweak) {
+    const tweaks=new Tweak({container:root.querySelector('.iwr-phone'),onChange:sync});
+    tweaks.addToggle(state,'monochrome',{label:'Monokrom'});
+    tweaks.addSlider(state,'intensity',{label:'Ses yoğunluğu',min:0.15,max:1,step:0.05});
+  }
+})();
+</script>
+<script src="../isolate.js"></script></body></html>

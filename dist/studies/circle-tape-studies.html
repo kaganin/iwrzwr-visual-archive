@@ -1,0 +1,43 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Circle Tape · ilk seri · iwrzwr</title><style>:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body><div id="circle-tape-studies" aria-label="Five circular recording studies">
+  <div class="tape-controls"><button type="button">Pause</button><span>Simulated voice · silent demo</span></div>
+  <div class="tape-grid"></div>
+</div>
+<style>
+#circle-tape-studies{font-family:system-ui,sans-serif;color:light-dark(#222,#eee)}
+#circle-tape-studies .tape-controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+#circle-tape-studies button{font:inherit;color:inherit;background:transparent;border:1px solid light-dark(#aaa,#555);border-radius:8px;padding:10px 18px;cursor:pointer}
+#circle-tape-studies .tape-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 20px}
+#circle-tape-studies figure{margin:0;text-align:center;min-width:0}
+#circle-tape-studies canvas{display:block;width:100%;max-width:204px;aspect-ratio:1;margin:auto;border-radius:50%;background:#000;border:1px solid #ffffff29;box-sizing:border-box}
+#circle-tape-studies figcaption{margin-top:12px}
+#circle-tape-studies small{display:block;margin-top:5px;color:light-dark(#555,#aaa)}
+@media(max-width:520px){#circle-tape-studies .tape-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script>
+(()=>{
+const root=document.getElementById('circle-tape-studies'),grid=root.querySelector('.tape-grid');
+const names=['Tape Head','Growing Take','Stereo Memory','Punch Window','Loop Overwrite'];
+const subtitles=['Fixed head · moving history','The take grows with the voice','Live voice + delayed trace','A moving recording window','New take over the previous pass'];
+const views=names.map((name,i)=>{const f=document.createElement('figure');const c=document.createElement('canvas');c.width=480;c.height=480;c.setAttribute('role','img');c.setAttribute('aria-label',name+': '+subtitles[i]);const label=document.createElement('figcaption');label.textContent=String(i+1).padStart(2,'0')+' · '+name;const sub=document.createElement('small');sub.textContent=subtitles[i];f.append(c,label,sub);grid.append(f);return c.getContext('2d')});
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const state={speed:1,amplitude:1,playing:!reduced.matches};let time=2,last=0;
+const button=root.querySelector('button');function sync(){button.textContent=state.playing?'Pause':'Play';draw()}
+button.onclick=()=>{state.playing=!state.playing;sync()};
+function voice(t){const syllable=Math.pow(Math.max(0,Math.sin(t*5.1+.4)),2)*.58+Math.pow(Math.max(0,Math.sin(t*8.7+1.6)),5)*.25;const phrase=.25+.75*Math.pow(.5+.5*Math.sin(t*1.32),.5);return 1.2+state.amplitude*37*syllable*phrase*(.72+.28*Math.sin(t*19)**2)}
+function line(g,x,y,x2,y2,color='#696969'){g.strokeStyle=color;g.lineWidth=1;g.beginPath();g.moveTo(x,y);g.lineTo(x2,y2);g.stroke()}
+function wave(g,left,right,y,at,scale=1,color='#eeeeea'){if(right<=left)return;g.fillStyle=color;g.beginPath();for(let x=left;x<=right;x+=.6){const a=voice(at(x))*scale;g.lineTo(x,y-a)}for(let x=right;x>=left;x-=.6)g.lineTo(x,y+voice(at(x))*scale);g.closePath();g.fill()}
+function head(g,x,top,bottom,color='#ff3b30'){line(g,x,top,x,bottom,color);g.fillStyle=color;g.fillRect(x-4,top-1,8,2);g.fillRect(x-4,bottom-1,8,2)}
+function draw(){views.forEach((g,i)=>{g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,240,240);g.save();g.beginPath();g.arc(120,120,119,0,Math.PI*2);g.clip();const l=22,r=218,p=(time%7)/7,x=l+(r-l)*p;
+if(i===0){const h=166;g.fillStyle='#ffffff09';g.fillRect(l,73,h-l,94);line(g,l,120,r,120);wave(g,l,h,120,q=>time-(h-q)/27);head(g,h,73,167)}
+if(i===1){line(g,l,120,r,120);g.fillStyle='#ffffff0c';g.fillRect(l,75,x-l,90);wave(g,l,x,120,q=>time-p*7+(q-l)/28);head(g,x, seventy(),170)}
+if(i===2){const h=179;line(g,l,96,r,96);line(g,l,148,r,148);wave(g,l,h,96,q=>time-(h-q)/26,.62);wave(g,l,h,148,q=>time-.42-(h-q)/26,.62,'#93938f');head(g,h,64,178);g.fillStyle='#999';g.font='10px monospace';g.fillText('L',25,74);g.fillText('R',25,173)}
+if(i===3){line(g,l,120,r,120);wave(g,l,r,120,q=>(q-l)/27+1,.8,'#555');const a=Math.max(l,x-54);g.save();g.beginPath();g.rect(a,68,x-a,104);g.clip();g.fillStyle='#ffffff15';g.fillRect(a,68,x-a,104);wave(g,l,r,120,q=>(q-l)/27+1,.8);g.restore();head(g,a, seventy(),170,'#92928a');head(g,x, seventy(),170)}
+if(i===4){line(g,l,120,r,120);const lap=Math.floor(time/7);wave(g,l,r,120,q=>(lap-1)*7+(q-l)/28,1,'#484846');wave(g,l,x,120,q=>lap*7+(q-l)/28);head(g,x,70,170)}
+g.restore()})}
+function seventy(){return 70}
+function frame(now){if(last&&state.playing&&!document.hidden)time+=Math.min((now-last)/1000,.05)*state.speed;last=now;draw();requestAnimationFrame(frame)}
+sync();requestAnimationFrame(frame);
+if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:sync});tweak.addSlider(state,'speed',{label:'Travel speed',min:.4,max:1.5,step:.1});tweak.addSlider(state,'amplitude',{label:'Voice intensity',min:.3,max:1.5,step:.1});}
+})();
+</script>
+</body></html>

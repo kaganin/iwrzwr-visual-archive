@@ -1,0 +1,212 @@
+<div id="cell-memory-ten">
+  <div class="viz-controls">
+    <button class="btn" type="button" data-audio aria-pressed="false">Örnek sesi aç</button>
+    <button class="btn" type="button" data-pause aria-pressed="false">Duraklat</button>
+    <span class="text-small" data-status role="status" aria-live="polite">Sessiz önizleme · 108 BPM</span>
+  </div>
+  <div data-series></div>
+</div>
+<style>
+#cell-memory-ten .sound-series{margin-top:28px}
+#cell-memory-ten h3{margin:0 0 14px}
+#cell-memory-ten .sound-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 24px}
+#cell-memory-ten figure{margin:0;min-width:0}
+#cell-memory-ten .sound-screen{background:#000;padding:26px 12px}
+#cell-memory-ten canvas{display:block;width:100%;height:44px}
+#cell-memory-ten figcaption{margin-top:8px;color:var(--foreground)}
+#cell-memory-ten .sound-mapping{display:block;margin-top:3px;color:var(--muted-foreground)}
+@media(max-width:520px){#cell-memory-ten .sound-grid{grid-template-columns:1fr}}
+</style>
+<script>
+(()=>{
+'use strict';
+const root=document.getElementById('cell-memory-ten');
+const series=[
+ {name:'Hücre / iz / hafıza',items:[
+ ['Echo Orchard','Vuruşlar → gecikmeli hücre kümeleri'],
+ ['Halo Cache','Ses kuyruğu → dolup sönen katmanlar'],
+ ['Band Ledger','Bas / orta / tiz → hücre hafızası'],
+ ['Diamond Spill','Bas vuruşu → dört yöne yayılım'],
+ ['Orbital Dust','Ses enerjisi → yörüngede parçacık izi'],
+ ['Twin Wells','Bas ve tiz → iki hücre haznesi'],
+ ['Spiral Retain','Nota kuyruğu → sarmal hücre hafızası'],
+ ['Pulse Quilt','Geçmiş vuruşlar → ayrı hücre adacıkları'],
+ ['Rebound Cloud','Bas → duvarlardan seken hücre bulutu'],
+ ['Diagonal Sediment','Ses geçmişi → çapraz birikim']
+ ]}
+];
+const container=root.querySelector('[data-series]'),panels=[];
+series.forEach((group,g)=>{
+ const section=document.createElement('section'),heading=document.createElement('h3'),grid=document.createElement('div');
+ section.className='sound-series';heading.textContent=group.name;grid.className='sound-grid';section.append(heading,grid);container.append(section);
+ group.items.forEach(([name,mapping],i)=>{
+  const figure=document.createElement('figure'),screen=document.createElement('div'),c=document.createElement('canvas'),caption=document.createElement('figcaption'),label=document.createElement('span');
+  screen.className='sound-screen';c.setAttribute('role','img');c.setAttribute('aria-label',name+'. '+mapping);caption.textContent=String(i+1).padStart(2,'0')+' · '+name;label.className='sound-mapping text-small';label.textContent=mapping;caption.append(label);screen.append(c);figure.append(screen,caption);grid.append(figure);
+  panels.push({id:g*5+i,c,figure,ctx:c.getContext('2d'),w:300,visible:true});
+ });
+});
+// One original, local stereo sound loop. The silent preview and audible mode
+// read the SAME PCM-derived envelopes, spectra and waveform samples.
+const rate=32000,step=60/108/2,N=Math.round(step*32*rate),duration=N/rate;
+const pcm=[new Float32Array(N),new Float32Array(N)],mono=new Float32Array(N);
+const events={kick:[0,6,8,16,22],snare:[4,12,20],hat:[2,3,6,10,11,14,18,19,22],note:[1,7,9,15,17,23]};
+const notes=[146.83,220,196,293.66,164.81,220];
+let seed=17471;
+function noise(){seed=(Math.imul(seed,1664525)+1013904223)|0;return (seed>>>0)/2147483648-1;}
+function voice(type,at,index){
+ const length=type==='note'?.85:type==='kick'?.6:type==='snare'?.28:.1;
+ const first=Math.round(at*rate),count=Math.round(length*rate),pan=type==='note'?(index%2?.65:-.65):type==='hat'?(index%2?.4:-.4):0;
+ const gainL=Math.sqrt((1-pan)/2),gainR=Math.sqrt((1+pan)/2);
+ let previousNoise=0;
+ for(let j=0;j<count&&first+j<N;j++){
+  const t=j/rate,rise=Math.min(1,t/.003);let value=0;
+  if(type==='kick')value=Math.sin(2*Math.PI*(48*t+120/32*(1-Math.exp(-32*t))))*Math.exp(-12*t)*.8*rise;
+  if(type==='snare')value=(noise()*.68+Math.sin(2*Math.PI*185*t)*.25)*Math.exp(-23*t)*rise*.5;
+  if(type==='hat'){const n=noise();value=(n-previousNoise)*Math.exp(-65*t)*rise*.17;previousNoise=n;}
+  if(type==='note'){const f=notes[index%notes.length];value=(Math.sin(2*Math.PI*f*t)+.3*Math.sin(2*Math.PI*f*2*t)+.12*Math.sin(2*Math.PI*f*4*t))*Math.exp(-6.8*t)*rise*.35;}
+  pcm[0][first+j]+=value*gainL;pcm[1][first+j]+=value*gainR;
+ }
+}
+Object.entries(events).forEach(([kind,steps])=>steps.forEach((s,i)=>voice(kind,s*step,i)));
+let peak=0;for(let i=0;i<N;i++)peak=Math.max(peak,Math.abs(pcm[0][i]),Math.abs(pcm[1][i]));
+for(let i=0;i<N;i++){pcm[0][i]*=.24/peak;pcm[1][i]*=.24/peak;mono[i]=(pcm[0][i]+pcm[1][i])*.5;}
+const hop=400,frameCount=Math.ceil(N/hop),frameTime=hop/rate;
+const cutoffs=[100,220,480,1000,2200,4800,9600],coeff=cutoffs.map(f=>1-Math.exp(-2*Math.PI*f/rate));
+const filtered=new Float64Array(7),frames=[],maxima=new Float64Array(8);
+let peakRms=0;
+for(let start=0;start<N;start+=hop){
+ const sums=new Float64Array(8);let all=0,l=0,r=0;
+ for(let i=start;i<Math.min(start+hop,N);i++){
+  const sample=mono[i];let previous=0;
+  for(let b=0;b<7;b++){filtered[b]+=coeff[b]*(sample-filtered[b]);const band=filtered[b]-previous;sums[b]+=band*band;previous=filtered[b];}
+  sums[7]+=(sample-previous)**2;all+=sample*sample;l+=pcm[0][i]**2;r+=pcm[1][i]**2;
+ }
+ const bins=Array.from(sums,v=>Math.sqrt(v/hop));bins.forEach((v,i)=>maxima[i]=Math.max(maxima[i],v));
+ const rms=Math.sqrt(all/hop);peakRms=Math.max(peakRms,rms);frames.push({bins,rms,l:Math.sqrt(l/hop),r:Math.sqrt(r/hop),travel:0});
+}
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),mod=(v,n)=>(v%n+n)%n,frac=v=>v-Math.floor(v),tau=Math.PI*2,tri=v=>1-4*Math.abs(frac(v)-.5);
+let travel=0;
+frames.forEach(f=>{
+ f.bins=f.bins.map((v,i)=>clamp(v/(maxima[i]*.8||1)));f.amp=clamp(f.rms/(peakRms*.8));
+ f.low=(f.bins[0]+f.bins[1])/2;f.mid=(f.bins[2]+f.bins[3]+f.bins[4])/3;f.high=(f.bins[5]+f.bins[6]+f.bins[7])/3;
+ f.balance=(f.r-f.l)/(f.l+f.r+.0001);f.left=clamp(f.l/(peakRms*.9));f.right=clamp(f.r/(peakRms*.9));
+ travel+=Math.max(0,f.amp-.025)*frameTime;f.travel=travel;
+});
+const cycleTravel=travel;
+function signal(t){
+ const cycle=Math.floor(t/duration),pos=mod(t,duration)/frameTime,i=Math.min(frameCount-1,Math.floor(pos)),j=Math.min(frameCount-1,i+1),q=pos-i,a=frames[i],b=frames[j];
+ const f={bins:a.bins.map((v,k)=>v+(b.bins[k]-v)*q)};
+ for(const key of ['low','mid','high','amp','balance','left','right','travel'])f[key]=a[key]+(b[key]-a[key])*q;
+ f.travel+=cycle*cycleTravel;return f;
+}
+function hit(t,kind){const sequence=events[kind],local=mod(t,duration);let index=-1;for(let i=0;i<sequence.length;i++)if(sequence[i]*step<=local)index=i;return {age:index<0?local+duration-sequence[sequence.length-1]*step:local-sequence[index]*step,n:Math.floor(t/duration)*sequence.length+index+1};}
+function wave(t,u){const at=Math.floor(mod(t-.032+u*.032,duration)*rate);return mono[Math.min(N-1,at)]/(peakRms*3);}
+const reduced=matchMedia('(prefers-reduced-motion: reduce)'),soundButton=root.querySelector('[data-audio]'),pauseButton=root.querySelector('[data-pause]'),status=root.querySelector('[data-status]');
+let time=1.72,last=0,raf=0,paused=reduced.matches,visible=true,audible=false,context=null,source=null,buffer=null,startTime=0,startOffset=0,audioPending=false;
+function sync(){soundButton.textContent=audible?'Sesi kapat':'Örnek sesi aç';soundButton.setAttribute('aria-pressed',String(audible));pauseButton.textContent=paused?'Devam et':'Duraklat';pauseButton.setAttribute('aria-pressed',String(paused));status.textContent=paused?'Duraklatıldı':audible?'Örnek ses açık · 108 BPM':'Sessiz önizleme · 108 BPM';}
+function clock(){return audible&&context&&source?startOffset+context.currentTime-startTime:time;}
+function stopSound(){if(audible)time=clock();if(source){try{source.stop();}catch(e){}source.disconnect();source=null;}audible=false;sync();}
+async function startSound(){
+ if(audioPending)return;audioPending=true;soundButton.disabled=true;
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)throw new Error('audio-unavailable');
+  if(!context)context=new AC();await context.resume();
+  if(context.state!=='running')throw new Error('audio-blocked');
+  if(!root.isConnected)return;
+  if(!buffer){buffer=context.createBuffer(2,N,rate);buffer.copyToChannel(pcm[0],0);buffer.copyToChannel(pcm[1],1);}
+  source=context.createBufferSource();source.buffer=buffer;source.loop=true;source.connect(context.destination);
+  startOffset=time;startTime=context.currentTime;source.start(0,mod(time,duration));audible=true;paused=false;sync();schedule();
+ }catch(error){stopSound();status.textContent='Ses burada açılamadı; sessiz önizleme devam ediyor.';}
+ finally{audioPending=false;soundButton.disabled=false;}
+}
+function drawPanel(panel,t){
+ const {ctx,w,id}=panel,f=signal(t);
+ const cols=Math.max(12,Math.floor((w-4)/4)),rows=10,left=(w-cols*4)/2;
+ const hist=Array.from({length:32},(_,i)=>signal(t-i*.065));
+ const held=hist.slice(0,9).reduce((v,s)=>Math.max(v,s.amp),0);
+ const lowHeld=hist.slice(0,7).reduce((v,s)=>Math.max(v,s.low),0);
+ const highHeld=hist.slice(0,7).reduce((v,s)=>Math.max(v,s.high),0);
+ const columnHistory=Array.from({length:cols},(_,i)=>signal(t-(cols-1-i)*.047));
+ const echoes=Array.from({length:5},(_,i)=>({hit:hit(t-i*.16,'snare'),delay:i*.16}));
+ const kick=hit(t,'kick');
+ const dust=Array.from({length:8},(_,i)=>{const s=hist[i*2],a=s.travel*2.1;return {x:Math.cos(a)*.64,y:Math.sin(a)*.55,energy:s.amp,index:i};});
+ const rebounds=Array.from({length:7},(_,i)=>{const at=t-i*.065,k=hit(at,'kick'),q=k.n*.15+.15*(1-Math.exp(-k.age*5));return {x:tri(q)*.68,y:tri(q*3+.12)*.52,energy:signal(at).amp};});
+ ctx.clearRect(0,0,w,44);
+ // All ten renderers use only disjoint 2×2 squares on this immutable 4px grid.
+ // No paths, outlines, strokes, anti-aliased circles or continuous lines.
+ for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
+  const u=c/(cols-1)*2-1,v=r/(rows-1)*2-1;
+  const grain=mod(c*13+r*23+(c^r)*7,19)/19;
+  let value=0,hot=false;
+  if(id===0){
+   for(let e=0;e<5;e++){
+    const age=echoes[e].hit.age;
+    if(age>1.3)continue;
+    const cx=(e-2)*.37,rad=.09+age*.29;
+    const d=Math.hypot((u-cx)*1.7,v*.38);
+    const shell=Math.abs(d-rad);
+    if(shell<.07&&grain>.15){const strength=Math.exp(-age*1.4)*(1-e*.11);if(strength>value){value=strength;hot=e===0&&shell<.026;}}
+   }
+  }else if(id===1){
+   const d=Math.hypot(u,v*.77),layer=Math.floor(d/.155);
+   if(layer<6&&mod(d,.155)<.118){
+    const energy=clamp(hist[layer*4].amp*2.5),angle=mod(Math.atan2(v*.77,u)/tau+.25,1);
+    if(energy>.025&&angle<energy&&grain>.13){value=(.25+energy*.65)*(1-layer*.055);hot=layer<2&&Math.abs(angle-energy)<.14;}
+   }
+  }else if(id===2){
+   const lane=Math.floor(r/3),within=r%3;
+   if(lane<3){const s=columnHistory[c],e=[s.low,s.mid,s.high][lane],height=Math.round(Math.sqrt(e)*3);if(within<height&&!(c%6===5&&within===2)){value=.24+e*.72;hot=c>=cols-3;}}
+  }else if(id===3){
+   const radius=kick.age*.84,d=Math.abs(u)+Math.abs(v)*.49,age=radius-d;
+   if(age>=0&&age<.3&&grain>.23){value=Math.exp(-kick.age*.9)*(1-age*1.7);hot=age<.068;}
+   const previous=hit(t-.37,'kick'),oldRadius=previous.age*.72,oldAge=oldRadius-d;
+   if(oldAge>0&&oldAge<.16&&grain>.45)value=Math.max(value,.38*Math.exp(-previous.age*.8));
+  }else if(id===4){
+   dust.forEach((p,i)=>{const d=Math.hypot((u-p.x)/.2,(v-p.y)/.43),strength=clamp(p.energy*3.2)*(1-i*.095);
+    if(d<1&&grain<.95-d*.45&&strength>value){value=strength*(1-d*.3);hot=i===0&&d<.5;}
+   });
+  }else if(id===5){
+   for(const side of [-1,1]){
+    const e=side<0?lowHeld:highHeld,d=Math.hypot((u-side*.48)/.32,v/.86),level=1.05-clamp(Math.sqrt(e)*2)*1.8;
+    if(d<1&&v>level&&grain>.12){value=.32+e*.63;hot=Math.abs(v-level)<.2;}
+   }
+  }else if(id===6){
+   const d=Math.hypot(u,v*.7),layer=Math.min(14,Math.floor(d*14)),a=Math.atan2(v*.7,u)/tau;
+   const turns=mod(a+d*.7-f.travel*.065,1/3),e=clamp(hist[layer].amp*3);
+   if(d<.93&&d>.07&&turns<.18&&grain<e*.7+.12&&e>.03){value=.25+e*.7;hot=turns<.044&&layer<6;}
+  }else if(id===7){
+   const tile=Math.min(5,Math.floor(c/cols*6)),cx=-1+(tile+.5)/3,localX=(u-cx)*3;
+   const age=tile*.19,s=signal(t-age),e=Math.max(s.low,s.mid)*1.8;
+   const d=Math.abs(localX)+Math.abs(v)*.72;
+   if(d<clamp(e,.06,1.1)&&grain>.16){value=.25+clamp(e)*.65;hot=tile===0&&d<.42;}
+  }else if(id===8){
+   rebounds.forEach((p,i)=>{const strength=clamp(p.energy*3)*(1-i*.1),d=Math.hypot((u-p.x)/(.13+strength*.12),(v-p.y)/(.2+strength*.48));
+    if(d<1&&grain>.1+d*.27&&strength>value){value=strength;hot=i===0&&d<.45;}
+   });
+  }else if(id===9){
+   const delay=(1-u)*.95+(v+1)*.24,s=signal(t-delay);
+   const e=clamp((s.low*.5+s.mid*.3+s.high*.2)*3.1),layer=mod(c-r*2,6);
+   if(grain<e*.85&&layer<4){value=.25+e*.7;hot=delay<.3&&e>.3;}
+  }
+  if(value<.055)continue;
+  ctx.globalAlpha=1;
+  ctx.fillStyle=hot?'#FF0000':value>.76?'#FFFFFF':value>.46?'#B8B8B8':value>.23?'#737373':'#343434';
+  ctx.fillRect(left+c*4,3+r*4,2,2);
+ }
+}
+
+function draw(){panels.forEach(p=>{if(p.visible)drawPanel(p,time);});}
+function resize(){const dpr=Math.min(devicePixelRatio||1,2);panels.forEach(p=>{p.w=Math.max(1,p.c.getBoundingClientRect().width);p.c.width=Math.round(p.w*dpr);p.c.height=44*dpr;p.ctx.setTransform(dpr,0,0,dpr,0,0);drawPanel(p,time);});}
+function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
+function frame(now){raf=0;if(!root.isConnected){stopSound();if(context)context.close();return;}if(paused||!visible||document.hidden)return;if(!last)last=now;const dt=now-last;if(dt>=1000/30){time=audible?clock():time+Math.min(dt/1000,.08);last=now;draw();}raf=requestAnimationFrame(frame);}
+soundButton.addEventListener('click',()=>audible?stopSound():startSound());
+pauseButton.addEventListener('click',()=>{if(!paused)stopSound();paused=!paused;sync();schedule();});
+reduced.addEventListener('change',e=>{if(e.matches)stopSound();paused=e.matches;sync();schedule();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopSound();else schedule();});
+window.addEventListener('pagehide',()=>{stopSound();if(context)context.close();});
+new ResizeObserver(resize).observe(container);
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{const panel=panels.find(p=>p.figure===e.target);if(panel){panel.visible=e.isIntersecting;if(panel.visible)drawPanel(panel,time);}else{visible=e.isIntersecting;if(!visible)stopSound();}});schedule();});
+observer.observe(root);panels.forEach(p=>observer.observe(p.figure));
+sync();resize();schedule();
+})();
+</script>

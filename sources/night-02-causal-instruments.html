@@ -1,0 +1,249 @@
+<div id="iwr-night-causal" aria-label="Set 02: Causal Instruments, beş hareketli ses ekranı">
+  <div class="viz-controls">
+    <button type="button" class="btn" data-mode="play" aria-pressed="true">Çalma</button>
+    <button type="button" class="btn" data-mode="record" aria-pressed="false">Kayıt</button>
+    <button type="button" class="btn btn-ghost" data-pause aria-pressed="false">Duraklat</button>
+    <span class="text-small text-muted">Örnek ses ritmi · sessiz demo</span>
+  </div>
+  <div class="nc-layout">
+    <div class="nc-stage">
+      <div class="nc-phone" aria-label="iwrzwr: Causal Instruments önizlemesi">
+        <div class="nc-header">
+          <div class="nc-status" aria-hidden="true"><span>9:41</span><span data-record hidden>REC</span><span>••• &nbsp; ▰</span></div>
+          <div class="nc-controls">
+            <div class="nc-circle" aria-hidden="true"></div>
+            <canvas role="img" aria-label="Coupled Nodes: birbirini harekete geçiren üç düğüm"></canvas>
+            <div class="nc-circle" aria-hidden="true"><i data-lucide="plus"></i></div>
+          </div>
+        </div>
+        <div class="nc-pads" aria-hidden="true"><div><i data-lucide="mic"></i></div><div><i data-lucide="mic"></i></div></div>
+      </div>
+      <div class="text-small text-muted nc-spec">126px header · 44px alan · 24px boşluk</div>
+    </div>
+    <div class="nc-options" role="group" aria-label="Causal Instruments seçenekleri">
+      <button type="button" class="btn btn-block" data-style="coupled" aria-pressed="true">1 · Coupled Nodes</button>
+      <button type="button" class="btn btn-block" data-style="bearing" aria-pressed="false">2 · Bearing Fan</button>
+      <button type="button" class="btn btn-block" data-style="relay" aria-pressed="false">3 · Causal Relay</button>
+      <button type="button" class="btn btn-block" data-style="boxes" aria-pressed="false">4 · State Boxes</button>
+      <button type="button" class="btn btn-block" data-style="branch" aria-pressed="false">5 · Branch Memory</button>
+    </div>
+  </div>
+  <div class="nc-caption" data-description aria-live="polite">Üç düğüm, sesi birbirine devrederek küçük bir geri besleme devresi kuruyor.</div>
+</div>
+<style>
+  #iwr-night-causal .nc-layout { display:grid; grid-template-columns:minmax(0,402px) minmax(190px,1fr); gap:24px; align-items:center; margin-top:20px; }
+  #iwr-night-causal .nc-stage { min-width:0; }
+  #iwr-night-causal .nc-options { display:grid; gap:8px; }
+  #iwr-night-causal .nc-phone { --nc-screen:#000; --nc-pad:#cdcdcd; --nc-divider:#b6b6b6; --nc-ink:#f1f0e8; color:var(--nc-ink); background:var(--nc-pad); border-radius:30px; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
+  #iwr-night-causal .nc-header { height:126px; position:relative; background:var(--nc-screen); border-radius:0 0 32px 40px; }
+  #iwr-night-causal .nc-status { position:absolute; top:24px; left:28px; right:28px; display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:500; }
+  #iwr-night-causal [data-record] { color:#ff8141; font-family:ui-monospace,monospace; font-size:11px; }
+  #iwr-night-causal [hidden] { display:none; }
+  #iwr-night-causal .nc-controls { position:absolute; top:62px; left:20px; right:20px; display:flex; align-items:center; gap:24px; height:44px; }
+  #iwr-night-causal .nc-circle { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:50%; background:#141414; box-shadow:inset 0 0 0 1px #303030; }
+  #iwr-night-causal .nc-circle svg { width:20px; height:20px; stroke-width:1.5; }
+  #iwr-night-causal canvas { display:block; height:44px; width:100%; flex:1; min-width:0; }
+  #iwr-night-causal .nc-pads { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--nc-divider); }
+  #iwr-night-causal .nc-pads>div { display:grid; place-items:center; height:120px; background:var(--nc-pad); color:#929292; }
+  #iwr-night-causal .nc-pads svg { width:18px; height:18px; }
+  #iwr-night-causal .nc-spec { margin-top:10px; }
+  #iwr-night-causal .nc-caption { margin-top:16px; min-height:44px; }
+  @media(max-width:630px) { #iwr-night-causal .nc-layout { grid-template-columns:minmax(0,1fr); gap:18px; } #iwr-night-causal .nc-stage { width:100%; max-width:402px; margin:auto; } }
+</style>
+<script>
+(() => {
+  const root=document.getElementById('iwr-night-causal');
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'coupled',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={coupled:'Coupled Nodes',bearing:'Bearing Fan',relay:'Causal Relay',boxes:'State Boxes',branch:'Branch Memory'};
+  const descriptions={
+    coupled:['Üç düğüm, sesi birbirine devrederek küçük bir geri besleme devresi kuruyor.','İlk düğüm heceyi yakalıyor; iki kısa gecikmeyle diğer düğümlere iz bırakıyor.'],
+    bearing:['İki segmentli kadran, aynı ritmi farklı açılardan tarıyor.','Konuşma darbeleri ibreyi kademeli konumlara taşıyor; son üç açı hafızada kalıyor.'],
+    relay:['Bir darbe, dört neden–sonuç istasyonunu sırayla uyandırıyor.','İstasyonlar sırayla kilitleniyor; yakalanan değer en sonda küçük bir fişe dönüşüyor.'],
+    boxes:['Dört minik koordinat odası, aynı ritmin farklı anlarını köşeli rotalarda dolaştırıyor.','Her darbe bir koordinat karesine yazılıyor; diğer üçü son yakaladıkları anı tutuyor.'],
+    branch:['Okuma noktası, dallanan hafızanın uçlarını tek tek ziyaret ediyor.','Kayıt sürdükçe küçük bir ağaç çiziliyor; yeni dallar, eski izleri koruyarak ekleniyor.']
+  };
+  const white='#f1f0e8',orange='#ff963e';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n);
+  const mod=(n,m)=>(n%m+m)%m;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const accent=()=>state.accent?orange:white;
+  // Synthetic, deterministic envelope: no microphone, real FFT, phase, or stereo measurement.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white,dashed=false) {
+    if(!points.length)return;
+    ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.setLineDash(dashed?[1,4]:[]);
+    ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]);
+  }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function ring(x,y,r,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function pointOn(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0);
+    for(let i=0;i<lengths.length;i++) {
+      if(distance<=lengths[i]||i===lengths.length-1) { const q=lengths[i]?distance/lengths[i]:0;return [mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]; }
+      distance-=lengths[i];
+    }
+    return path[0];
+  }
+  function prefix(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0),out=[path[0]];
+    for(let i=0;i<lengths.length;i++) {
+      if(distance<lengths[i]) { const q=lengths[i]?distance/lengths[i]:0;out.push([mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]);break; }
+      out.push(path[i+1]);distance-=lengths[i];
+    }
+    return out;
+  }
+  function coupled(time) {
+    const xs=[w*.13,w*.5,w*.87],recording=state.mode==='record';
+    const nodes=xs.map((x,i)=>({x,y:22+(recording?0:Math.sin(time*1.5-i*.8)*3),r:5+env(time-i*.18)*6}));
+    for(let i=0;i<2;i++) {
+      const a=nodes[i],b=nodes[i+1],direction=Math.atan2(b.y-a.y,b.x-a.x);
+      const path=[[a.x+Math.cos(direction)*(a.r+3),a.y+Math.sin(direction)*(a.r+3)],[b.x-Math.cos(direction)*(b.r+3),b.y-Math.sin(direction)*(b.r+3)]];
+      line(path,.5,white,true);
+      const phase=fract(time*.95-i*.18),dot=pointOn(path,phase);
+      marker(dot[0],dot[1],.35+env(time-i*.18),accent(),2);
+    }
+    if(!recording) {
+      const back=[[xs[2],12],[xs[2],4],[xs[0],4],[xs[0],12]];
+      line(back,.22,white,true);
+      const dot=pointOn(back,fract(time*.28));marker(dot[0],dot[1],.7,white,2);
+    }
+    nodes.forEach((n,i)=>{
+      ring(n.x,n.y,n.r,.9);
+      marker(n.x,n.y,.5+env(time-i*.18),i===0?accent():white,3);
+      if(recording) {
+        const strength=env(time-i*.18),extent=3+strength*12;
+        line([[n.x-extent/2,39],[n.x+extent/2,39]],.8,i===0?accent():white);
+        rect(n.x-1,34,2,2,.35+strength);
+      }
+    });
+  }
+  function bearing(time) {
+    const radius=Math.min(22,w*.15),centers=[w*.27,w*.73],cy=32;
+    const a0=Math.PI*1.02,a1=Math.PI*1.98,span=a1-a0;
+    centers.forEach((cx,i)=>{
+      const end=state.mode==='record'?Math.floor(env(time-i*.16)*8)/8:clamp(.5+.46*Math.sin(time*1.6+i*1.9)*(0.5+env(time)*.5));
+      for(let layer=0;layer<3;layer++)for(let segment=0;segment<15;segment++) {
+        const start=a0+segment*span/15,finish=start+span/15*.52;
+        const close=Math.abs(segment/14-end)<.12;
+        arc(cx,cy,radius-layer*4,start,finish,close?.9:.23,close&&layer===0?accent():white);
+      }
+      const needle=value=>a0+clamp(value)*span;
+      if(state.mode==='record')for(let history=3;history>0;history--) {
+        const angle=needle(Math.floor(env(time-history*.21-i*.16)*8)/8);
+        marker(cx+Math.cos(angle)*(radius-2),cy+Math.sin(angle)*(radius-2),.16+(3-history)*.1,white,2);
+      }
+      const angle=needle(end);
+      line([[cx,cy],[cx+Math.cos(angle)*(radius-2),cy+Math.sin(angle)*(radius-2)]],.95,accent());
+      marker(cx,cy,1,white,3);
+      line([[cx-5,41],[cx+5,41]],.35);
+    });
+    line([[w*.5-3,22],[w*.5+3,22]],.5,white,true);
+  }
+  function relay(time) {
+    const xs=[w*.08,w*.36,w*.64,w*.92],ys=[22,11,33,22],cycle=fract(time*.34),phase=cycle*4;
+    const selected=Math.min(3,Math.floor(phase)),recording=state.mode==='record';
+    for(let i=0;i<3;i++) {
+      const knee=(xs[i]+xs[i+1])/2,path=[[xs[i]+6,ys[i]],[knee,ys[i]],[knee,ys[i+1]],[xs[i+1]-6,ys[i+1]]];
+      line(path,.22);
+      if(!recording&&selected===i) { const dot=pointOn(path,fract(phase));marker(dot[0],dot[1],1,accent());line(prefix(path,fract(phase)),.7); }
+      if(recording&&phase>i+1)line(path,.8);
+    }
+    xs.forEach((x,i)=>{
+      const y=ys[i],latched=recording&&phase>i+.25,active=selected===i;
+      if(i===0)ring(x,y,5,active?1:.6,active?accent():white);
+      else if(i===3)box(x-4,y-6,8,12,active?1:.6,active?accent():white);
+      else box(x-5,y-5,10,10,active||latched?1:.4,active?accent():white);
+      if(latched)rect(x-2,y-2,4,4,.9);
+      else if(active)marker(x,y,.6+env(time)*.4,accent(),3);
+      if(i>0&&i<3) {
+        const portY=i===1?y+9:y-9;
+        line([[x-4,portY],[x+4,portY]],latched?.85:.23);
+      }
+    });
+    if(recording) {
+      const ready=clamp((phase-3.3)*2),x=xs[3];
+      rect(x-3,37,6,2,ready,accent());rect(x-3,41,6,1,ready*.5);
+    }
+  }
+  function boxes(time) {
+    const count=4,gap=8,size=Math.min(27,(w-gap*(count-1)-4)/count),left=(w-(size*count+gap*(count-1)))/2;
+    const step=Math.floor(time*2.2),selected=mod(step,4),recording=state.mode==='record';
+    for(let i=0;i<count;i++) {
+      const x=left+i*(size+gap),y=(44-size)/2,center=[x+size/2,22],active=i===selected;
+      box(x,y,size,size,active?.75:.28);
+      line([[center[0]-3,22],[center[0]+3,22]],.2);line([[center[0],19],[center[0],25]],.2);
+      const sample=recording?step-mod(step-i,4):time*2.2-i*.7;
+      const inset=4,route=[[x+inset,y+inset],[x+size-inset,y+inset],[x+size-inset,y+size-inset],[x+inset,y+size-inset],[x+inset,y+inset]];
+      if(recording) {
+        const px=mix(x+inset,x+size-inset,hash(sample+25)),py=mix(y+inset,y+size-inset,hash(sample+61));
+        line([[px,y+size-2],[px,py],[x+2,py]],.25,active?accent():white);
+        marker(px,py,active?1:.72,active?accent():white,3);
+        if(active)rect(x+size/2-3,y+size+4,6,1,1,accent());
+      } else {
+        const progress=fract(sample*.15),p=pointOn(route,progress),q=pointOn(route,fract(progress-.15));
+        line([[q[0],q[1]],[p[0],q[1]],[p[0],p[1]]],.35);
+        line([[p[0],22],[center[0],22],[center[0],p[1]]],.13);
+        marker(p[0],p[1],.8+env(time-i*.15)*.2,active?accent():white,3);
+      }
+    }
+  }
+  function branch(time) {
+    const x0=4,x1=w*.25,x2=w*.53,x3=w-5,ys=[6,16,28,38];
+    const paths=ys.map((y,i)=>[[x0,22],[x1,22],[x1,i<2?11:33],[x2,i<2?11:33],[x2,y],[x3,y]]);
+    const recording=state.mode==='record',cycle=mod(time*.62,4.8),selected=Math.min(3,Math.floor(cycle));
+    paths.forEach((path,i)=>{
+      if(recording) {
+        const progress=clamp(cycle-i),fade=cycle>4.25?1-clamp((cycle-4.25)/.55):1;
+        if(progress>0) {
+          line(prefix(path,progress),(.48+(i===selected?.42:0))*fade,i===selected?accent():white);
+          const tip=pointOn(path,progress);marker(tip[0],tip[1],fade,i===selected?accent():white,3);
+          if(progress===1)box(x3-2,ys[i]-2,4,4,.6*fade);
+        }
+      } else {
+        line(path,i===selected?.8:.2);
+        box(x3-2,ys[i]-2,4,4,i===selected?1:.4,i===selected?accent():white);
+        if(i===selected) { const position=fract(time*.62),tip=pointOn(path,position);marker(tip[0],tip[1],1,accent(),3); }
+      }
+    });
+    marker(x0,22,1,accent(),3);
+  }
+  const renderers={coupled,bearing,relay,boxes,branch};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](t);ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) {
+    raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;
+    if(!last)last=now;
+    const elapsed=now-last;
+    if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }
+    raf=requestAnimationFrame(frame);
+  }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+  if(globalThis.Tweak) { const tweak=new Tweak({container:root.querySelector('.nc-phone'),onChange:sync});tweak.addToggle(state,'accent',{label:'Kehribar vurgu'});tweak.addSlider(state,'gain',{label:'Tepki yoğunluğu',min:.3,max:1.2,step:.1}); }
+})();
+</script>

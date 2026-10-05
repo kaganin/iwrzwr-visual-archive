@@ -1,0 +1,19 @@
+@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:swap;src:url("https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf") format("truetype")}
+:root{font-family:"SF Pro","SF Pro Text",Inter,-apple-system,BlinkMacSystemFont,Arial,sans-serif;font-size:15px;font-weight:400;line-height:24px;letter-spacing:-.005em;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
+header .brand{font-size:20px;line-height:32px;font-weight:400;letter-spacing:-.005em}
+header>span:last-child{line-height:24px}
+.series h2,figcaption{font-size:15px;line-height:24px;font-weight:400;letter-spacing:-.005em}
+/* Shared hairlines for the archive chrome and study frames. */
+header{border-bottom:.5px solid #ffffff1a}
+iframe{border:.5px solid #ffffff1a}
+header{padding:24px 32px}
+main{padding:32px}
+.all-grid{gap:32px}
+/* Archive is a gallery; demo transport and recording selectors are hidden. */
+button,[class*="controls"],.viz-controls{display:none!important}
+.animation-card{min-height:240px;border:.5px solid rgb(255 255 255 / 10%);background:#000;overflow:hidden;contain:layout paint}
+.collection-card{min-height:320px}
+.animation-card:not([data-ready]){visibility:hidden}
+body>header{display:flex!important;position:sticky;top:0;z-index:10;background:#000}
+button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:.5px!important;border-color:rgb(255 255 255 / 10%)!important}

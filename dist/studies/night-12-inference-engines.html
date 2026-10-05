@@ -1,0 +1,231 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>12 Inference Engines · iwrzwr</title><style>:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body><div id="iwr-night-inference" aria-label="Set 12: Inference Engines, beş hareketli ses ekranı">
+  <div class="viz-controls">
+    <button type="button" class="btn" data-mode="play" aria-pressed="true">Çalma</button>
+    <button type="button" class="btn" data-mode="record" aria-pressed="false">Kayıt</button>
+    <button type="button" class="btn btn-ghost" data-pause aria-pressed="false">Duraklat</button>
+    <span class="text-small text-muted">Örnek ses ritmi · sessiz demo</span>
+  </div>
+  <div class="ie-layout">
+    <div class="ie-stage">
+      <div class="ie-phone" aria-label="iwrzwr: Inference Engines önizlemesi">
+        <div class="ie-header">
+          <div class="ie-status" aria-hidden="true"><span>9:41</span><span data-record hidden>REC</span><span>••• &nbsp; ▰</span></div>
+          <div class="ie-controls">
+            <div class="ie-circle" aria-hidden="true"></div>
+            <canvas role="img" aria-label="Ricochet Register: sabit sınırlar arasında yansıyan düz yollar"></canvas>
+            <div class="ie-circle" aria-hidden="true"><i data-lucide="plus"></i></div>
+          </div>
+        </div>
+        <div class="ie-pads" aria-hidden="true"><div><i data-lucide="mic"></i></div><div><i data-lucide="mic"></i></div></div>
+      </div>
+      <div class="text-small text-muted ie-spec">126px header · 44px alan · 24px boşluk</div>
+    </div>
+    <div class="ie-options" role="group" aria-label="Inference Engines seçenekleri">
+      <button type="button" class="btn btn-block" data-style="ricochet" aria-pressed="true">1 · Ricochet Register</button>
+      <button type="button" class="btn btn-block" data-style="identity" aria-pressed="false">2 · Identity Hold</button>
+      <button type="button" class="btn btn-block" data-style="critical" aria-pressed="false">3 · Critical Sections</button>
+      <button type="button" class="btn btn-block" data-style="deferred" aria-pressed="false">4 · Deferred Yield</button>
+      <button type="button" class="btn btn-block" data-style="range" aria-pressed="false">5 · Range Reduction</button>
+    </div>
+  </div>
+  <div class="ie-caption" data-description aria-live="polite">Bir kayıtlı yol okunuyor; her çarpışmada geliş ve yansıma açısı aynı kalıyor.</div>
+</div>
+<style>
+  #iwr-night-inference .ie-layout { display:grid; grid-template-columns:minmax(0,402px) minmax(190px,1fr); gap:24px; align-items:center; margin-top:20px; }
+  #iwr-night-inference .ie-stage { min-width:0; }
+  #iwr-night-inference .ie-options { display:grid; gap:8px; }
+  #iwr-night-inference .ie-phone { --ie-screen:#000; --ie-pad:#cdcdcd; --ie-divider:#b6b6b6; --ie-ink:#f1f0e8; color:var(--ie-ink); background:var(--ie-pad); border-radius:30px; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
+  #iwr-night-inference .ie-header { height:126px; position:relative; background:var(--ie-screen); border-radius:0 0 32px 40px; }
+  #iwr-night-inference .ie-status { position:absolute; top:24px; left:28px; right:28px; display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:500; }
+  #iwr-night-inference [data-record] { color:#FF0000; font-family:ui-monospace,monospace; font-size:11px; }
+  #iwr-night-inference [hidden] { display:none; }
+  #iwr-night-inference .ie-controls { position:absolute; top:62px; left:20px; right:20px; display:flex; align-items:center; gap:24px; height:44px; }
+  #iwr-night-inference .ie-circle { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:50%; background:#141414; box-shadow:inset 0 0 0 1px #303030; }
+  #iwr-night-inference .ie-circle svg { width:20px; height:20px; stroke-width:1.5; }
+  #iwr-night-inference canvas { display:block; height:44px; width:100%; flex:1; min-width:0; }
+  #iwr-night-inference .ie-pads { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--ie-divider); }
+  #iwr-night-inference .ie-pads>div { display:grid; place-items:center; height:120px; background:var(--ie-pad); color:#929292; }
+  #iwr-night-inference .ie-pads svg { width:18px; height:18px; }
+  #iwr-night-inference .ie-spec { margin-top:10px; }
+  #iwr-night-inference .ie-caption { margin-top:16px; min-height:44px; }
+  @media(max-width:630px) { #iwr-night-inference .ie-layout { grid-template-columns:minmax(0,1fr); gap:18px; } #iwr-night-inference .ie-stage { width:100%; max-width:402px; margin:auto; } }
+</style>
+<script>
+(() => {
+  const root=document.getElementById('iwr-night-inference');
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'ricochet',mode:'play',paused:reduced.matches,accent:true};
+  const names={ricochet:'Ricochet Register',identity:'Identity Hold',critical:'Critical Sections',deferred:'Deferred Yield',range:'Range Reduction'};
+  const descriptions={
+    ricochet:['Bir kayıtlı yol okunuyor; her çarpışmada geliş ve yansıma açısı aynı kalıyor.','Her darbe tek bir çıkış açısı yazıyor; diğer iki kayıtlı yol değişmiyor.'],
+    identity:['Kör bölgede kesik çizgi yalnız tahmin; yeniden gözlenince aynı işaret devam ediyor.','Yeni örnekler izi doğruluyor; doğrulama gecikirse kısa tahminin süresi doluyor.'],
+    critical:['Tek düzlemde adacıklar birleşip ayrılıyor; değişen şey bağlantı sayısı.','Her darbe bir eşik kesitini saklıyor; köprüler ve ayrılmalar sonraki darbeye kadar tutuluyor.'],
+    deferred:['Kayıtlı tamamlanma sırası okunuyor; bekleyen ve hazır kesitler ayrı görünüyor.','Üst iz yaş, alt tikler biriken girdi; ikisi dolmadan köşeler birleşmiyor.'],
+    range:['Aynı beş örnek min–maks aralığına ve medyana daralıyor, sonra aynen geri açılıyor.','Yeni örnekler aynı grubu güncelliyor; özet yalnız min, maks veya medyan değişince oynuyor.']
+  };
+  const white='#f1f0e8',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),fract=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,mix=(a,b,q)=>a+(b-a)*q;
+  const accent=()=>state.accent?amber:white;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white,dash=[]) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.setLineDash(dash);ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]); }
+  function marker(x,y,alpha=1,color=white,size=2) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function partial(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0),out=[path[0]];
+    for(let i=0;i<lengths.length;i++){if(distance<lengths[i]){const q=lengths[i]?distance/lengths[i]:0;out.push([mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]);break;}out.push(path[i+1]);distance-=lengths[i];}
+    return out;
+  }
+  // Deterministic illustrative geometry and data; no audio input or output.
+  function rayPath(slope,startY) {
+    let x=0,y=startY,direction=slope;const points=[[x,y]];
+    for(let segment=0;segment<4&&x<1-1e-9;segment++) {
+      const boundary=direction>0?1:0,travel=(boundary-y)/direction;
+      if(x+travel>=1){y+=(1-x)*direction;x=1;}else{x+=travel;y=boundary;direction=-direction;}
+      points.push([x,y]);
+    }
+    return points;
+  }
+  function ricochet(time) {
+    const recording=state.mode==='record',step=Math.floor(time*.55),phase=fract(time*.55),active=mod(step,3);
+    line([[5,8],[w-5,8]],.27);line([[5,36],[w-5,36]],.27);
+    for(let i=0;i<3;i++) {
+      const launch=recording?step-mod(step-i,3):i,slope=2.1+mod(launch,6)*.27,start=.3+mod(launch,3)*.1;
+      const path=rayPath(slope,start).map(p=>[5+p[0]*(w-10),8+p[1]*28]),live=i===active;
+      const shown=recording&&live?partial(path,clamp(phase/.36)):path;
+      line(shown,live?.88:.18,recording&&live?accent():white);
+      if(live) {
+        const read=recording?shown:partial(path,phase),point=read[read.length-1];marker(point[0],point[1],1,accent(),3);
+        path.slice(1,-1).forEach(p=>line([[p[0]-2,p[1]],[p[0]+2,p[1]]],.64));
+      }
+    }
+  }
+  function identityModel(time,recording) {
+    const period=4.2,cycle=Math.floor(time/period),u=mod(time,period)/period,lastObserved=.42,gapEnd=recording&&mod(cycle,2)? .79:.57;
+    const missing=u>=.43&&u<gapEnd,age=Math.max(0,u-lastObserved),lease=.18;
+    return {u,gapEnd,lastObserved,age,lease,status:!missing?'observed':age<=lease?'predicted':'unresolved',sampleU:recording?Math.floor(u/.025)*.025:u};
+  }
+  function identity(time) {
+    const recording=state.mode==='record',m=identityModel(time,recording),position=u=>[5+u*(w-10),13+u*16],left=position(.43)[0],right=position(.57)[0];
+    line([[left,11],[left,7],[right,7],[right,11]],.35);line([[left,33],[left,37],[right,37],[right,33]],.35);
+    const confirmed=m.status==='observed'?m.sampleU:m.lastObserved,tailStart=m.status==='observed'&&confirmed>m.gapEnd?Math.max(m.gapEnd,confirmed-.16):Math.max(0,confirmed-.16);
+    line([position(tailStart),position(confirmed)],.75);
+    for(let i=0;i<3;i++){const u=Math.max(tailStart,confirmed-i*.045),p=position(u);marker(p[0],p[1],.35);}
+    if(m.status==='observed') {
+      const p=position(m.sampleU);line([[p[0]-3,p[1]],[p[0],p[1]-3],[p[0]+3,p[1]],[p[0],p[1]+3],[p[0]-3,p[1]]],1,accent());
+    } else if(m.status==='predicted') {
+      const p=position(m.u);line([position(m.lastObserved),p],.9,accent(),[3,3]);line([[p[0]-3,p[1]-3],[p[0]+3,p[1]-3],[p[0]+3,p[1]+3],[p[0]-3,p[1]+3]],.8,accent(),[2,2]);
+    } else {
+      const p=position(m.lastObserved);line([[p[0]-3,p[1]-4],[p[0]-3,p[1]+4],[p[0]+1,p[1]+4]],.9,accent());
+    }
+  }
+  const fieldColumns=48,fieldRows=12,peaks=[[.22,.48,1],[.5,.55,.93],[.78,.44,.86]];
+  const scalarField=Array.from({length:fieldColumns*fieldRows},(_,index)=>{
+    const x=(index%fieldColumns+.5)/fieldColumns,y=(Math.floor(index/fieldColumns)+.5)/fieldRows;
+    return Math.max(...peaks.map(([cx,cy,height])=>height-((x-cx)/.2)**2-((y-cy)/.36)**2));
+  });
+  const topologyCache=new Map();let lastComponents=null,changedAt=-100;
+  function topology(threshold) {
+    const key=Math.round(clamp(threshold,0,1.04)*50);if(topologyCache.has(key))return topologyCache.get(key);
+    const inside=scalarField.map(value=>value>=key/50),seen=new Set(),edges=[];let components=0;
+    for(let index=0;index<inside.length;index++)if(inside[index]) {
+      const x=index%fieldColumns,y=Math.floor(index/fieldColumns);
+      if(y===0||!inside[index-fieldColumns])edges.push([[x,y],[x+1,y]]);
+      if(x===fieldColumns-1||!inside[index+1])edges.push([[x+1,y],[x+1,y+1]]);
+      if(y===fieldRows-1||!inside[index+fieldColumns])edges.push([[x+1,y+1],[x,y+1]]);
+      if(x===0||!inside[index-1])edges.push([[x,y+1],[x,y]]);
+      if(!seen.has(index)) {
+        components++;const queue=[index];seen.add(index);
+        for(let head=0;head<queue.length;head++) {
+          const cell=queue[head],column=cell%fieldColumns;
+          for(const next of[column>0?cell-1:-1,column<fieldColumns-1?cell+1:-1,cell-fieldColumns,cell+fieldColumns])if(next>=0&&next<inside.length&&inside[next]&&!seen.has(next)){seen.add(next);queue.push(next);}
+        }
+      }
+    }
+    const result={threshold:key/50,components,edges};topologyCache.set(key,result);return result;
+  }
+  function critical(time) {
+    const recording=state.mode==='record',cycle=fract(time/5),level=recording?[.74,.42,.14,.52,.9,1.02][mod(Math.floor(time),6)]:.12+.9*(1-Math.abs(cycle*2-1)),shape=topology(level);
+    if(lastComponents!==null&&lastComponents!==shape.components)changedAt=time;lastComponents=shape.components;
+    for(const [x,y,dx,dy] of[[4,4,1,1],[w-4,4,-1,1],[4,40,1,-1],[w-4,40,-1,-1]])line([[x+dx*5,y],[x,y],[x,y+dy*5]],.35);
+    ink(.82);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();
+    for(const edge of shape.edges){ctx.moveTo(6+edge[0][0]*(w-12)/fieldColumns,6+edge[0][1]*32/fieldRows);ctx.lineTo(6+edge[1][0]*(w-12)/fieldColumns,6+edge[1][1]*32/fieldRows);}ctx.stroke();
+    if(time-changedAt<.24)line([[w/2-3,42],[w/2,40],[w/2+3,42]],1,accent());
+  }
+  const jobs=[
+    {born:0,minAge:1.8,target:4,pulses:[[.2,4]]},
+    {born:.6,minAge:.8,target:4,pulses:[[.2,1],[.7,1],[1.5,2]]},
+    {born:1.2,minAge:1.2,target:4,pulses:[[.3,1],[.9,1],[1.8,2]]}
+  ];
+  function maturityTime(job) { let budget=0,budgetTime=Infinity;for(const [age,amount] of job.pulses){budget+=amount;if(budget>=job.target){budgetTime=age;break;}}return job.born+Math.max(job.minAge,budgetTime); }
+  function jobState(job,time) {
+    const age=Math.max(0,time-job.born),exists=time>=job.born,budget=exists?job.pulses.reduce((sum,[at,amount])=>sum+(age>=at?amount:0),0):0;
+    return {age,budget,exists,ageReady:exists&&age>=job.minAge,budgetReady:budget>=job.target,mature:exists&&age>=job.minAge&&budget>=job.target};
+  }
+  function deferred(time) {
+    const recording=state.mode==='record',clock=mod(time,5.4);
+    for(let i=0;i<jobs.length;i++) {
+      const job=jobs[i],status=jobState(job,clock),x=w*(.18+i*.32),path=[[x-10,29],[x-10,23],[x-3,23],[x+3,21],[x+10,21],[x+10,15]],readyAt=maturityTime(job);
+      if(recording) {
+        line(path.slice(0,3),status.exists?.82:.18,status.budgetReady?accent():white);line(path.slice(3),status.exists?.82:.18,status.ageReady?accent():white);
+        if(status.mature)line(path,.96,accent());
+        line([[x-12,7],[x+12,7]],.18);line([[x-12,7],[x-12+clamp(status.age/job.minAge)*24,7]],status.exists?.8:0,status.ageReady?accent():white);
+        for(let tick=0;tick<4;tick++)line([[x-10+tick*6,36],[x-7+tick*6,36]],status.budget>tick?.95:.16,status.budgetReady?accent():white);
+      } else {
+        line(path,status.mature?.9:.22);
+        if(clock>=readyAt&&clock-readyAt<.45)line(path,1,accent());
+        line([[x-2,35],[x+2,35]],status.mature?.7:.18);
+      }
+    }
+    if(!recording){line([[4,40],[w-4,40]],.2);marker(4+clock/5.4*(w-8),40,1,accent(),2);}
+  }
+  const cohorts=[[.2,.8,.5,.5,.35],[.7,.28,.48,.9,.1]],sampleOffsets=[-8,5,-3,9,0];
+  function summary(values) {
+    if(!values.length)return null;const ordered=[...values].sort((a,b)=>a-b),mid=Math.floor(ordered.length/2);
+    return {min:ordered[0],max:ordered[ordered.length-1],median:ordered.length%2?ordered[mid]:(ordered[mid-1]+ordered[mid])/2};
+  }
+  function range(time) {
+    const recording=state.mode==='record',cycle=fract(time/5),collapse=cycle<.15?0:cycle<.4?(cycle-.15)/.25:cycle<.65?1:cycle<.9?1-(cycle-.65)/.25:0,clock=mod(time,6),total=clamp(Math.floor(clock/.45)+1,0,10),cell=(w-16)/2;
+    for(let group=0;group<2;group++) {
+      const origin=5+group*(cell+6),count=recording?clamp(total-group*5,0,5):5,values=cohorts[group].slice(0,count),stats=summary(values),x=value=>origin+value*cell;
+      line([[origin,39],[origin+cell,39]],.19);
+      for(let index=0;index<values.length;index++) {
+        const y=22+sampleOffsets[index]*(recording?1:1-collapse),current=recording&&index===count-1&&total<=group*5+5;
+        marker(x(values[index]),y,recording?.9:1-collapse,current?accent():white,2);
+        if(current)line([[x(values[index]),y-4],[x(values[index]),y-2]],.6,accent());
+      }
+      if(stats) {
+        const opacity=recording?.85:collapse;
+        line([[x(stats.min),18],[x(stats.min),26]],opacity);line([[x(stats.max),18],[x(stats.max),26]],opacity);line([[x(stats.min),22],[x(stats.max),22]],opacity*.7);
+        line([[x(stats.median),16],[x(stats.median),28]],opacity,accent());
+      }
+    }
+  }
+  const renderers={ricochet,identity,critical,deferred,range};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](t);ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{
+    const latest=entries.filter(entry=>entry.target===root).reduce((a,b)=>!a||b.time>=a.time?b:a,null);
+    if(latest){visible=latest.isIntersecting;schedule();}
+  }).observe(root);
+  resize();sync();
+  if(globalThis.Tweak){const tweak=new Tweak({container:root.querySelector('.ie-phone'),onChange:sync});tweak.addToggle(state,'accent',{label:'Kehribar vurgu'});}
+})();
+</script>
+<script src="../isolate.js"></script></body></html>

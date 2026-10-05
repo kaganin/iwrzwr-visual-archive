@@ -1,0 +1,111 @@
+<div id="signal-stem-profile" aria-label="Signal Stem, revised profile">
+  <div class="sp-controls">
+    <div role="group" aria-label="Audio activity">
+      <button type="button" data-mode="record" aria-pressed="true">Recording</button>
+      <button type="button" data-mode="play" aria-pressed="false">Playback</button>
+    </div>
+    <button type="button" data-pause aria-label="Pause animation">Pause</button>
+    <span class="sp-status" aria-live="polite">Simulated voice · silent demo</span>
+  </div>
+  <figure>
+    <svg class="sp-scene" viewBox="0 0 1200 1200" role="img" aria-label="Upright right-facing head with a broad rounded skull, sloping forehead, defined nose and chin, natural ear, and a vibrating vocal node">
+      <defs><clipPath id="sp-circle"><circle cx="600" cy="600" r="596"/></clipPath></defs>
+      <circle cx="600" cy="600" r="598" fill="#000" stroke="#ffffff29" stroke-width="2"/>
+      <g clip-path="url(#sp-circle)">
+        <g transform="translate(85 70) scale(.94)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <g data-layer="waves"></g>
+          <path data-layer="head" fill="#000"/>
+          <path data-layer="jaw"/>
+          <g data-layer="brow"></g>
+          <g data-layer="eye"></g>
+          <g data-layer="nose"></g>
+          <g data-layer="ear"></g>
+          <g data-layer="mouth"></g>
+          <g data-layer="throat"></g>
+          <g data-layer="voice"></g>
+        </g>
+      </g>
+    </svg>
+    <figcaption>Signal Stem</figcaption>
+  </figure>
+</div>
+<style>
+#signal-stem-profile{font-family:system-ui,sans-serif;color:light-dark(#242424,#efefed)}
+#signal-stem-profile .sp-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+#signal-stem-profile [role="group"]{display:flex;gap:5px}
+#signal-stem-profile button{font:inherit;cursor:pointer;min-height:44px;padding:8px 13px;border:1px solid light-dark(#b7b7b3,#51514e);border-radius:8px;background:transparent;color:inherit}
+#signal-stem-profile button[aria-pressed="true"]{color:light-dark(#fff,#161616);background:light-dark(#242424,#e7e7e2);border-color:light-dark(#242424,#e7e7e2)}
+#signal-stem-profile .sp-status{font-size:12px;color:light-dark(#5d5d5a,#aaa9a3)}
+#signal-stem-profile figure{margin:0;text-align:center}
+#signal-stem-profile .sp-scene{display:block;width:100%;max-width:430px;aspect-ratio:1;margin:auto}
+#signal-stem-profile figcaption{font-weight:500;margin-top:14px}
+</style>
+<script>
+(()=>{
+'use strict';
+const root=document.getElementById('signal-stem-profile');
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const settings={palette:'Amber',weight:4.8,intensity:1};
+const colors={
+  Amber:{outline:'#bd9669',detail:'#d3ad7c',active:'#ffd08a',ear:'#87dedf',dim:'#60513d'},
+  Cyan:{outline:'#5ad8ed',detail:'#96e6ee',active:'#ff6760',ear:'#f5c36b',dim:'#28535d'},
+  'White + red':{outline:'#c4c4be',detail:'#e5e5de',active:'#ff3b30',ear:'#ff3b30',dim:'#50504e'}
+};
+const layers={};root.querySelectorAll('[data-layer]').forEach(el=>layers[el.dataset.layer]=el);
+let mode='record',playing=!reduced.matches,t=1.3,last=0,raf=0,visible=true,amp=.45,blend=0;
+const f=n=>Number(n).toFixed(2),fract=n=>n-Math.floor(n);
+const path=(d,c,w=settings.weight,a=1)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${f(w)}" opacity="${f(Math.max(0,Math.min(1,a)))}"/>`;
+const dot=(x,y,r,c,a=1)=>`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${c}" opacity="${f(a)}"/>`;
+const ring=(x,y,r,c,a=1)=>`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="none" stroke="${c}" stroke-width="3" opacity="${f(a)}"/>`;
+function voice(time){
+  const q=((time%8.8)+8.8)%8.8;
+  const syllables=[[.38,.11,.45],[.76,.14,.83],[1.2,.19,.53],[1.73,.13,.98],[2.03,.11,.45],[2.48,.22,.76],[3.46,.16,.67],[3.81,.12,.9],[4.27,.22,.52],[4.91,.18,.85],[5.18,.09,.35],[6.06,.16,.97],[6.53,.25,.76],[7.12,.17,.61],[7.68,.12,.44]];
+  let v=.01;for(const [at,width,height] of syllables)v+=height*Math.exp(-.5*((q-at)/width)**2);
+  return Math.min(1,v)*(.88+.12*Math.sin(time*23)**2);
+}
+// The silhouette follows the supplied profile's skull, forehead, nose, lips and chin.
+// The headphone-covered ear is a new anatomical interpretation, not a traced detail.
+function silhouette(gap){return `M216 1030 L218 794 C219 731 194 674 169 627 C145 582 116 553 100 504 C82 465 77 415 81 370 C84 275 127 196 199 141 C266 87 348 58 423 56 C514 52 598 76 675 119 C743 157 814 214 834 256 C849 289 854 322 866 357 C876 386 880 410 887 428 C894 447 879 460 879 480 C889 518 912 554 946 587 C962 603 967 620 952 635 C943 646 924 646 914 655 C905 665 902 680 907 697 C910 705 916 711 915 718 C913 727 904 735 890 743 L${f(890-gap*.12)} ${f(743+gap)} C${f(902-gap*.1)} ${f(750+gap)} ${f(917-gap*.1)} ${f(762+gap)} ${f(908-gap*.12)} ${f(776+gap)} C${f(897-gap*.12)} ${f(789+gap)} 876 ${f(805+gap*.65)} 880 ${f(831+gap*.6)} C891 ${f(858+gap*.5)} 893 ${f(885+gap*.4)} 872 ${f(902+gap*.4)} C846 ${f(925+gap*.3)} 798 ${f(925+gap*.3)} 751 ${f(920+gap*.2)} C736 ${f(919+gap*.2)} 722 ${f(917+gap*.2)} 710 ${f(915+gap*.15)} C682 919 669 946 657 980 L641 1030 Z`}
+const earOuter='M528 479 C535 444 509 425 482 428 C449 433 436 463 439 497 C441 524 450 542 451 565 C451 588 460 612 479 622 C497 631 512 621 516 604 C520 587 522 571 532 558 C542 544 543 526 533 515';
+const earInner='M508 460 C483 444 456 468 463 500 C466 516 478 526 482 545 M503 476 C488 488 488 507 501 520 M529 530 C515 520 497 532 503 549 C507 559 518 559 519 575 M478 563 C468 577 474 595 486 598';
+function draw(){
+  const c=colors[settings.palette],r=1-blend,p=blend,a=Math.min(1.1,amp*settings.intensity),gap=r*a*27;
+  layers.head.setAttribute('d',silhouette(gap));layers.head.setAttribute('stroke',c.outline);layers.head.setAttribute('stroke-width',settings.weight);
+  layers.jaw.setAttribute('d',`M710 ${f(915+gap*.15)} C674 ${f(909+gap*.15)} 626 ${f(894+gap*.1)} 596 876`);
+  layers.jaw.setAttribute('stroke',c.outline);layers.jaw.setAttribute('stroke-width',settings.weight*.85);
+  layers.brow.innerHTML=path('M769 449 L840 418 L885 431 M840 440 L874 456',c.detail,settings.weight*.83);
+  const blink=reduced.matches?0:Math.exp(-Math.pow((fract(t/6.6)*6.6-5.8)/.085,2));
+  layers.eye.innerHTML=path('M765 496 Q809 473 856 471',c.detail,settings.weight*.83)+path(`M786 489 Q809 ${f(512-blink*25)} 839 ${f(522-blink*34)}`,c.detail,settings.weight*.83)+path('M816 480 C818 491 815 507 822 514 M829 478 Q834 500 827 513',c.detail,settings.weight*.65,1-blink)+path('M830 527 Q831 543 823 553',c.outline,settings.weight*.65,.65);
+  layers.nose.innerHTML=path('M887 601 C873 602 863 614 861 633 C859 650 873 663 888 656 C900 642 913 636 931 631',c.detail,settings.weight*.83);
+  layers.mouth.innerHTML=path('M848 762 Q871 756 890 743',c.detail,settings.weight*.83)+path(`M848 762 Q869 ${f(762+gap*.7)} ${f(890-gap*.12)} ${f(743+gap)}`,c.detail,settings.weight*.83,r*a)+path(`M884 ${f(807+gap*.6)} Q887 ${f(798+gap*.7)} 898 ${f(789+gap*.8)}`,c.outline,settings.weight*.65,.55);
+  layers.ear.innerHTML=path(earOuter,p>.5?c.ear:c.detail,settings.weight*(1+.12*p))+path(earInner,p>.5?c.ear:c.detail,settings.weight*.73,.82)+ring(513,541,15+a*4,c.ear,p*a*.65);
+  const nodeY=934+(reduced.matches?0:Math.sin(t*24)*a*4*r);
+  layers.throat.innerHTML=path('M620 1010 V881',c.dim,3,.7)+path(`M620 1010 V${f(nodeY)}`,c.active,settings.weight,.28+r*.72)+dot(620,nodeY,9+a*3*r,c.active,.25+r*.75)+ring(620,nodeY,21+a*6,c.active,r*a*.2);
+  let out='',waves='';
+  for(let j=0;j<4;j++){
+    const q=fract(t*.55-j/4),x=922+q*206,level=voice(t-q*1.8)*settings.intensity,h=10+level*25;
+    out+=path(`M${f(x)} ${f(757-h)}Q${f(x+11)} 757 ${f(x)} ${f(757+h)}`,c.active,settings.weight*.85,(1-q)*Math.min(1,level*2)*r);
+    const z=fract(t*.43-j/4),rad=255+z*270,from=2.25,to=4.13;
+    waves+=path(`M${f(485+Math.cos(from)*rad)} ${f(520+Math.sin(from)*rad)}A${f(rad)} ${f(rad)} 0 0 1 ${f(485+Math.cos(to)*rad)} ${f(520+Math.sin(to)*rad)}`,c.ear,settings.weight*.85,(1-z)*(.25+a*.65)*p);
+  }
+  layers.voice.innerHTML=out;layers.waves.innerHTML=waves;
+}
+function schedule(){if(!raf&&playing&&visible&&!document.hidden)raf=requestAnimationFrame(frame)}
+function frame(now){
+  raf=0;if(last){const dt=Math.min(.05,(now-last)/1000);t+=dt;blend+=((mode==='play'?1:0)-blend)*(1-Math.exp(-dt/.085));const target=voice(t);amp+=(target-amp)*(1-Math.exp(-dt/(target>amp?.035:.13)))}last=now;draw();schedule();
+}
+function sync(){
+  root.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));
+  root.querySelector('.sp-status').textContent=mode==='record'?'Simulated voice · silent demo':'Simulated playback · silent demo';
+  const pause=root.querySelector('[data-pause]');pause.textContent=playing?'Pause':'Play';pause.setAttribute('aria-label',playing?'Pause animation':'Play animation');
+  if(!playing){cancelAnimationFrame(raf);raf=0;last=0;blend=mode==='play'?1:0}draw();schedule();
+}
+root.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{mode=button.dataset.mode;sync()}));
+root.querySelector('[data-pause]').addEventListener('click',()=>{playing=!playing;sync()});
+document.addEventListener('visibilitychange',()=>{last=0;if(document.hidden){cancelAnimationFrame(raf);raf=0}else schedule()});
+new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(!visible){cancelAnimationFrame(raf);raf=0;last=0}else schedule()}).observe(root);
+reduced.addEventListener('change',()=>{if(reduced.matches){playing=false;sync()}});
+sync();
+if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:draw});tweak.addSelect(settings,'palette',{label:'Palette',options:['Amber','Cyan','White + red']});tweak.addSlider(settings,'weight',{label:'Contour weight',min:3,max:7,step:.5});tweak.addSlider(settings,'intensity',{label:'Voice intensity',min:.3,max:1.3,step:.1})}
+})();
+</script>

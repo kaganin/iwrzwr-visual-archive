@@ -1,0 +1,193 @@
+<div id="mixtape-monkeys" aria-label="Five listening monkey animation concepts">
+  <div class="monkey-controls"><button type="button" aria-label="Pause all animations">Pause</button><span>Simulated beat · silent demo</span></div>
+  <div class="monkey-grid"></div>
+</div>
+<style>
+#mixtape-monkeys{font-family:system-ui,sans-serif;color:light-dark(#242424,#eee)}
+#mixtape-monkeys .monkey-controls{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:26px}
+#mixtape-monkeys button{font:inherit;color:inherit;background:transparent;border:1px solid light-dark(#aaa,#555);border-radius:8px;padding:9px 17px;min-height:44px;cursor:pointer}
+#mixtape-monkeys .monkey-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 24px}
+#mixtape-monkeys figure{margin:0;text-align:center;min-width:0}
+#mixtape-monkeys figure:last-child{grid-column:1/-1}
+#mixtape-monkeys canvas{display:block;width:100%;max-width:280px;aspect-ratio:1;margin:auto;background:#000;border:1px solid #ffffff29;border-radius:50%;box-sizing:border-box}
+#mixtape-monkeys figcaption{font-weight:500;margin-top:13px}
+#mixtape-monkeys .monkey-map{color:light-dark(#565656,#aaa);font-size:12px;line-height:1.5;margin-top:5px}
+@media(max-width:440px){#mixtape-monkeys .monkey-grid{grid-template-columns:1fr}}
+</style>
+<script>
+(()=>{
+'use strict';
+const root=document.getElementById('mixtape-monkeys');
+const options={speed:1,energy:1,monochrome:false};
+const C={body:'#f25b79',face:'#e1e2d9',hardware:'#7f91e8',signal:'#00cfa7',dim:'#44485c'};
+const tau=Math.PI*2;
+const info=[
+ ['Sleep Tape','Bass → sleepy nod · envelope → breathing'],
+ ['Window Seat','Bass → chin · hi-hats → thumb'],
+ ['Deep Listener','Low end → circular head sway · mids → shoulders'],
+ ['Tail Reception','Bass → tail coil · hi-hats → toe tap'],
+ ['Shared Frequency','One player · two different ways to disappear']
+];
+const panels=info.map(([name,mapping],i)=>{
+ const figure=document.createElement('figure'),canvas=document.createElement('canvas'),caption=document.createElement('figcaption'),detail=document.createElement('div');
+ canvas.width=canvas.height=840;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',name+'. '+mapping+'. Simulated audio response.');
+ caption.textContent=String(i+1).padStart(2,'0')+' · '+name;detail.className='monkey-map';detail.textContent=mapping;
+ figure.append(canvas,caption,detail);root.querySelector('.monkey-grid').append(figure);
+ return {canvas,g:canvas.getContext('2d'),visible:true};
+});
+function ink(c){return options.monochrome&&c!==C.body&&c!==C.dim?C.face:c}
+const paths=new Map();
+function path(g,d,c=C.face,fill=false,w=1.25){let p=paths.get(d);if(!p){p=new Path2D(d);if(paths.size<400)paths.set(d,p)}if(fill){g.fillStyle='#000';g.fill(p)}g.strokeStyle=ink(c);g.lineWidth=w;g.stroke(p)}
+function line(g,x,y,xx,yy,c=C.face,w=1.25){g.beginPath();g.moveTo(x,y);g.lineTo(xx,yy);g.strokeStyle=ink(c);g.lineWidth=w;g.stroke()}
+function oval(g,x,y,rx,ry,c=C.face,fill=false){g.beginPath();g.ellipse(x,y,rx,ry,0,0,tau);if(fill){g.fillStyle='#000';g.fill()}g.lineWidth=1.25;g.strokeStyle=ink(c);g.stroke()}
+function dot(g,x,y,r,c=C.signal){g.beginPath();g.arc(x,y,r,0,tau);g.fillStyle=ink(c);g.fill()}
+function group(g,x,y,a,draw,sx=1,sy=sx){g.save();g.translate(x,y);g.rotate(a);g.scale(sx,sy);draw();g.restore()}
+function reel(g,x,y,r,t){oval(g,x,y,r,r,C.face);dot(g,x,y,1.1,C.hardware);for(let j=0;j<3;j++){const a=t+j*tau/3;line(g,x+Math.cos(a)*2,y+Math.sin(a)*2,x+Math.cos(a)*(r-1),y+Math.sin(a)*(r-1),C.hardware,.8)}}
+function player(g,x,y,a,t,scale=1){group(g,x,y,a,()=>{
+ path(g,'M-21 -28 H19 Q22 -28 22 -24 V26 Q22 29 18 29 H-20 Q-23 29 -23 25 V-24 Q-23 -28 -21 -28 Z',C.hardware,true);
+ path(g,'M-18 -22 H17 V2 H-18 Z',C.dim);
+ reel(g,-9,-10,5,t*1.4);reel(g,9,-10,5,-t*1.4);line(g,-9,-15,9,-15,C.face,.7);line(g,-9,-5,9,-5,C.face,.7);
+ path(g,'M-14 9 H11 M-14 14 H2 M-14 19 H6',C.hardware,false,.9);
+ dot(g,13,18,1.5,C.signal);line(g,-10,-32,-10,-28,C.hardware);line(g,4,-31,13,-31,C.face,1.1);
+ },scale)}
+// Broad temples, recessed eyes, a projecting muzzle and small ear folds keep
+// these macaques distinct from a human avatar with round ears.
+function frontHead(g,t,n,headphones=true){
+ path(g,'M-34 -10 Q-44 -24 -49 -12 Q-53 1 -39 12 M34 -10 Q44 -24 49 -12 Q53 1 39 12',C.body,true);
+ path(g,'M-43 -11 Q-49 -4 -41 3 M43 -11 Q49 -4 41 3',C.face);
+ path(g,'M-38 -7 L-42 -20 L-36 -19 L-36 -29 L-30 -26 Q-27 -42 -13 -44 L-16 -49 L-5 -44 L1 -50 L9 -44 Q29 -44 34 -30 L40 -31 L38 -23 L44 -18 L39 -12 L39 8 L34 13 L35 24 L28 22 Q23 43 0 46 Q-23 43 -28 22 L-35 24 L-34 13 L-39 8 Z',C.body,true);
+ path(g,'M-28 -17 Q-22 -30 -10 -25 Q0 -21 10 -25 Q22 -30 28 -17 L24 1 Q36 10 29 27 Q21 39 0 38 Q-21 39 -29 27 Q-36 10 -24 1 Z',C.face,true);
+ path(g,'M-25 -13 Q-15 -18 -7 -11 M7 -11 Q15 -18 25 -13',C.face,false,1.5);
+ path(g,'M-23 -7 Q-16 -2 -9 -7 M9 -7 Q16 -2 23 -7',C.face);
+ path(g,'M-7 -3 L-10 7 Q0 13 10 7 L7 -3 M-5 7 L-3 8 M3 8 L5 7',C.body);
+ path(g,'M-23 16 Q0 25 23 16 M-15 26 Q0 30 15 26 M-27 10 L-23 8 M27 10 L23 8',C.face);
+ path(g,'M-31 -27 L-27 -32 M-25 -34 L-21 -36 M23 -35 L28 -31',C.body,false,.8);
+ if(headphones){
+  path(g,'M-42 -9 V-22 Q-41 -55 0 -56 Q41 -55 42 -22 V-9',C.hardware);
+  path(g,'M-42 -22 Q-35 -49 0 -49 Q35 -49 42 -22',C.dim);
+  path(g,'M-46 -12 Q-39 -17 -36 -10 V9 Q-40 15 -46 9 Z M46 -12 Q39 -17 36 -10 V9 Q40 15 46 9 Z',C.hardware,true);
+  line(g,-42,-8,-42,6,C.hardware,.85);line(g,42,-8,42,6,C.hardware,.85);
+ }
+}
+function sideHead(g){
+ path(g,'M-31 23 L-41 17 L-42 10 L-49 7 L-46 1 L-50 -8 L-45 -10 Q-50 -33 -39 -43 L-45 -44 L-36 -48 L-38 -54 L-27 -54 Q-12 -64 4 -57 L13 -58 L15 -52 L23 -47 L19 -43 L25 -38 L20 -34 Q22 -26 16 -20 L23 -13 Q25 -7 34 -3 Q42 0 41 7 Q47 14 36 21 Q26 33 4 31 L-5 39',C.body,true);
+ path(g,'M-3 -39 Q10 -43 18 -34 L12 -23 Q15 -11 29 -5 Q38 -4 40 3 M-10 -19 Q-7 -7 0 1 Q-7 14 7 25 Q18 32 35 22',C.face);
+ path(g,'M-1 -29 Q8 -32 15 -27 M1 -23 Q7 -19 13 -23 M25 -5 L29 -4 M8 12 Q23 17 40 11',C.face);
+ path(g,'M-21 -23 Q-35 -27 -36 -13 Q-35 0 -22 2 Q-12 -4 -15 -16 Q-16 -21 -21 -23 Z',C.body,true);
+ path(g,'M-24 -17 Q-31 -21 -31 -11 L-26 -7 L-23 -12',C.face);
+ path(g,'M-25 -10 Q-19 -14 -17 -8 L-18 0 L-24 1 Z',C.hardware,true);
+ path(g,'M-35 -37 L-30 -42 M-28 -44 L-22 -46 M-39 -30 L-35 -32 M-17 23 L-15 28',C.body,false,.8);
+}
+function pulse(t,p,off=0){const d=((t-off)%p+p)%p;return Math.max(0,(Math.exp(-d/.2)-Math.exp(-d/.025))*1.6)}
+function sound(t){const beat=60/88;return {kick:pulse(t,beat)*options.energy,hat:pulse(t,beat/2,beat/4)*options.energy,phrase:(.5+.5*Math.sin(t*1.15))*options.energy,breath:Math.sin(t*1.6)*options.energy}}
+
+// 01: weight stays on the branch; only breathing, cheek and loose cable move.
+function sleepTape(g,t,s){
+ path(g,'M33 191 Q104 179 226 177 M44 199 Q135 186 220 185 M62 196 L60 214 M183 187 L181 205',C.dim,false,1);
+ group(g,0,-s.breath*1.3,0,()=>{
+  path(g,'M49 143 Q43 104 77 93 Q119 79 152 108 L183 132 L173 161 L130 166 L81 158 L62 170 L38 166 Z',C.body,true);
+  path(g,'M74 106 Q83 95 113 102 M76 111 L78 105 M84 102 L88 99 M94 99 L99 97 M121 108 Q132 125 158 131',C.body);
+  path(g,'M82 146 Q106 150 113 173 L100 191 L72 194 L65 186 L84 175 L67 164',C.body,true);
+  path(g,'M80 184 L97 182 M76 188 L92 187 M73 192 L88 192',C.face,false,.85);
+  player(g,72,139,-.21,t,.64);
+  path(g,'M81 111 Q92 127 85 149 L71 179 Q66 187 57 187 L55 180 L49 185 Q44 185 46 179 L52 171 L52 143',C.body,true);
+  path(g,'M53 177 L60 168 M58 182 L65 172',C.face,false,.85);
+  group(g,183,130,.88+Math.sin(t*1.6)*.022+s.kick*.025,()=>frontHead(g,t,s.kick),.76);
+ });
+ path(g,`M159 111 C132 ${113+s.breath*2} 164 165 124 166 C105 168 99 144 70 121`,C.hardware,false,1);
+ const sway=Math.sin(t*1.6)*3;
+ path(g,`M45 146 C20 158 38 185 52 169 C61 157 39 ${159+sway} 45 168`,C.body);
+}
+
+// 02: the second reference's outward-stretched arms and impassive profile.
+function windowSeat(g,t,s){
+ path(g,'M69 219 Q49 202 53 170 Q48 139 67 121 Q82 106 106 106 L134 114 L148 153 L144 206 L154 219',C.body,true);
+ path(g,'M112 118 Q135 129 138 158 L130 186 M63 147 L62 156 M62 164 L62 173 M72 134 L70 139 M75 207 L91 211',C.body);
+ group(g,124,94,.022+Math.sin(t*1.6)*.026+s.kick*.026,()=>sideHead(g),1.03);
+ const armLift=s.hat*.8;
+ group(g,0,-armLift,0,()=>{
+  path(g,'M106 145 Q118 146 139 158 L196 155 L207 165 L198 181 L129 187 Q103 177 91 159',C.body,true);
+  path(g,'M88 158 Q105 172 128 173 L192 170',C.body);
+  player(g,215,150,.2,t,.65);
+  path(g,'M192 163 Q196 153 206 153 L219 156 Q224 159 220 163 L211 163 Q224 167 219 171 L208 170 Q219 174 214 178 L201 178 L194 182 L184 178',C.body,true);
+  line(g,206,161,214,162,C.face,.8);line(g,203,168,211,169,C.face,.8);line(g,201,174,208,175,C.face,.8);
+ });
+ path(g,`M102 93 C88 136 154 ${166+s.breath*4} 173 131 C188 101 199 107 212 128`,C.hardware,false,1);
+ path(g,'M86 188 Q80 212 103 227 M105 207 L119 227',C.body);
+}
+
+// 03: rotate around the neck, with a delayed shoulder response; no vibration.
+function deepListener(g,t,s){
+ const angle=Math.sin(t*2.1)*(.065+s.phrase*.012),breath=s.breath*1.2;
+ group(g,140,187,Math.sin(t*2.1-.35)*.022,()=>{
+  path(g,'M-64 30 Q-61 -25 -36 -42 L-24 -54 H24 L37 -41 Q63 -25 65 30 L36 42 H-35 Z',C.body,true);
+  path(g,'M-34 -29 Q-20 -39 0 -29 Q20 -39 34 -29 M-13 -31 L-8 -20 M12 -31 L7 -20',C.face);
+  path(g,'M-40 -26 L-47 -18 M-46 -18 L-51 -8 M40 -26 L47 -18 M46 -18 L51 -8',C.body,false,.8);
+  player(g,0,10,0,t,.77);
+  path(g,'M-52 -9 Q-51 12 -23 16 L-15 10 L-7 13 Q-5 17 -12 19 L-6 20 Q-4 25 -12 26 L-8 29 Q-9 35 -18 33 L-38 30 Q-62 26 -64 6',C.body,true);
+  path(g,'M52 -9 Q51 12 23 16 L15 10 L7 13 Q5 17 12 19 L6 20 Q4 25 12 26 L8 29 Q9 35 18 33 L38 30 Q62 26 64 6',C.body,true);
+  path(g,'M-25 20 L-14 23 M-25 25 L-16 28 M25 20 L14 23 M25 25 L16 28',C.face,false,.85);
+ });
+ group(g,140+Math.sin(t*2.1)*2,103+breath,angle,()=>frontHead(g,t,s.kick),.91);
+ path(g,`M102 109 C76 145 122 ${153+s.breath*3} 132 167`,C.hardware,false,1);
+ for(let side=-1;side<=1;side+=2){group(g,140+side*66,95,-side*.15,()=>{
+  for(let j=0;j<3;j++){const h=2+s.phrase*(j+1)*2;line(g,j*side*5,-h,j*side*5,h,j===0?C.signal:C.dim,.9)}
+ })}
+}
+
+// 04: a tail traces the phrase; the listener's expression barely changes.
+function tailReception(g,t,s){
+ const coil=s.phrase*7,tip=Math.sin(t*2.1)*7;
+ path(g,`M117 172 C163 207 220 190 232 151 C246 106 209 101 197 128 C185 153 ${217+coil} 167 222 143 C226 128 208 ${128+tip} 211 142`,C.body);
+ path(g,'M45 200 H173 V232 H45 Z M50 207 H168 M54 217 H84 M149 216 H161 M149 222 H161',C.hardware,true);
+ reel(g,105,218,7,t);reel(g,129,218,7,-t);dot(g,60,225,1.4,C.signal);
+ group(g,0,s.kick*1.2,0,()=>{
+  path(g,'M87 105 Q61 112 60 142 L72 172 L64 190 L83 198 L115 187 L142 201 L160 190 L143 154 Q148 114 120 107',C.body,true);
+  path(g,'M90 121 Q103 128 119 123 M68 148 Q76 157 83 163 M132 154 Q140 164 141 171',C.face);
+  path(g,'M89 160 Q66 165 59 183 L75 192 M122 162 Q146 169 154 187',C.body);
+  group(g,109,88,Math.sin(t*1.4)*.025,()=>sideHead(g),.83);
+  player(g,96,158,-.12,t,.57);
+  path(g,'M75 134 Q66 151 75 164 L89 167 L94 161 L87 159 L95 156 L93 151 L81 153 L85 139',C.body,true);
+  path(g,'M130 130 Q143 149 125 162 L109 166 L103 161 L112 158 L104 155 L106 151 L119 151 L118 139',C.body,true);
+ });
+ group(g,73,195,-s.hat*.09,()=>{path(g,'M-11 -8 Q-8 3 7 4 L18 2 Q22 5 16 8 H-6 Q-20 5 -19 -4',C.body,true);path(g,'M6 3 L7 7 M11 3 L12 7',C.face,false,.8)});
+ path(g,'M143 197 L161 197 Q167 201 163 205 H141 L130 199',C.body,true);
+ path(g,`M90 86 C67 104 113 ${114+s.breath*3} 91 139`,C.hardware,false,1);
+}
+
+// 05: a shared cable connects the two poses, never a duplicated dancing rig.
+function sharedFrequency(g,t,s){
+ path(g,'M31 189 H249 M44 196 H232 M65 191 V210 M217 191 V207',C.dim,false,1);
+ group(g,8,32,0,()=>{
+  path(g,'M40 144 Q30 120 45 102 Q63 86 86 103 L108 128 L97 151 L64 155 L45 162 L31 155 Z',C.body,true);
+  path(g,'M62 131 Q78 137 72 156 L52 169 L41 165 M47 113 Q59 119 48 142 L38 156',C.body);
+  path(g,'M65 140 Q89 161 110 139',C.body);
+  group(g,96,104,.72+Math.sin(t*1.7)*.035,()=>frontHead(g,t,s.kick,false),.57);
+ });
+ group(g,0,-s.kick*.7,0,()=>{
+  path(g,'M177 106 Q155 112 157 143 L168 166 L159 183 L182 189 L207 178 L224 189 L237 179 L218 150 Q222 118 204 108',C.body,true);
+  path(g,'M173 123 Q177 145 201 149 M163 140 Q174 152 182 148 M174 171 Q163 180 173 183 M206 163 Q223 164 231 180',C.body);
+  group(g,188,91,-.06+Math.sin(t*1.7+.75)*.025,()=>sideHead(g),.73);
+ });
+ player(g,145,179,.04,t,.5);
+ path(g,'M114 170 L131 170 L134 176 L126 180 L116 176 M172 147 Q158 154 154 168 L161 174 L168 167 L184 158',C.body,true);
+ path(g,`M84 137 C67 161 102 ${191+s.breath*3} 135 166 M173 88 C151 111 183 ${152-s.breath*3} 143 165`,C.hardware,false,1);
+ dot(g,139,165,1.5,C.signal);
+}
+const renderers=[sleepTape,windowSeat,deepListener,tailReception,sharedFrequency];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)');
+let playing=!reduce.matches,time=1.9,last=0,raf=0,onScreen=true;
+function render(force=false){const s=sound(time);panels.forEach((p,i)=>{if(!p.visible&&!force)return;const g=p.g;g.setTransform(3,0,0,3,0,0);g.clearRect(0,0,280,280);g.save();g.lineCap='round';g.lineJoin='round';g.beginPath();g.arc(140,140,138,0,tau);g.clip();renderers[i](g,time,s);g.restore()})}
+function schedule(){if(!raf&&playing&&onScreen&&!document.hidden)raf=requestAnimationFrame(frame)}
+function frame(now){raf=0;if(last)time+=Math.min(.05,(now-last)/1000)*options.speed;last=now;render();schedule()}
+const button=root.querySelector('button');
+function sync(){button.textContent=playing?'Pause':'Play';button.setAttribute('aria-label',playing?'Pause all animations':'Play all animations');if(!playing){cancelAnimationFrame(raf);raf=0;last=0}render(true);schedule()}
+button.onclick=()=>{playing=!playing;sync()};
+document.addEventListener('visibilitychange',()=>{last=0;if(document.hidden){cancelAnimationFrame(raf);raf=0}else schedule()});
+const observer=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.target===root)onScreen=entry.isIntersecting;else{const p=panels.find(p=>p.canvas===entry.target);if(p)p.visible=entry.isIntersecting}}if(!onScreen){cancelAnimationFrame(raf);raf=0;last=0}else schedule()},{rootMargin:'120px'});
+observer.observe(root);panels.forEach(p=>observer.observe(p.canvas));
+reduce.addEventListener('change',()=>{if(reduce.matches){playing=false;sync()}});
+sync();
+if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>render(true)});tweak.addSlider(options,'speed',{label:'Tempo',min:.5,max:1.5,step:.1});tweak.addSlider(options,'energy',{label:'Audio energy',min:.3,max:1.6,step:.1});tweak.addToggle(options,'monochrome',{label:'White + red only'})}
+})();
+</script>

@@ -1,0 +1,184 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>01 Raster Protocol · iwrzwr</title><style>:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body><div id="iwr-night-raster" aria-label="Set 01: Raster Protocol, beş hareketli ses ekranı">
+  <div class="viz-controls">
+    <button type="button" class="btn" data-mode="play" aria-pressed="true">Çalma</button>
+    <button type="button" class="btn" data-mode="record" aria-pressed="false">Kayıt</button>
+    <button type="button" class="btn btn-ghost" data-pause aria-pressed="false">Duraklat</button>
+    <span class="text-small text-muted">Örnek ses ritmi · sessiz demo</span>
+  </div>
+  <div class="nr-layout">
+    <div class="nr-stage">
+      <div class="nr-phone" aria-label="iwrzwr: Raster Protocol önizlemesi">
+        <div class="nr-header">
+          <div class="nr-status" aria-hidden="true"><span>9:41</span><span data-record hidden>REC</span><span>••• &nbsp; ▰</span></div>
+          <div class="nr-controls">
+            <div class="nr-circle" aria-hidden="true"></div>
+            <canvas role="img" aria-label="Gate Register: darbelerle adım atan bit hücreleri"></canvas>
+            <div class="nr-circle" aria-hidden="true"><i data-lucide="plus"></i></div>
+          </div>
+        </div>
+        <div class="nr-pads" aria-hidden="true"><div><i data-lucide="mic"></i></div><div><i data-lucide="mic"></i></div></div>
+      </div>
+      <div class="text-small text-muted nr-spec">126px header · 44px alan · 24px boşluk</div>
+    </div>
+    <div class="nr-options" role="group" aria-label="Raster Protocol seçenekleri">
+      <button type="button" class="btn btn-block" data-style="register" aria-pressed="true">1 · Gate Register</button>
+      <button type="button" class="btn btn-block" data-style="packets" aria-pressed="false">2 · Packet Stitch</button>
+      <button type="button" class="btn btn-block" data-style="comb" aria-pressed="false">3 · Raster Comb</button>
+      <button type="button" class="btn btn-block" data-style="parity" aria-pressed="false">4 · Parity Bloom</button>
+      <button type="button" class="btn btn-block" data-style="bus" aria-pressed="false">5 · Address Bus</button>
+    </div>
+  </div>
+  <div class="nr-caption" data-description aria-live="polite">Ses darbeleri, sabit bit hücrelerinde bir adım ilerliyor.</div>
+</div>
+<style>
+  #iwr-night-raster .nr-layout { display:grid; grid-template-columns:minmax(0,402px) minmax(190px,1fr); gap:24px; align-items:center; margin-top:20px; }
+  #iwr-night-raster .nr-stage { min-width:0; }
+  #iwr-night-raster .nr-options { display:grid; gap:8px; }
+  #iwr-night-raster .nr-phone { --nr-screen:#000; --nr-pad:#cdcdcd; --nr-divider:#b6b6b6; --nr-ink:#f1f0e8; color:var(--nr-ink); background:var(--nr-pad); border-radius:30px; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
+  #iwr-night-raster .nr-header { height:126px; position:relative; background:var(--nr-screen); border-radius:0 0 32px 40px; }
+  #iwr-night-raster .nr-status { position:absolute; top:24px; left:28px; right:28px; display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:500; }
+  #iwr-night-raster [data-record] { color:#FF0000; font-family:ui-monospace,monospace; font-size:11px; }
+  #iwr-night-raster [hidden] { display:none; }
+  #iwr-night-raster .nr-controls { position:absolute; top:62px; left:20px; right:20px; display:flex; align-items:center; gap:24px; height:44px; }
+  #iwr-night-raster .nr-circle { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:50%; background:#141414; box-shadow:inset 0 0 0 1px #303030; }
+  #iwr-night-raster .nr-circle svg { width:20px; height:20px; stroke-width:1.5; }
+  #iwr-night-raster canvas { display:block; height:44px; width:100%; flex:1; min-width:0; }
+  #iwr-night-raster .nr-pads { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--nr-divider); }
+  #iwr-night-raster .nr-pads>div { display:grid; place-items:center; height:120px; background:var(--nr-pad); color:#929292; }
+  #iwr-night-raster .nr-pads svg { width:18px; height:18px; }
+  #iwr-night-raster .nr-spec { margin-top:10px; }
+  #iwr-night-raster .nr-caption { margin-top:16px; min-height:44px; }
+  @media(max-width:630px) { #iwr-night-raster .nr-layout { grid-template-columns:minmax(0,1fr); gap:18px; } #iwr-night-raster .nr-stage { width:100%; max-width:402px; margin:auto; } }
+</style>
+<script>
+(() => {
+  const root=document.getElementById('iwr-night-raster');
+  const canvas=root.querySelector('canvas'), ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'), caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'register',mode:'play',paused:reduced.matches,accent:true,gain:0.82};
+  const names={register:'Gate Register',packets:'Packet Stitch',comb:'Raster Comb',parity:'Parity Bloom',bus:'Address Bus'};
+  const descriptions={
+    register:['Ses darbeleri, sabit bit hücrelerinde bir adım ilerliyor.','Yeni kayıt verisi sağdan yazılıyor; önceki bitler yer değiştiriyor.'],
+    packets:['Kesikli ses paketleri, sabit okuma iğnesinin altından geçiyor.','Her yeni hece ayrı bir veri zarfı; merkezde dikilip sola bırakılıyor.'],
+    comb:['Yedi ince tarama çizgisi sesle bükülüp tekrar hizalanıyor.','Tarayıcı, konuşmanın kesitini satır satır yakalıyor.'],
+    parity:['Küçük bir mantık devresi gibi, simetrik bitler açılıp kapanıyor.','Hece darbeleri merkezden dışarı yeni bir ikili desen yazıyor.'],
+    bus:['Sinyal, köşeli veri yollarında duraklar arasında dolaşıyor.','Yeni darbeler merkezde doğup ayrı kayıt yollarına yönleniyor.']
+  };
+  const white='#f1f0e8', amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  // A deterministic synthetic rhythm, not microphone input or a measured spectrum.
+  function env(time) { return clamp((0.15+0.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+0.28*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  const accent=()=>state.accent?amber:white;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function register(time) {
+    const n=Math.max(6,Math.min(14,Math.floor(w/14))),pitch=(w-4)/n,cell=Math.max(3,pitch-4),step=Math.floor(time*3.6),phase=fract(time*3.6);
+    for(let col=0;col<n;col++) {
+      const sample=state.mode==='record'?step-n+col:col;
+      const bits=Math.floor(hash(sample+8)*127),x=2+col*pitch;
+      for(let row=0;row<7;row++) {
+        const on=(bits>>row)&1;
+        rect(x,8+row*4,cell,2,on?0.85:0.09,col===n-1&&state.mode==='record'?accent():white);
+      }
+      rect(x,39,cell,1,col===mod(step,n)?1:0.13,accent());
+    }
+    if(state.mode==='record')line([[w-1,4],[w-1,36]],1-phase*0.65,accent());
+  }
+  function packets(time) {
+    const head=state.mode==='record'?w*.64:w*.35,speed=27,spacing=35,offset=mod(time*speed,spacing);
+    line([[0,22],[w,22]],.13);
+    for(let i=-2;i<Math.ceil(w/spacing)+2;i++) {
+      const index=i+Math.floor(time*speed/spacing),x=i*spacing-offset;
+      const v=hash(index+23),size=12+v*17,height=6+Math.round(v*6)*2;
+      const active=x<=head&&x+size>=head;
+      box(x,22-height/2,size,height,active?1:.55,active?accent():white);
+      for(let k=3;k<size-2;k+=4)rect(x+k,20,1,4,.3+hash(index+k)*.6);
+      rect(x+size+3,22,2,1,.35);
+    }
+    line([[head,3],[head,41]],.9,accent());
+    rect(head-2,2,5,2,1,accent());
+  }
+  function comb(time) {
+    const gain=env(time),scan=mod(time*.22,1)*w;
+    for(let row=0;row<7;row++) {
+      const points=[],center=(row-3)*4.2;
+      for(let x=1;x<w;x+=2) {
+        const u=x/w,envelope=Math.pow(Math.sin(u*Math.PI),2);
+        const wave=Math.sin(u*13-time*2.5+row*.16)*Math.cos(u*4+time*.9);
+        const y=22+center+envelope*wave*(3+gain*9)*(1-Math.abs(row-3)*.11);
+        points.push([x,clamp(y,2,42)]);
+      }
+      const selected=mod(Math.floor(time*5),7)===row;
+      line(points,state.mode==='record'?(selected?1:.22):.8,row===3?accent():white);
+    }
+    if(state.mode==='record')rect(scan,3,1,38,.55,accent());
+  }
+  function parity(time) {
+    const pitch=4,cols=Math.floor((w-8)/pitch),half=Math.floor(cols/2),rows=9,step=Math.floor(time*3),gain=env(time),radius=state.mode==='record'?2+fract(time*1.5)*(half+8):5+gain*half;
+    const left=(w-cols*pitch)/2;
+    for(let col=0;col<cols;col++)for(let row=0;row<rows;row++) {
+      const x=Math.abs(col-half),y=Math.abs(row-4),band=x+y*2;
+      const gate=((x^(y*3)^step)%7)<3;
+      const on=gate&&band<radius+6;
+      if(!on)continue;
+      const frontier=Math.abs(band-radius)<2;
+      rect(left+col*pitch,5+row*pitch,2,2,frontier?1:.35+.4*(1-y/5),frontier?accent():white);
+    }
+    if(state.mode==='record') { rect(w/2-1,20,2,4,1,accent());line([[2,18],[2,26]],.4);line([[w-2,18],[w-2,26]],.4); }
+  }
+  function bus(time) {
+    const start=7,end=w-7,mid=w/2,ys=[7,17,27,37];
+    ys.forEach((y,i)=>{
+      const knee=w*(.25+i*.13),points=[[start,22],[knee,22],[knee,y],[end,y]];
+      line(points,.18);
+      box(end-2,y-2,4,4,.35);
+      const phase=fract(time*(.37+i*.05)+i*.23),length=end-start+Math.abs(y-22),dist=phase*length;
+      const horizontal=knee-start,vertical=Math.abs(y-22);
+      let x,py;
+      if(dist<horizontal){x=start+dist;py=22;}else if(dist<horizontal+vertical){x=knee;py=22+Math.sign(y-22)*(dist-horizontal);}else{x=knee+dist-horizontal-vertical;py=y;}
+      const emitting=state.mode==='record';
+      rect(x-1,py-1,3,3,1,i===mod(Math.floor(time*2),4)?accent():white);
+      if(emitting&&phase<.22)line([[start,22],[Math.min(x,knee),22]],.8,accent());
+      if(!emitting&&phase>.8)rect(end-3,y-3,6,6,(phase-.8)*4,accent());
+    });
+    box(start-3,19,6,6,.85,accent());
+    if(state.mode==='record')rect(mid-1,21,2,2,.35+env(time));
+  }
+  const renderers={register,packets,comb,parity,bus};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](t);ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));
+    draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) {
+    raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;
+    if(!last)last=now;
+    const elapsed=now-last;
+    if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }
+    raf=requestAnimationFrame(frame);
+  }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+  if(globalThis.Tweak) { const tweak=new Tweak({container:root.querySelector('.nr-phone'),onChange:sync});tweak.addToggle(state,'accent',{label:'Kehribar vurgu'});tweak.addSlider(state,'gain',{label:'Tepki yoğunluğu',min:.3,max:1.2,step:.1}); }
+})();
+</script>
+<script src="../isolate.js"></script></body></html>

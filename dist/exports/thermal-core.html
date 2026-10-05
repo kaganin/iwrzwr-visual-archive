@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Thermal Core</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <canvas id="art" width="1080" height="1080"></canvas>
+  <script>
+    const canvas = document.querySelector('#art');
+    const ctx = canvas.getContext('2d');
+    const TAU = Math.PI * 2;
+    const WHITE = '#f3f2ea';
+    const GREY = '#656565';
+    const RED = '#ff0000';
+    const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+    const smooth = (a, b, x) => {
+      const t = clamp((x - a) / (b - a));
+      return t * t * (3 - 2 * t);
+    };
+    const pulse = (x, center, width) => Math.exp(-Math.pow((x - center) / width, 2));
+
+    function strokeArc(x, y, r, a, b, color, alpha = 1, width = 2) {
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = 'butt';
+      ctx.beginPath();
+      ctx.arc(x, y, r, a, b);
+      ctx.stroke();
+    }
+
+    function line(x1, y1, x2, y2, color, alpha = 1, width = 2) {
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = 'butt';
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    function draw(time) {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 1080, 1080);
+
+      // Ten seconds, four CPU states, exact return to the first frame.
+      const phase = (time % 10) / 10;
+      const base = 0.30 + 0.16 * Math.sin(TAU * phase - 0.7);
+      const peakA = pulse(phase, 0.24, 0.055);
+      const peakB = pulse(phase, 0.58, 0.075);
+      const peakC = pulse(phase, 0.82, 0.040);
+      const load = clamp(base + peakA * 0.48 + peakB * 0.35 + peakC * 0.62);
+      const overload = smooth(0.79, 0.96, load);
+
+      const cx = 540;
+      const cy = 540;
+      const rotor = 300;
+      // Four exact turns per loop; periodic phase modulation makes peaks feel faster
+      // without introducing a cut between the final and first frame.
+      const rotation = TAU * (4 * phase + Math.sin(TAU * phase) * load * 0.11);
+      const bladeCount = 12;
+      const fanOpen = 0.18 + load * 0.42;
+
+      // Quiet outer thermal register.
+      for (let i = 0; i < 72; i++) {
+        const a = -Math.PI * 0.82 + (i / 71) * Math.PI * 1.64;
+        const active = i / 71 < load;
+        const radius = 390;
+        strokeArc(cx, cy, radius, a, a + 0.018,
+          active && i > 58 ? RED : active ? WHITE : GREY,
+          active ? 0.78 : 0.25,
+          active ? 3 : 2);
+      }
+
+      // Bearing rings.
+      strokeArc(cx, cy, 104, 0, TAU, WHITE, 0.85, 2);
+      strokeArc(cx, cy, 78, 0, TAU, GREY, 0.7, 2);
+      strokeArc(cx, cy, 42 + load * 6, 0, TAU, overload > 0.05 ? RED : WHITE, 1, 3);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = overload > 0.05 ? RED : WHITE;
+      ctx.fillRect(cx - 4, cy - 4, 8, 8);
+
+      // Segmented fan: the opening angle and extension are the CPU load.
+      for (let i = 0; i < bladeCount; i++) {
+        const a = rotation + (i / bladeCount) * TAU;
+        const bladeAlpha = 0.22 + 0.62 * (0.5 + 0.5 * Math.sin(a * 2 - rotation));
+        for (let layer = 0; layer < 5; layer++) {
+          const r = 134 + layer * (30 + load * 7);
+          const seg = 0.07 + fanOpen * (1 - layer * 0.065);
+          const color = overload > 0.05 && (i + layer) % 4 === 0 ? RED : WHITE;
+          strokeArc(cx, cy, r, a - seg * 0.5, a + seg * 0.5, color,
+            bladeAlpha * (1 - layer * 0.07), 2.5);
+        }
+        const inner = 112;
+        const outer = 145 + load * 150;
+        line(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner,
+             cx + Math.cos(a) * outer, cy + Math.sin(a) * outer,
+             overload > 0.05 && i % 3 === 0 ? RED : WHITE,
+             0.38 + load * 0.45, 2);
+      }
+
+      // Four fixed CPU bus ports keep the rotor computational, not illustrative.
+      const portR = 455;
+      [-Math.PI / 2, 0, Math.PI / 2, Math.PI].forEach((a, i) => {
+        const x1 = cx + Math.cos(a) * (rotor + 46);
+        const y1 = cy + Math.sin(a) * (rotor + 46);
+        const x2 = cx + Math.cos(a) * portR;
+        const y2 = cy + Math.sin(a) * portR;
+        line(x1, y1, x2, y2, i === 1 && overload > 0.05 ? RED : GREY, 0.72, 2);
+        const tangentX = -Math.sin(a) * 18;
+        const tangentY = Math.cos(a) * 18;
+        line(x2 - tangentX, y2 - tangentY, x2 + tangentX, y2 + tangentY,
+             i === 1 && overload > 0.05 ? RED : WHITE, 0.9, 3);
+      });
+
+      // Peak flash is short and restrained.
+      if (overload > 0.01) {
+        strokeArc(cx, cy, 330 + overload * 24, -0.22, 0.22, RED, overload, 4);
+      }
+
+      ctx.globalAlpha = 1;
+    }
+
+    window.__renderFrame = seconds => draw(seconds);
+    draw(0);
+  </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Matrix · rotalar · iwrzwr</title><style>:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body><div id="matrix-routes-ten">
+  <div class="viz-controls"><button type="button" class="btn" data-pause aria-pressed="false">Duraklat</button><span class="text-small">Örnek ritim · sessiz demo</span></div>
+  <div class="route-grid"></div>
+</div>
+<style>
+#matrix-routes-ten .route-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:16px}
+#matrix-routes-ten figure{margin:0;min-width:0}
+#matrix-routes-ten .route-screen{background:#000;padding:28px 12px}
+#matrix-routes-ten canvas{display:block;width:100%;height:44px}
+#matrix-routes-ten figcaption{margin-top:8px;color:var(--foreground)}
+#matrix-routes-ten .route-label{display:block;margin-top:3px;color:var(--muted-foreground)}
+@media(max-width:520px){#matrix-routes-ten .route-grid{grid-template-columns:1fr}}
+</style>
+<script>
+(()=>{
+const root=document.getElementById('matrix-routes-ten');
+const titles=[
+ ['01 · Figure Eight','Sekiz çizerek merkezden geçiş'],
+ ['02 · Ricochet Register','Kenarlara çarpıp yön değiştirme'],
+ ['03 · Square Circuit','Köşelerde 90° dönerek dolaşma'],
+ ['04 · Pendulum Bank','Üstten asılı, gecikmeli salınım'],
+ ['05 · Fountain Fold','Merkezden yukarı, dışarı ve aşağı'],
+ ['06 · Counter Rotors','Ters yönlerde dönen iki alan'],
+ ['07 · Hourglass Drift','Daralarak geçiş, ardından yayılma'],
+ ['08 · Junction Turn','İki yandan gelip dikey ayrılma'],
+ ['09 · Orbital Shells','İç içe, karşıt yönlü yörüngeler'],
+ ['10 · Accordion Field','Katlanarak ilerleyen hücre örgüsü']
+];
+const grid=root.querySelector('.route-grid');
+const panels=titles.map(([title,direction])=>{
+ const f=document.createElement('figure'),s=document.createElement('div'),c=document.createElement('canvas'),l=document.createElement('figcaption'),d=document.createElement('span');
+ s.className='route-screen';c.setAttribute('role','img');c.setAttribute('aria-label',title+': '+direction);l.textContent=title;d.className='route-label text-small';d.textContent=direction;l.append(d);s.append(c);f.append(s,l);grid.append(f);
+ return {c,ctx:c.getContext('2d'),w:300};
+});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)'),pause=root.querySelector('[data-pause]');
+const tau=2*Math.PI,frac=x=>x-Math.floor(x),mod=(x,m)=>(x%m+m)%m,tri=x=>1-4*Math.abs(frac(x)-.5);
+let paused=reduce.matches,visible=true,time=1.7,last=0,raf=0;
+function draw(){panels.forEach((panel,id)=>{
+ const {ctx,w}=panel,cols=Math.max(12,Math.floor((w-4)/4)),left=(w-cols*4)/2,cells=new Uint8Array(cols*10),p=time/8;
+ ctx.clearRect(0,0,w,44);
+ // Every mark stays on the same 2px-square / 4px-pitch matrix.
+ function dot(x,y,ink=2,fat=false){
+  const c=Math.round((x+1)*.5*(cols-1)),r=Math.round((y+1)*4.5);
+  if(c<0||c>=cols||r<0||r>9)return;
+  const at=r*cols+c;cells[at]=Math.max(cells[at],ink);
+  if(fat&&r<9)cells[at+cols]=Math.max(cells[at+cols],Math.min(ink,2));
+ }
+ function path(fn,head,length=.24,ghost=true,fat=true){
+  if(ghost)for(let i=0;i<180;i+=3){const pt=fn(i/180);dot(pt[0],pt[1],1);}
+  const n=Math.max(80,Math.ceil(cols*length*3));
+  for(let j=n;j>=0;j--){const age=j/n,q=frac(head-age*length),pt=fn(q);dot(pt[0],pt[1],age<.12?4:age<.4?3:2,fat);}
+ }
+ if(id===0){
+  const curve=q=>[Math.sin(q*tau)*.9,Math.sin(q*tau*2)*.72];
+  path(curve,p,.31);path(curve,p+.5,.14,false,false);
+ }else if(id===1){
+  const ray=q=>[tri(q)*.92,tri(q*3+.13)*.8];
+  path(ray,p,.2);path(ray,p+.46,.12,false);
+ }else if(id===2){
+  const circuit=(q,r)=>{const a=frac(q)*4;if(a<1)return [-r+2*r*a,-.72];if(a<2)return [r,-.72+(a-1)*1.44];if(a<3)return [r-(a-2)*2*r,.72];return [-r,.72-(a-3)*1.44];};
+  path(q=>circuit(q,.91),p,.23,true,false);
+  path(q=>{const [x,y]=circuit(1-q,.68);return [x,y*.45];},p,.33,true,false);
+ }else if(id===3){
+  for(let k=0;k<7;k++){
+   const center=-.78+k*.26,angle=Math.sin(p*tau-k*.42)*.55;
+   dot(center,-.82,2);
+   for(let j=1;j<=32;j++){const length=j/32,x=center+Math.sin(angle)*length*.2,y=-.82+Math.cos(angle)*length*1.58;dot(x,y,j>27?4:j>20?3:2);}
+  }
+ }else if(id===4){
+  for(const side of [-1,1])for(let lane=0;lane<3;lane++){
+   const arc=q=>[side*q*(.65+lane*.13),.85-(5.5+lane*.55)*q*(1-q)];
+   path(arc,p+lane*.12,.2,lane===1,false);
+  }
+ }else if(id===5){
+  for(const side of [-1,1]){
+   const center=side*.48;
+   for(let arm=0;arm<3;arm++){
+    const blade=q=>{const a=q*tau*side+arm*tau/3;return [center+Math.cos(a)*.38,Math.sin(a)*.8];};
+    path(blade,p,.15,arm===0,false);
+   }
+   dot(center,0,3);
+  }
+ }else if(id===6){
+  for(let lane=0;lane<11;lane++){
+   const spread=(lane-5)/5;
+   const stream=q=>{const y=-.9+q*1.8;return [spread*(.075+.8*Math.pow(Math.abs(y),1.5)),y];};
+   path(stream,p+lane*.035,.28,lane%2===0,false);
+  }
+ }else if(id===7){
+  for(const side of [-1,1])for(let lane=0;lane<3;lane++){
+   const turn=q=>q<.64?[side*(.94-q/.64*.9),side*(lane-1)*.16]:[side*.04+side*(lane-1)*.065,-side*(q-.64)/.36*.9];
+   path(turn,p+lane*.07,.18,lane===1,false);
+  }
+ }else if(id===8){
+  for(let shell=0;shell<3;shell++){
+   const rx=.9-shell*.25,ry=.82-shell*.19,sign=shell%2?-1:1;
+   const orbit=q=>[Math.cos(q*tau)*rx,Math.sin(q*tau)*ry];
+   path(orbit,sign*p+shell*.22,.22,true,false);
+  }
+ }else{
+  for(let r=0;r<7;r++)for(let c=0;c<35;c++){
+   const u=-.92+c/34*1.84,v=-.72+r*.24,fold=tri(u*.85-p);
+   const x=u+fold*.075*Math.sin((v+1)*Math.PI/2),y=v*(.48+.4*Math.abs(fold));
+   const edge=Math.abs(fold);dot(x,y,edge<.1?4:edge<.3?3:2);
+  }
+ }
+ for(let r=0;r<10;r++)for(let c=0;c<cols;c++){const ink=cells[r*cols+c];if(!ink)continue;ctx.fillStyle=['','#292929','#8F8F8F','#FFFFFF','#FF0000'][ink];ctx.fillRect(left+c*4,3+r*4,2,2);}
+});}
+function resize(){const dpr=Math.min(devicePixelRatio||1,2);panels.forEach(p=>{p.w=Math.max(1,p.c.getBoundingClientRect().width);p.c.width=Math.round(p.w*dpr);p.c.height=44*dpr;p.ctx.setTransform(dpr,0,0,dpr,0,0);});draw();}
+function sync(){pause.textContent=paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(paused));}
+function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const dt=now-last;if(dt>=1000/30){time+=Math.min(dt/1000,.08);last=now;draw();}raf=requestAnimationFrame(frame);}
+pause.addEventListener('click',()=>{paused=!paused;sync();schedule();});
+reduce.addEventListener('change',e=>{paused=e.matches;sync();schedule();});
+document.addEventListener('visibilitychange',schedule);
+new ResizeObserver(resize).observe(grid);
+new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;schedule();}).observe(root);
+sync();resize();schedule();
+})();
+</script>
+<script src="../isolate.js"></script></body></html>

@@ -1,0 +1,3671 @@
+// Shared debug palette and primary cycle for the sound studies.
+const galleryTheme={accent:'#FF0000',period:2.4};
+
+// Match visible travel to Splice Loom's 24px per primary beat.
+// Equal seconds per loop alone made wide sweeps dramatically faster.
+function galleryMotionTime(style,time,width,mode) {
+  const referenceDistance=48;
+  // Section Gate crosses the full canvas; a slower clock keeps its perceived
+  // travel speed in the same family as Flare Stem and Field Strain.
+  if(style==='section')return time*.65;
+  if(style==='strain')return time*1.2*referenceDistance/Math.max(24,(width-10)*.7);
+  // Loupe runs at 64% of the original Vernier rate (~14s per sweep).
+  if(style==='loupe')return time*.64*galleryTheme.period/(2*Math.PI/.7);
+  // Delay Vernier retains the original twenty-study demo timing.
+  if(style==='vernier')return time;
+  return time;
+}
+
+function galleryGrayAlpha(alpha) {
+  if(alpha<=0)return 0;
+  return [.16,.32,.56,1].reduce((best,value)=>Math.abs(value-alpha)<Math.abs(best-alpha)?value:best);
+}
+
+(() => {
+  const root=document.getElementById('study-1');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'section',mode:'play',paused:reduced.matches,accent:true};
+  const names={section:'Section Gate',strain:'Field Strain',atlas:'Compression Atlas',flare:'Flare Stem',slots:'Event Slots'};
+  const descriptions={
+    section:['Sabit hacmi kesen düzlem, beş çizginin gerçek kesişimlerini ortaya çıkarıyor.','Yeni kesit katman katman yazılıyor; önceki beş kesit yerinde kalıyor.'],
+    strain:['Bağlı koordinat çizgileri yerel bir çekimle bükülüyor; kenarlar hep aynı yerde.','Her darbe sabit bir kavşağı çekip bırakıyor; sessizlikte bütün alan yeniden düz.'],
+    atlas:['Altmış işaret korunuyor; yalnız bir hücrenin yerleşimi dönüşüyor.','Sıradaki on iki işaret bekleme rafından açılıyor; yazılmış hücreler sabit kalıyor.'],
+    flare:['Beş çizgi tek boğazdan açılıyor; ses yalnız ortak açıklığı değiştiriyor.','Boğaz darbeyle açılıp kapanıyor; biten darbeler uçlarda küçük çentikler bırakıyor.'],
+    slots:['Basamak yüksekliği ses şiddeti değil, geçen süre; imleç dolu ve boş aralıkları okuyor.','Süre basamakları açık uçtan büyüyor; ses bitince kapanıyor, sessizlik boş kalıyor.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const fract=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,mix=(a,b,p)=>a+(b-a)*p;
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Silent deterministic timing, not microphone input or a physical simulation.
+  function pulse(time,period=1.8,length=.95) { const age=mod(time,period);return age>=length?0:Math.pow(Math.sin(Math.PI*age/length),2); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function area(points,alpha=.12,color=white) { if(points.length<3)return;ink(alpha,color);ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill(); }
+  function marker(x,y,alpha=1,color=white,size=2) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function project(x,y,z) { return [10+x*(w-30)+z*10,26-y*10-z*12]; }
+  function sectionCurve(x,_z,take=0) { return .48*Math.sin(x*5.5+take*.7)+.06*Math.cos(x*2.1+take*.4); }
+  function section(time) {
+    const recording=state.mode==='record',step=Math.floor(time/galleryTheme.period),phase=fract(time/galleryTheme.period),active=mod(step,5),cut=recording?(active+.5)/5:fract(time/galleryTheme.period);
+    const plane=[project(cut,-1,0),project(cut,-1,1),project(cut,1,1),project(cut,1,0),project(cut,-1,0)];
+    const planeVisible=recording||cut<(w-40)/(w-30);
+    if(planeVisible){area(plane,.035,white);line(plane,.6,white);}
+    if(recording) {
+      for(let station=0;station<5;station++) {
+        const x=(station+.5)/5,take=step-mod(step-station,5),live=station===active,extent=live?phase:1,points=[];
+        for(let j=0;j<=12;j++) { const z=j/12;if(z>extent)break;points.push(project(x,sectionCurve(x,z,take),z)); }
+        if(live)points.push(project(x,sectionCurve(x,extent,take),extent));
+        line(points,live?1:.36,white);
+        if(live&&points.length){const p=points[points.length-1];marker(p[0],p[1],1,white,3);}
+      }
+    } else {
+      const cross=[];
+      for(let rail=0;rail<5;rail++) {
+        const z=rail/4,points=[],slice=[];
+        for(let j=0;j<=24;j++){const x=j/24;points.push(project(x,sectionCurve(x,z),z));}
+        line(points,.32);
+        for(let j=0;j<=6;j++){const x=cut-.04+j*.08/6;if(x>=0&&x<=1)slice.push(project(x,sectionCurve(x,z),z));}
+        line(slice,.9,white);
+        const hit=project(cut,sectionCurve(cut,z),z);cross.push(hit);marker(hit[0],hit[1],1,accent(),2);
+      }
+      line(cross,.9,accent());
+    }
+  }
+  function strainPoint(u,v,loci) {
+    const pin=Math.sin(Math.PI*u)*Math.sin(Math.PI*v);let dx=0,dy=0;
+    for(const locus of loci) {
+      const a=(u-locus.u)/.2,b=(v-locus.v)/.42,influence=Math.exp(-(a*a+b*b))*locus.force*pin;
+      dx+=(locus.u-u)*.38*influence;dy+=locus.pull*.32*influence;
+    }
+    return [5+(u+dx)*(w-10),5+(v+dy)*34];
+  }
+  function strain(time) {
+    const recording=state.mode==='record',loci=[];
+    if(recording) {
+      const step=Math.floor(time/galleryTheme.period),age=mod(time,galleryTheme.period),u=[.25,.5,.75][mod(step,3)],v=mod(step,2)?.75:.25;
+      const force=age<.85?Math.pow(1-age/.85,2):0;
+      loci.push({u,v,force,pull:mod(step,2)?-1:1});
+    } else {
+      const travel=fract(time/galleryTheme.period),bend=Math.sin(travel*Math.PI*6);
+      loci.push({u:travel,v:.5,force:.86,pull:bend});
+    }
+    ctx.save();ctx.beginPath();ctx.rect(5,5,w-10,34);ctx.clip();
+    for(let row=1;row<4;row++) {
+      const points=[];for(let j=0;j<=28;j++)points.push(strainPoint(j/28,row/4,loci));line(points,row===2?1:.31,white);
+    }
+    for(let col=1;col<8;col++) {
+      const points=[];for(let j=0;j<=16;j++)points.push(strainPoint(col/8,j/16,loci));line(points,.32);
+    }
+    for(const locus of loci) {
+      const p=strainPoint(locus.u,locus.v,loci),radius=3+locus.force;
+      line([[p[0]-radius,p[1]],[p[0]+radius,p[1]]],.95,accent());line([[p[0],p[1]-radius],[p[0],p[1]+radius]],.95,accent());
+    }
+    ctx.restore();
+  }
+  function atlasPosition(pattern,index,width) {
+    const col=index%3,row=Math.floor(index/3);
+    switch(mod(pattern,5)) {
+      case 0:return [width*(.2+col*.3),9+row*8];
+      case 1:return [width*(.13+(index%6)*.148),14+Math.floor(index/6)*15];
+      case 2:{const side=Math.floor(index/3),q=index%3;return [[width*(.2+q*.2),9],[width*.8,9+q*8],[width*(.8-q*.2),33],[width*.2,33-q*8]][side];}
+      case 3:return [width*(.36+(index%2)*.28),7+Math.floor(index/2)*5.8];
+      default:return [width*(.14+col*.28+row*.055),8+row*8+col*1.5];
+    }
+  }
+  function atlas(time) {
+    const recording=state.mode==='record',step=Math.floor(time*.8),phase=fract(time*.8),active=mod(step,5),epoch=Math.floor(step/5),cell=(w-8)/5;
+    for(let i=0;i<5;i++) {
+      const origin=4+i*cell,width=cell-3;
+      line([[origin,40],[origin+width,40]],i===active?.8:.2,i===active?accent():white);
+      for(let index=0;index<12;index++) {
+        let a,b,q;
+        if(recording) {
+          const rack=[width*(.12+(index%6)*.15),32+Math.floor(index/6)*5];
+          const target=atlasPosition(i+epoch,index,width);
+          a=rack;b=target;q=i<active?1:i>active?0:clamp(phase/.38);
+        } else {
+          const pattern=i+epoch+(i<active?1:0);a=atlasPosition(pattern,index,width);b=atlasPosition(pattern+1,index,width);q=i===active?phase:0;
+        }
+        const x=origin+mix(a[0],b[0],q),y=mix(a[1],b[1],q);
+        marker(x,y,i===active?.96:recording&&i>active?.38:.7,i===active?accent():white,2);
+      }
+    }
+  }
+  function flare(time) {
+    // A 2.4-second beat in both playback and recording.
+    if(state.mode==='record')time*=1.8/2.4;
+    const recording=state.mode==='record',step=Math.floor(time/1.8),age=mod(time,1.8),beat=pulse(time),opening=recording?1+beat*6:1.2+pulse(time,2.4,1.65)*6,throat=w*.2,shoulder=w*.38,rim=w*.76;
+    line([[4,22],[throat,22]],.85,white);
+    line([[throat-3,18],[throat-3,26]],.36);
+    for(let track=0;track<5;track++) {
+      const offset=track-2,endpoint=8+track*7,points=[[throat,22],[shoulder,22+offset*.7],[rim,22+offset*opening],[w-9,endpoint]];
+      line(points,track===2?.8:.66,track===2||(recording&&track===mod(step,5))?accent():white);
+      line([[w-7,endpoint],[w-3,endpoint]],.35,track===2?accent():white);
+      if(recording&&track<=mod(step,5)&&(track<mod(step,5)||age>.95)) {
+        line([[w-10,endpoint-2],[w-7,endpoint-2],[w-7,endpoint+2],[w-4,endpoint+2]],track===mod(step,5)?1:.65,track===mod(step,5)?accent():white);
+      }
+    }
+    if(!recording)line([[rim-3,22-opening*2-3],[rim,22-opening*2-3],[rim,22+opening*2+3],[rim-3,22+opening*2+3]],.48,accent());
+  }
+  const slotPhrases=[{start:0,length:3},{start:4,length:2},{start:8,length:4},{start:13,length:2}];
+  function slots(time) {
+    const recording=state.mode==='record',units=16,cursor=mod(time*2.2,units),pitch=(w-8)/units,base=37;
+    line([[4,base],[w-4,base]],.25);
+    for(let i=0;i<=units;i++)line([[4+i*pitch,39],[4+i*pitch,41]],.18);
+    for(const phrase of slotPhrases) {
+      const elapsed=recording?clamp(cursor-phrase.start,0,phrase.length):phrase.length;
+      if(elapsed<=0)continue;
+      const start=4+phrase.start*pitch,top=[[start,base]],live=cursor>=phrase.start&&cursor<phrase.start+phrase.length;
+      for(let cell=0;cell<Math.ceil(elapsed);cell++) {
+        const x=start+cell*pitch,y=base-(cell+1)*6,end=start+Math.min(elapsed,cell+1)*pitch;
+        top.push([x,y],[end,y]);
+      }
+      const end=top[top.length-1],closed=!recording||elapsed===phrase.length;
+      area([...top,[end[0],base]],live?.17:.09,live?accent():white);
+      line(top,live?.95:.57,live?accent():white);
+      if(closed)line([end,[end[0],base]],.57);
+      else {marker(end[0],end[1],1,accent(),3);line([[end[0]-2,base+2],[end[0]+2,base+2]],.85,accent());}
+    }
+    const x=4+cursor*pitch;
+    if(!recording) {line([[x,5],[x,base+1]],.6,accent());line([[x-2,4],[x,6],[x+2,4]],.9,accent());}
+    else line([[x-2,4],[x+2,4]],.9,accent());
+  }
+  const renderers={section,strain,atlas,flare,slots};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{
+    const latest=entries.filter(entry=>entry.target===root).reduce((a,b)=>!a||b.time>=a.time?b:a,null);
+    if(latest){visible=latest.isIntersecting;schedule();}
+  }).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-1')?.querySelector('[data-style="section"]').click();
+
+(() => {
+  const root=document.getElementById('study-2');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'section',mode:'play',paused:reduced.matches,accent:true};
+  const names={section:'Section Gate',strain:'Field Strain',atlas:'Compression Atlas',flare:'Flare Stem',slots:'Event Slots'};
+  const descriptions={
+    section:['Sabit hacmi kesen düzlem, beş çizginin gerçek kesişimlerini ortaya çıkarıyor.','Yeni kesit katman katman yazılıyor; önceki beş kesit yerinde kalıyor.'],
+    strain:['Bağlı koordinat çizgileri yerel bir çekimle bükülüyor; kenarlar hep aynı yerde.','Her darbe sabit bir kavşağı çekip bırakıyor; sessizlikte bütün alan yeniden düz.'],
+    atlas:['Altmış işaret korunuyor; yalnız bir hücrenin yerleşimi dönüşüyor.','Sıradaki on iki işaret bekleme rafından açılıyor; yazılmış hücreler sabit kalıyor.'],
+    flare:['Beş çizgi tek boğazdan açılıyor; ses yalnız ortak açıklığı değiştiriyor.','Boğaz darbeyle açılıp kapanıyor; biten darbeler uçlarda küçük çentikler bırakıyor.'],
+    slots:['Basamak yüksekliği ses şiddeti değil, geçen süre; imleç dolu ve boş aralıkları okuyor.','Süre basamakları açık uçtan büyüyor; ses bitince kapanıyor, sessizlik boş kalıyor.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const fract=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,mix=(a,b,p)=>a+(b-a)*p;
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Silent deterministic timing, not microphone input or a physical simulation.
+  function pulse(time,period=1.8,length=.95) { const age=mod(time,period);return age>=length?0:Math.pow(Math.sin(Math.PI*age/length),2); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function area(points,alpha=.12,color=white) { if(points.length<3)return;ink(alpha,color);ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill(); }
+  function marker(x,y,alpha=1,color=white,size=2) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function project(x,y,z) { return [10+x*(w-30)+z*10,26-y*10-z*12]; }
+  function sectionCurve(x,_z,take=0) { return .48*Math.sin(x*5.5+take*.7)+.06*Math.cos(x*2.1+take*.4); }
+  function section(time) {
+    const recording=state.mode==='record',step=Math.floor(time/galleryTheme.period),phase=fract(time/galleryTheme.period),active=mod(step,5),cut=recording?(active+.5)/5:fract(time/galleryTheme.period);
+    const plane=[project(cut,-1,0),project(cut,-1,1),project(cut,1,1),project(cut,1,0),project(cut,-1,0)];
+    const planeVisible=recording||cut<(w-40)/(w-30);
+    if(planeVisible){area(plane,.035,white);line(plane,.6,white);}
+    if(recording) {
+      for(let station=0;station<5;station++) {
+        const x=(station+.5)/5,take=step-mod(step-station,5),live=station===active,extent=live?phase:1,points=[];
+        for(let j=0;j<=12;j++) { const z=j/12;if(z>extent)break;points.push(project(x,sectionCurve(x,z,take),z)); }
+        if(live)points.push(project(x,sectionCurve(x,extent,take),extent));
+        line(points,live?1:.36,white);
+        if(live&&points.length){const p=points[points.length-1];marker(p[0],p[1],1,white,3);}
+      }
+    } else {
+      const cross=[];
+      for(let rail=0;rail<5;rail++) {
+        const z=rail/4,points=[],slice=[];
+        for(let j=0;j<=24;j++){const x=j/24;points.push(project(x,sectionCurve(x,z),z));}
+        line(points,.32);
+        for(let j=0;j<=6;j++){const x=cut-.04+j*.08/6;if(x>=0&&x<=1)slice.push(project(x,sectionCurve(x,z),z));}
+        line(slice,.9,white);
+        const hit=project(cut,sectionCurve(cut,z),z);cross.push(hit);marker(hit[0],hit[1],1,accent(),2);
+      }
+      line(cross,.9,accent());
+    }
+  }
+  function strainPoint(u,v,loci) {
+    const pin=Math.sin(Math.PI*u)*Math.sin(Math.PI*v);let dx=0,dy=0;
+    for(const locus of loci) {
+      const a=(u-locus.u)/.2,b=(v-locus.v)/.42,influence=Math.exp(-(a*a+b*b))*locus.force*pin;
+      dx+=(locus.u-u)*.38*influence;dy+=locus.pull*.32*influence;
+    }
+    return [5+(u+dx)*(w-10),5+(v+dy)*34];
+  }
+  function strain(time) {
+    const recording=state.mode==='record',loci=[];
+    if(recording) {
+      const step=Math.floor(time/galleryTheme.period),age=mod(time,galleryTheme.period),u=[.25,.5,.75][mod(step,3)],v=mod(step,2)?.75:.25;
+      const force=age<.85?Math.pow(1-age/.85,2):0;
+      loci.push({u,v,force,pull:mod(step,2)?-1:1});
+    } else {
+      const travel=fract(time/galleryTheme.period),bend=Math.sin(travel*Math.PI*6);
+      loci.push({u:travel,v:.5,force:.86,pull:bend});
+    }
+    ctx.save();ctx.beginPath();ctx.rect(5,5,w-10,34);ctx.clip();
+    for(let row=1;row<4;row++) {
+      const points=[];for(let j=0;j<=28;j++)points.push(strainPoint(j/28,row/4,loci));line(points,row===2?1:.31,white);
+    }
+    for(let col=1;col<8;col++) {
+      const points=[];for(let j=0;j<=16;j++)points.push(strainPoint(col/8,j/16,loci));line(points,.32);
+    }
+    for(const locus of loci) {
+      const p=strainPoint(locus.u,locus.v,loci),radius=3+locus.force;
+      line([[p[0]-radius,p[1]],[p[0]+radius,p[1]]],.95,accent());line([[p[0],p[1]-radius],[p[0],p[1]+radius]],.95,accent());
+    }
+    ctx.restore();
+  }
+  function atlasPosition(pattern,index,width) {
+    const col=index%3,row=Math.floor(index/3);
+    switch(mod(pattern,5)) {
+      case 0:return [width*(.2+col*.3),9+row*8];
+      case 1:return [width*(.13+(index%6)*.148),14+Math.floor(index/6)*15];
+      case 2:{const side=Math.floor(index/3),q=index%3;return [[width*(.2+q*.2),9],[width*.8,9+q*8],[width*(.8-q*.2),33],[width*.2,33-q*8]][side];}
+      case 3:return [width*(.36+(index%2)*.28),7+Math.floor(index/2)*5.8];
+      default:return [width*(.14+col*.28+row*.055),8+row*8+col*1.5];
+    }
+  }
+  function atlas(time) {
+    const recording=state.mode==='record',step=Math.floor(time*.8),phase=fract(time*.8),active=mod(step,5),epoch=Math.floor(step/5),cell=(w-8)/5;
+    for(let i=0;i<5;i++) {
+      const origin=4+i*cell,width=cell-3;
+      line([[origin,40],[origin+width,40]],i===active?.8:.2,i===active?accent():white);
+      for(let index=0;index<12;index++) {
+        let a,b,q;
+        if(recording) {
+          const rack=[width*(.12+(index%6)*.15),32+Math.floor(index/6)*5];
+          const target=atlasPosition(i+epoch,index,width);
+          a=rack;b=target;q=i<active?1:i>active?0:clamp(phase/.38);
+        } else {
+          const pattern=i+epoch+(i<active?1:0);a=atlasPosition(pattern,index,width);b=atlasPosition(pattern+1,index,width);q=i===active?phase:0;
+        }
+        const x=origin+mix(a[0],b[0],q),y=mix(a[1],b[1],q);
+        marker(x,y,i===active?.96:recording&&i>active?.38:.7,i===active?accent():white,2);
+      }
+    }
+  }
+  function flare(time) {
+    // A 2.4-second beat in both playback and recording.
+    if(state.mode==='record')time*=1.8/2.4;
+    const recording=state.mode==='record',step=Math.floor(time/1.8),age=mod(time,1.8),beat=pulse(time),opening=recording?1+beat*6:1.2+pulse(time,2.4,1.65)*6,throat=w*.2,shoulder=w*.38,rim=w*.76;
+    line([[4,22],[throat,22]],.85,white);
+    line([[throat-3,18],[throat-3,26]],.36);
+    for(let track=0;track<5;track++) {
+      const offset=track-2,endpoint=8+track*7,points=[[throat,22],[shoulder,22+offset*.7],[rim,22+offset*opening],[w-9,endpoint]];
+      line(points,track===2?.8:.66,track===2||(recording&&track===mod(step,5))?accent():white);
+      line([[w-7,endpoint],[w-3,endpoint]],.35,track===2?accent():white);
+      if(recording&&track<=mod(step,5)&&(track<mod(step,5)||age>.95)) {
+        line([[w-10,endpoint-2],[w-7,endpoint-2],[w-7,endpoint+2],[w-4,endpoint+2]],track===mod(step,5)?1:.65,track===mod(step,5)?accent():white);
+      }
+    }
+    if(!recording)line([[rim-3,22-opening*2-3],[rim,22-opening*2-3],[rim,22+opening*2+3],[rim-3,22+opening*2+3]],.48,accent());
+  }
+  const slotPhrases=[{start:0,length:3},{start:4,length:2},{start:8,length:4},{start:13,length:2}];
+  function slots(time) {
+    const recording=state.mode==='record',units=16,cursor=mod(time*2.2,units),pitch=(w-8)/units,base=37;
+    line([[4,base],[w-4,base]],.25);
+    for(let i=0;i<=units;i++)line([[4+i*pitch,39],[4+i*pitch,41]],.18);
+    for(const phrase of slotPhrases) {
+      const elapsed=recording?clamp(cursor-phrase.start,0,phrase.length):phrase.length;
+      if(elapsed<=0)continue;
+      const start=4+phrase.start*pitch,top=[[start,base]],live=cursor>=phrase.start&&cursor<phrase.start+phrase.length;
+      for(let cell=0;cell<Math.ceil(elapsed);cell++) {
+        const x=start+cell*pitch,y=base-(cell+1)*6,end=start+Math.min(elapsed,cell+1)*pitch;
+        top.push([x,y],[end,y]);
+      }
+      const end=top[top.length-1],closed=!recording||elapsed===phrase.length;
+      area([...top,[end[0],base]],live?.17:.09,live?accent():white);
+      line(top,live?.95:.57,live?accent():white);
+      if(closed)line([end,[end[0],base]],.57);
+      else {marker(end[0],end[1],1,accent(),3);line([[end[0]-2,base+2],[end[0]+2,base+2]],.85,accent());}
+    }
+    const x=4+cursor*pitch;
+    if(!recording) {line([[x,5],[x,base+1]],.6,accent());line([[x-2,4],[x,6],[x+2,4]],.9,accent());}
+    else line([[x-2,4],[x+2,4]],.9,accent());
+  }
+  const renderers={section,strain,atlas,flare,slots};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{
+    const latest=entries.filter(entry=>entry.target===root).reduce((a,b)=>!a||b.time>=a.time?b:a,null);
+    if(latest){visible=latest.isIntersecting;schedule();}
+  }).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-2')?.querySelector('[data-style="strain"]').click();
+
+(() => {
+  const root=document.getElementById('study-3');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'section',mode:'play',paused:reduced.matches,accent:true};
+  const names={section:'Section Gate',strain:'Field Strain',atlas:'Compression Atlas',flare:'Flare Stem',slots:'Event Slots'};
+  const descriptions={
+    section:['Sabit hacmi kesen düzlem, beş çizginin gerçek kesişimlerini ortaya çıkarıyor.','Yeni kesit katman katman yazılıyor; önceki beş kesit yerinde kalıyor.'],
+    strain:['Bağlı koordinat çizgileri yerel bir çekimle bükülüyor; kenarlar hep aynı yerde.','Her darbe sabit bir kavşağı çekip bırakıyor; sessizlikte bütün alan yeniden düz.'],
+    atlas:['Altmış işaret korunuyor; yalnız bir hücrenin yerleşimi dönüşüyor.','Sıradaki on iki işaret bekleme rafından açılıyor; yazılmış hücreler sabit kalıyor.'],
+    flare:['Beş çizgi tek boğazdan açılıyor; ses yalnız ortak açıklığı değiştiriyor.','Boğaz darbeyle açılıp kapanıyor; biten darbeler uçlarda küçük çentikler bırakıyor.'],
+    slots:['Basamak yüksekliği ses şiddeti değil, geçen süre; imleç dolu ve boş aralıkları okuyor.','Süre basamakları açık uçtan büyüyor; ses bitince kapanıyor, sessizlik boş kalıyor.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const fract=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,mix=(a,b,p)=>a+(b-a)*p;
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Silent deterministic timing, not microphone input or a physical simulation.
+  function pulse(time,period=1.8,length=.95) { const age=mod(time,period);return age>=length?0:Math.pow(Math.sin(Math.PI*age/length),2); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function area(points,alpha=.12,color=white) { if(points.length<3)return;ink(alpha,color);ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill(); }
+  function marker(x,y,alpha=1,color=white,size=2) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function project(x,y,z) { return [10+x*(w-30)+z*10,26-y*10-z*12]; }
+  function sectionCurve(x,_z,take=0) { return .48*Math.sin(x*5.5+take*.7)+.06*Math.cos(x*2.1+take*.4); }
+  function section(time) {
+    const recording=state.mode==='record',step=Math.floor(time/galleryTheme.period),phase=fract(time/galleryTheme.period),active=mod(step,5),cut=recording?(active+.5)/5:fract(time/galleryTheme.period);
+    const plane=[project(cut,-1,0),project(cut,-1,1),project(cut,1,1),project(cut,1,0),project(cut,-1,0)];
+    const planeVisible=recording||cut<(w-40)/(w-30);
+    if(planeVisible){area(plane,.035,white);line(plane,.6,white);}
+    if(recording) {
+      for(let station=0;station<5;station++) {
+        const x=(station+.5)/5,take=step-mod(step-station,5),live=station===active,extent=live?phase:1,points=[];
+        for(let j=0;j<=12;j++) { const z=j/12;if(z>extent)break;points.push(project(x,sectionCurve(x,z,take),z)); }
+        if(live)points.push(project(x,sectionCurve(x,extent,take),extent));
+        line(points,live?1:.36,white);
+        if(live&&points.length){const p=points[points.length-1];marker(p[0],p[1],1,white,3);}
+      }
+    } else {
+      const cross=[];
+      for(let rail=0;rail<5;rail++) {
+        const z=rail/4,points=[],slice=[];
+        for(let j=0;j<=24;j++){const x=j/24;points.push(project(x,sectionCurve(x,z),z));}
+        line(points,.32);
+        for(let j=0;j<=6;j++){const x=cut-.04+j*.08/6;if(x>=0&&x<=1)slice.push(project(x,sectionCurve(x,z),z));}
+        line(slice,.9,white);
+        const hit=project(cut,sectionCurve(cut,z),z);cross.push(hit);marker(hit[0],hit[1],1,accent(),2);
+      }
+      line(cross,.9,accent());
+    }
+  }
+  function strainPoint(u,v,loci) {
+    const pin=Math.sin(Math.PI*u)*Math.sin(Math.PI*v);let dx=0,dy=0;
+    for(const locus of loci) {
+      const a=(u-locus.u)/.2,b=(v-locus.v)/.42,influence=Math.exp(-(a*a+b*b))*locus.force*pin;
+      dx+=(locus.u-u)*.38*influence;dy+=locus.pull*.32*influence;
+    }
+    return [5+(u+dx)*(w-10),5+(v+dy)*34];
+  }
+  function strain(time) {
+    const recording=state.mode==='record',loci=[];
+    if(recording) {
+      const step=Math.floor(time/galleryTheme.period),age=mod(time,galleryTheme.period),u=[.25,.5,.75][mod(step,3)],v=mod(step,2)?.75:.25;
+      const force=age<.85?Math.pow(1-age/.85,2):0;
+      loci.push({u,v,force,pull:mod(step,2)?-1:1});
+    } else {
+      const travel=fract(time/galleryTheme.period),bend=Math.sin(travel*Math.PI*6);
+      loci.push({u:travel,v:.5,force:.86,pull:bend});
+    }
+    ctx.save();ctx.beginPath();ctx.rect(5,5,w-10,34);ctx.clip();
+    for(let row=1;row<4;row++) {
+      const points=[];for(let j=0;j<=28;j++)points.push(strainPoint(j/28,row/4,loci));line(points,row===2?1:.31,white);
+    }
+    for(let col=1;col<8;col++) {
+      const points=[];for(let j=0;j<=16;j++)points.push(strainPoint(col/8,j/16,loci));line(points,.32);
+    }
+    for(const locus of loci) {
+      const p=strainPoint(locus.u,locus.v,loci),radius=3+locus.force;
+      line([[p[0]-radius,p[1]],[p[0]+radius,p[1]]],.95,accent());line([[p[0],p[1]-radius],[p[0],p[1]+radius]],.95,accent());
+    }
+    ctx.restore();
+  }
+  function atlasPosition(pattern,index,width) {
+    const col=index%3,row=Math.floor(index/3);
+    switch(mod(pattern,5)) {
+      case 0:return [width*(.2+col*.3),9+row*8];
+      case 1:return [width*(.13+(index%6)*.148),14+Math.floor(index/6)*15];
+      case 2:{const side=Math.floor(index/3),q=index%3;return [[width*(.2+q*.2),9],[width*.8,9+q*8],[width*(.8-q*.2),33],[width*.2,33-q*8]][side];}
+      case 3:return [width*(.36+(index%2)*.28),7+Math.floor(index/2)*5.8];
+      default:return [width*(.14+col*.28+row*.055),8+row*8+col*1.5];
+    }
+  }
+  function atlas(time) {
+    const recording=state.mode==='record',step=Math.floor(time*.8),phase=fract(time*.8),active=mod(step,5),epoch=Math.floor(step/5),cell=(w-8)/5;
+    for(let i=0;i<5;i++) {
+      const origin=4+i*cell,width=cell-3;
+      line([[origin,40],[origin+width,40]],i===active?.8:.2,i===active?accent():white);
+      for(let index=0;index<12;index++) {
+        let a,b,q;
+        if(recording) {
+          const rack=[width*(.12+(index%6)*.15),32+Math.floor(index/6)*5];
+          const target=atlasPosition(i+epoch,index,width);
+          a=rack;b=target;q=i<active?1:i>active?0:clamp(phase/.38);
+        } else {
+          const pattern=i+epoch+(i<active?1:0);a=atlasPosition(pattern,index,width);b=atlasPosition(pattern+1,index,width);q=i===active?phase:0;
+        }
+        const x=origin+mix(a[0],b[0],q),y=mix(a[1],b[1],q);
+        marker(x,y,i===active?.96:recording&&i>active?.38:.7,i===active?accent():white,2);
+      }
+    }
+  }
+  function flare(time) {
+    // A 2.4-second beat in both playback and recording.
+    if(state.mode==='record')time*=1.8/2.4;
+    const recording=state.mode==='record',step=Math.floor(time/1.8),age=mod(time,1.8),beat=pulse(time),opening=recording?1+beat*6:1.2+pulse(time,2.4,1.65)*6,throat=w*.2,shoulder=w*.38,rim=w*.76;
+    line([[4,22],[throat,22]],.85,white);
+    line([[throat-3,18],[throat-3,26]],.36);
+    for(let track=0;track<5;track++) {
+      const offset=track-2,endpoint=8+track*7,points=[[throat,22],[shoulder,22+offset*.7],[rim,22+offset*opening],[w-9,endpoint]];
+      line(points,track===2?.8:.66,track===2||(recording&&track===mod(step,5))?accent():white);
+      line([[w-7,endpoint],[w-3,endpoint]],.35,track===2?accent():white);
+      if(recording&&track<=mod(step,5)&&(track<mod(step,5)||age>.95)) {
+        line([[w-10,endpoint-2],[w-7,endpoint-2],[w-7,endpoint+2],[w-4,endpoint+2]],track===mod(step,5)?1:.65,track===mod(step,5)?accent():white);
+      }
+    }
+    if(!recording)line([[rim-3,22-opening*2-3],[rim,22-opening*2-3],[rim,22+opening*2+3],[rim-3,22+opening*2+3]],.48,accent());
+  }
+  const slotPhrases=[{start:0,length:3},{start:4,length:2},{start:8,length:4},{start:13,length:2}];
+  function slots(time) {
+    const recording=state.mode==='record',units=16,cursor=mod(time*2.2,units),pitch=(w-8)/units,base=37;
+    line([[4,base],[w-4,base]],.25);
+    for(let i=0;i<=units;i++)line([[4+i*pitch,39],[4+i*pitch,41]],.18);
+    for(const phrase of slotPhrases) {
+      const elapsed=recording?clamp(cursor-phrase.start,0,phrase.length):phrase.length;
+      if(elapsed<=0)continue;
+      const start=4+phrase.start*pitch,top=[[start,base]],live=cursor>=phrase.start&&cursor<phrase.start+phrase.length;
+      for(let cell=0;cell<Math.ceil(elapsed);cell++) {
+        const x=start+cell*pitch,y=base-(cell+1)*6,end=start+Math.min(elapsed,cell+1)*pitch;
+        top.push([x,y],[end,y]);
+      }
+      const end=top[top.length-1],closed=!recording||elapsed===phrase.length;
+      area([...top,[end[0],base]],live?.17:.09,live?accent():white);
+      line(top,live?.95:.57,live?accent():white);
+      if(closed)line([end,[end[0],base]],.57);
+      else {marker(end[0],end[1],1,accent(),3);line([[end[0]-2,base+2],[end[0]+2,base+2]],.85,accent());}
+    }
+    const x=4+cursor*pitch;
+    if(!recording) {line([[x,5],[x,base+1]],.6,accent());line([[x-2,4],[x,6],[x+2,4]],.9,accent());}
+    else line([[x-2,4],[x+2,4]],.9,accent());
+  }
+  const renderers={section,strain,atlas,flare,slots};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{
+    const latest=entries.filter(entry=>entry.target===root).reduce((a,b)=>!a||b.time>=a.time?b:a,null);
+    if(latest){visible=latest.isIntersecting;schedule();}
+  }).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-3')?.querySelector('[data-style="flare"]').click();
+
+(() => {
+  const root=document.getElementById('study-4');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'handoff',mode:'play',paused:reduced.matches,accent:true};
+  const names={handoff:'Quantized Handoff',clipped:'Clipped Travel',ratchet:'Retrigger Ratchet',lease:'Context Lease',schmitt:'Schmitt Memory'};
+  const descriptions={
+    handoff:['Sonraki örnek hazır bekliyor; yalnız dört vuruşluk cümle bitince devreye giriyor.','Darbeler bekleyen örneği değiştiriyor; cümle sınırına kadar etkin kayıt değişmiyor.'],
+    clipped:['Soluk sürücü ilerlese de beyaz imleç belirlenmiş sınırın dışına çıkamıyor.','Önce iki sınır yazılıyor; sonraki taşmaların son iki teması hafızada tutuluyor.'],
+    ratchet:['İmleç kısa bir aralığı birkaç kez okuyor; tekrar sayısı dolunca sonrakine geçiyor.','Yeni aralığın bitişi ve tekrar çentikleri yazılıyor; tamamlanan aralık korunuyor.'],
+    lease:['Sabit bir adres kısa süreliğine olay kodunu gösteriyor; sonra kendi adına dönüyor.','Geçici kod adresin altına kaydediliyor; üstteki kimlik geri gelirken son kod korunuyor.'],
+    schmitt:['Üst eşik açıyor, alt eşik kapatıyor; aradaki bölgede önceki durum korunuyor.','Aynı iki eşik çalışıyor; yalnız durum değiştiren geçişler alttaki hafızaya yazılıyor.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function diamond(x,y,r=3,alpha=1,color=white) { line([[x-r,y],[x,y-r],[x+r,y],[x,y+r],[x-r,y]],alpha,color); }
+  function text(value,x,y,alpha=1,color=white) { ink(alpha,color);ctx.font='11px ui-monospace, SFMono-Regular, Menlo, monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(value,x,y); }
+  function signature(x,y,id,alpha,color=white) {
+    for(let lane=0;lane<3;lane++) {
+      const tilt=Math.floor(hash(id*9+lane)*3)-1,offset=hash(id+lane*13)*4;
+      line([[x-10,y-6+lane*6],[x-3+offset,y-6+lane*6],[x+4,y-6+lane*6+tilt*3],[x+10,y-6+lane*6+tilt*3]],alpha,color);
+    }
+  }
+  // Synthetic event state and transport only; no MIDI, audio, or calibrated units.
+  function handoff(time) {
+    const phrase=Math.floor(time/2.4),position=mod(time,2.4),beat=Math.floor(position/.6),recording=state.mode==='record';
+    const active=recording?(phrase-1)*4+3:phrase,pending=recording?phrase*4+beat:phrase+1;
+    const distance=Math.min(76,w*.43),left=w/2-distance/2,right=w/2+distance/2;
+    signature(left,18,active,.95,position<.12?accent():white);
+    signature(right,18,pending,.56);
+    line([[left-13,30],[left+13,30]],.9,accent());
+    line([[right-13,30],[right-8,30]],.33);line([[right+8,30],[right+13,30]],.33);
+    if(recording&&mod(position,.6)<.11)box(right-13,6,26,24,.65,accent());
+    for(let i=0;i<4;i++) {
+      const x=w/2-21+i*14;
+      rect(x,40,7,1,i<=beat?.85:.16,i===beat?accent():white);
+    }
+  }
+  function clipped(time) {
+    const recording=state.mode==='record',phrase=Math.floor(time/4.8),phase=mod(time,4.8),span=w-24;
+    const targetLow=.26+hash(phrase)*.1,targetHigh=.61+hash(phrase+3)*.12;
+    const lo=recording?.2+(targetLow-.2)*clamp(phase/.6):.32;
+    const hi=recording?.8+(targetHigh-.8)*clamp((phase-.6)/.6):.68;
+    const driver=.5+.44*Math.sin(time*1.7),position=clamp(driver,lo,hi),x=12+driver*span,pin=12+position*span;
+    line([[12,25],[w-12,25]],.16);
+    line([[12+lo*span,17],[12+lo*span,33]],.75);line([[12+hi*span,17],[12+hi*span,33]],.75);
+    diamond(x,10,3,.55);
+    line([[x,14],[x,19]],.3);
+    rect(pin-1,20,2,10,1,accent());
+    if(Math.abs(x-pin)>3) {
+      const direction=x>pin?1:-1;
+      for(let i=1;i<=3;i++) {
+        const at=pin+(x-pin)*i/4;
+        line([[at-direction,25],[at+direction,25]],.4);
+      }
+    }
+    if(recording) {
+      const contacts=[];let previousSide=0;
+      for(let age=1.2;age<=phase;age+=.04) {
+        const value=.5+.44*Math.sin((phrase*4.8+age)*1.7),side=value<lo?-1:value>hi?1:0;
+        if(side&&side!==previousSide)contacts.push(side<0?lo:hi);
+        previousSide=side;
+      }
+      contacts.slice(-2).forEach((value,i)=>line([[12+value*span-4,38+i*4],[12+value*span+4,38+i*4]],.7,accent()));
+    }
+  }
+  const intervals=[.23,.46,.31],repeats=[3,2,4],repeatSum=repeats.reduce((a,b)=>a+b,0);
+  function ratchet(time) {
+    const span=w-12,recording=state.mode==='record';
+    let start=6;
+    if(recording) {
+      const step=Math.floor(time/1.3),active=mod(step,3),phase=mod(time,1.3)/1.3;
+      intervals.forEach((fraction,i)=>{
+        const width=fraction*span-7;
+        line([[start,18],[start,34]],.42);
+        const extent=i===active?width*clamp(phase/.63):width;
+        line([[start,27],[start+extent,27]],i===active?1:.32,i===active?accent():white);
+        if(i===active)line([[start+extent,19],[start+extent,34]],1,accent());
+        else line([[start+width,23],[start+width,31]],.4);
+        const count=i===active?Math.floor(clamp((phase-.64)/.3)*repeats[i]):repeats[i];
+        for(let j=0;j<count;j++)rect(start+j*5,9,2,2,i===active?.9:.35,i===active?accent():white);
+        start+=fraction*span;
+      });
+    } else {
+      const step=mod(Math.floor(time/.34),repeatSum),phase=fract(time/.34);
+      let passed=0;
+      intervals.forEach((fraction,i)=>{
+        const width=fraction*span-7,active=step>=passed&&step<passed+repeats[i],read=step-passed;
+        line([[start,18],[start,34]],.42);line([[start,27],[start+width,27]],active?.6:.24);line([[start+width,23],[start+width,31]],.4);
+        for(let j=0;j<repeats[i];j++)rect(start+j*5,9,2,2,active&&j<=read?.9:.2,active&&j===read?accent():white);
+        if(active) {const x=start+phase*width;line([[x,19],[x,34]],1,accent());}
+        start+=fraction*span;passed+=repeats[i];
+      });
+    }
+  }
+  function lease(time) {
+    const event=Math.floor(time/.9),phase=mod(time,.9),active=mod(event,3),pitch=(w-6)/3,recording=state.mode==='record';
+    const code=id=>'+'+String(Math.floor(hash(id+19)*99)).padStart(3,'0');
+    for(let i=0;i<3;i++) {
+      const x=3+pitch*(i+.5),temporary=i===active&&phase<.68,identity=['A.01','B.02','C.03'][i];
+      text(temporary?code(event):identity,x,14,temporary?1:.66,temporary?accent():white);
+      if(recording) {
+        const committed=event-mod(event-i,3)-(i===active&&phase<.68?3:0);
+        text(code(committed),x,33,i===active&&phase>=.68?.9:.32,i===active&&phase>=.68?accent():white);
+      } else line([[x-10,32],[x+10,32]],.15);
+      if(temporary)rect(x-10,24,20*(1-phase/.68),1,.65,accent());
+    }
+  }
+  const drive=[.12,.47,.79,.59,.54,.62,.46,.31,.12];
+  const low=.35,high=.68;
+  function schmittState(index,progress) {
+    let on=false;
+    for(let i=0;i<=index;i++){if(drive[i]>=high)on=true;else if(drive[i]<=low)on=false;}
+    const value=drive[index]+(drive[index+1]-drive[index])*progress;
+    if(value>=high)on=true;else if(value<=low)on=false;
+    return {value,on};
+  }
+  function schmitt(time) {
+    const duration=.5,phase=mod(time,duration*(drive.length-1))/duration,index=Math.floor(phase),progress=fract(phase),current=schmittState(index,progress),span=w-24;
+    const x=value=>12+value*span,upper=11,lower=30;
+    line([[12,lower],[x(high),lower],[x(high),upper],[w-12,upper]],current.on?.19:.64);
+    line([[w-12,upper],[x(low),upper],[x(low),lower],[12,lower]],current.on?.64:.19);
+    line([[x(low)-3,36],[x(low)+3,36]],.55);line([[x(high)-3,36],[x(high)+3,36]],.55);
+    const at=x(current.value),y=current.on?upper:lower;
+    diamond(at,y,3,1,accent());
+    if(current.value>low&&current.value<high)line([[at,y],[at,21]],.27,accent());
+    rect(w-7,y-3,2,6,.9,accent());
+    if(state.mode==='record') {
+      const history=[];let previous=false;
+      for(let i=0;i<=index;i++) {
+        const checked=schmittState(i,i===index?progress:1);
+        if(checked.on!==previous)history.push({on:checked.on,at:i});
+        previous=checked.on;
+      }
+      history.forEach((entry,i)=>line([[12+i*18,42],[21+i*18,42]],.9,entry.on?accent():white));
+    }
+  }
+  const renderers={handoff,clipped,ratchet,lease,schmitt};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{
+    const latest=entries.filter(entry=>entry.target===root).reduce((a,b)=>!a||b.time>=a.time?b:a,null);
+    if(latest){visible=latest.isIntersecting;schedule();}
+  }).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-4')?.querySelector('[data-style="schmitt"]').click();
+
+(() => {
+  const root=document.getElementById('study-5');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'handoff',mode:'play',paused:reduced.matches,accent:true};
+  const names={handoff:'Quantized Handoff',clipped:'Clipped Travel',ratchet:'Retrigger Ratchet',lease:'Context Lease',schmitt:'Schmitt Memory'};
+  const descriptions={
+    handoff:['Sonraki örnek hazır bekliyor; yalnız dört vuruşluk cümle bitince devreye giriyor.','Darbeler bekleyen örneği değiştiriyor; cümle sınırına kadar etkin kayıt değişmiyor.'],
+    clipped:['Soluk sürücü ilerlese de beyaz imleç belirlenmiş sınırın dışına çıkamıyor.','Önce iki sınır yazılıyor; sonraki taşmaların son iki teması hafızada tutuluyor.'],
+    ratchet:['İmleç kısa bir aralığı birkaç kez okuyor; tekrar sayısı dolunca sonrakine geçiyor.','Yeni aralığın bitişi ve tekrar çentikleri yazılıyor; tamamlanan aralık korunuyor.'],
+    lease:['Sabit bir adres kısa süreliğine olay kodunu gösteriyor; sonra kendi adına dönüyor.','Geçici kod adresin altına kaydediliyor; üstteki kimlik geri gelirken son kod korunuyor.'],
+    schmitt:['Üst eşik açıyor, alt eşik kapatıyor; aradaki bölgede önceki durum korunuyor.','Aynı iki eşik çalışıyor; yalnız durum değiştiren geçişler alttaki hafızaya yazılıyor.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function diamond(x,y,r=3,alpha=1,color=white) { line([[x-r,y],[x,y-r],[x+r,y],[x,y+r],[x-r,y]],alpha,color); }
+  function text(value,x,y,alpha=1,color=white) { ink(alpha,color);ctx.font='11px ui-monospace, SFMono-Regular, Menlo, monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(value,x,y); }
+  function signature(x,y,id,alpha,color=white) {
+    for(let lane=0;lane<3;lane++) {
+      const tilt=Math.floor(hash(id*9+lane)*3)-1,offset=hash(id+lane*13)*4;
+      line([[x-10,y-6+lane*6],[x-3+offset,y-6+lane*6],[x+4,y-6+lane*6+tilt*3],[x+10,y-6+lane*6+tilt*3]],alpha,color);
+    }
+  }
+  // Synthetic event state and transport only; no MIDI, audio, or calibrated units.
+  function handoff(time) {
+    const phrase=Math.floor(time/2.4),position=mod(time,2.4),beat=Math.floor(position/.6),recording=state.mode==='record';
+    const active=recording?(phrase-1)*4+3:phrase,pending=recording?phrase*4+beat:phrase+1;
+    const distance=Math.min(76,w*.43),left=w/2-distance/2,right=w/2+distance/2;
+    signature(left,18,active,.95,position<.12?accent():white);
+    signature(right,18,pending,.56);
+    line([[left-13,30],[left+13,30]],.9,accent());
+    line([[right-13,30],[right-8,30]],.33);line([[right+8,30],[right+13,30]],.33);
+    if(recording&&mod(position,.6)<.11)box(right-13,6,26,24,.65,accent());
+    for(let i=0;i<4;i++) {
+      const x=w/2-21+i*14;
+      rect(x,40,7,1,i<=beat?.85:.16,i===beat?accent():white);
+    }
+  }
+  function clipped(time) {
+    const recording=state.mode==='record',phrase=Math.floor(time/4.8),phase=mod(time,4.8),span=w-24;
+    const targetLow=.26+hash(phrase)*.1,targetHigh=.61+hash(phrase+3)*.12;
+    const lo=recording?.2+(targetLow-.2)*clamp(phase/.6):.32;
+    const hi=recording?.8+(targetHigh-.8)*clamp((phase-.6)/.6):.68;
+    const driver=.5+.44*Math.sin(time*1.7),position=clamp(driver,lo,hi),x=12+driver*span,pin=12+position*span;
+    line([[12,25],[w-12,25]],.16);
+    line([[12+lo*span,17],[12+lo*span,33]],.75);line([[12+hi*span,17],[12+hi*span,33]],.75);
+    diamond(x,10,3,.55);
+    line([[x,14],[x,19]],.3);
+    rect(pin-1,20,2,10,1,accent());
+    if(Math.abs(x-pin)>3) {
+      const direction=x>pin?1:-1;
+      for(let i=1;i<=3;i++) {
+        const at=pin+(x-pin)*i/4;
+        line([[at-direction,25],[at+direction,25]],.4);
+      }
+    }
+    if(recording) {
+      const contacts=[];let previousSide=0;
+      for(let age=1.2;age<=phase;age+=.04) {
+        const value=.5+.44*Math.sin((phrase*4.8+age)*1.7),side=value<lo?-1:value>hi?1:0;
+        if(side&&side!==previousSide)contacts.push(side<0?lo:hi);
+        previousSide=side;
+      }
+      contacts.slice(-2).forEach((value,i)=>line([[12+value*span-4,38+i*4],[12+value*span+4,38+i*4]],.7,accent()));
+    }
+  }
+  const intervals=[.23,.46,.31],repeats=[3,2,4],repeatSum=repeats.reduce((a,b)=>a+b,0);
+  function ratchet(time) {
+    const span=w-12,recording=state.mode==='record';
+    let start=6;
+    if(recording) {
+      const step=Math.floor(time/1.3),active=mod(step,3),phase=mod(time,1.3)/1.3;
+      intervals.forEach((fraction,i)=>{
+        const width=fraction*span-7;
+        line([[start,18],[start,34]],.42);
+        const extent=i===active?width*clamp(phase/.63):width;
+        line([[start,27],[start+extent,27]],i===active?1:.32,i===active?accent():white);
+        if(i===active)line([[start+extent,19],[start+extent,34]],1,accent());
+        else line([[start+width,23],[start+width,31]],.4);
+        const count=i===active?Math.floor(clamp((phase-.64)/.3)*repeats[i]):repeats[i];
+        for(let j=0;j<count;j++)rect(start+j*5,9,2,2,i===active?.9:.35,i===active?accent():white);
+        start+=fraction*span;
+      });
+    } else {
+      const step=mod(Math.floor(time/.34),repeatSum),phase=fract(time/.34);
+      let passed=0;
+      intervals.forEach((fraction,i)=>{
+        const width=fraction*span-7,active=step>=passed&&step<passed+repeats[i],read=step-passed;
+        line([[start,18],[start,34]],.42);line([[start,27],[start+width,27]],active?.6:.24);line([[start+width,23],[start+width,31]],.4);
+        for(let j=0;j<repeats[i];j++)rect(start+j*5,9,2,2,active&&j<=read?.9:.2,active&&j===read?accent():white);
+        if(active) {const x=start+phase*width;line([[x,19],[x,34]],1,accent());}
+        start+=fraction*span;passed+=repeats[i];
+      });
+    }
+  }
+  function lease(time) {
+    const event=Math.floor(time/.9),phase=mod(time,.9),active=mod(event,3),pitch=(w-6)/3,recording=state.mode==='record';
+    const code=id=>'+'+String(Math.floor(hash(id+19)*99)).padStart(3,'0');
+    for(let i=0;i<3;i++) {
+      const x=3+pitch*(i+.5),temporary=i===active&&phase<.68,identity=['A.01','B.02','C.03'][i];
+      text(temporary?code(event):identity,x,14,temporary?1:.66,temporary?accent():white);
+      if(recording) {
+        const committed=event-mod(event-i,3)-(i===active&&phase<.68?3:0);
+        text(code(committed),x,33,i===active&&phase>=.68?.9:.32,i===active&&phase>=.68?accent():white);
+      } else line([[x-10,32],[x+10,32]],.15);
+      if(temporary)rect(x-10,24,20*(1-phase/.68),1,.65,accent());
+    }
+  }
+  const drive=[.12,.47,.79,.59,.54,.62,.46,.31,.12];
+  const low=.35,high=.68;
+  function schmittState(index,progress) {
+    let on=false;
+    for(let i=0;i<=index;i++){if(drive[i]>=high)on=true;else if(drive[i]<=low)on=false;}
+    const value=drive[index]+(drive[index+1]-drive[index])*progress;
+    if(value>=high)on=true;else if(value<=low)on=false;
+    return {value,on};
+  }
+  function schmitt(time) {
+    const duration=.5,phase=mod(time,duration*(drive.length-1))/duration,index=Math.floor(phase),progress=fract(phase),current=schmittState(index,progress),span=w-24;
+    const x=value=>12+value*span,upper=11,lower=30;
+    line([[12,lower],[x(high),lower],[x(high),upper],[w-12,upper]],current.on?.19:.64);
+    line([[w-12,upper],[x(low),upper],[x(low),lower],[12,lower]],current.on?.64:.19);
+    line([[x(low)-3,36],[x(low)+3,36]],.55);line([[x(high)-3,36],[x(high)+3,36]],.55);
+    const at=x(current.value),y=current.on?upper:lower;
+    diamond(at,y,3,1,accent());
+    if(current.value>low&&current.value<high)line([[at,y],[at,21]],.27,accent());
+    rect(w-7,y-3,2,6,.9,accent());
+    if(state.mode==='record') {
+      const history=[];let previous=false;
+      for(let i=0;i<=index;i++) {
+        const checked=schmittState(i,i===index?progress:1);
+        if(checked.on!==previous)history.push({on:checked.on,at:i});
+        previous=checked.on;
+      }
+      history.forEach((entry,i)=>line([[12+i*18,42],[21+i*18,42]],.9,entry.on?accent():white));
+    }
+  }
+  const renderers={handoff,clipped,ratchet,lease,schmitt};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{
+    const latest=entries.filter(entry=>entry.target===root).reduce((a,b)=>!a||b.time>=a.time?b:a,null);
+    if(latest){visible=latest.isIntersecting;schedule();}
+  }).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-5')?.querySelector('[data-style="clipped"]').click();
+
+(() => {
+  const root=document.getElementById('study-6');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'handoff',mode:'play',paused:reduced.matches,accent:true};
+  const names={handoff:'Quantized Handoff',clipped:'Clipped Travel',ratchet:'Retrigger Ratchet',lease:'Context Lease',schmitt:'Schmitt Memory'};
+  const descriptions={
+    handoff:['Sonraki örnek hazır bekliyor; yalnız dört vuruşluk cümle bitince devreye giriyor.','Darbeler bekleyen örneği değiştiriyor; cümle sınırına kadar etkin kayıt değişmiyor.'],
+    clipped:['Soluk sürücü ilerlese de beyaz imleç belirlenmiş sınırın dışına çıkamıyor.','Önce iki sınır yazılıyor; sonraki taşmaların son iki teması hafızada tutuluyor.'],
+    ratchet:['İmleç kısa bir aralığı birkaç kez okuyor; tekrar sayısı dolunca sonrakine geçiyor.','Yeni aralığın bitişi ve tekrar çentikleri yazılıyor; tamamlanan aralık korunuyor.'],
+    lease:['Sabit bir adres kısa süreliğine olay kodunu gösteriyor; sonra kendi adına dönüyor.','Geçici kod adresin altına kaydediliyor; üstteki kimlik geri gelirken son kod korunuyor.'],
+    schmitt:['Üst eşik açıyor, alt eşik kapatıyor; aradaki bölgede önceki durum korunuyor.','Aynı iki eşik çalışıyor; yalnız durum değiştiren geçişler alttaki hafızaya yazılıyor.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function diamond(x,y,r=3,alpha=1,color=white) { line([[x-r,y],[x,y-r],[x+r,y],[x,y+r],[x-r,y]],alpha,color); }
+  function text(value,x,y,alpha=1,color=white) { ink(alpha,color);ctx.font='11px ui-monospace, SFMono-Regular, Menlo, monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(value,x,y); }
+  function signature(x,y,id,alpha,color=white) {
+    for(let lane=0;lane<3;lane++) {
+      const tilt=Math.floor(hash(id*9+lane)*3)-1,offset=hash(id+lane*13)*4;
+      line([[x-10,y-6+lane*6],[x-3+offset,y-6+lane*6],[x+4,y-6+lane*6+tilt*3],[x+10,y-6+lane*6+tilt*3]],alpha,color);
+    }
+  }
+  // Synthetic event state and transport only; no MIDI, audio, or calibrated units.
+  function handoff(time) {
+    const phrase=Math.floor(time/2.4),position=mod(time,2.4),beat=Math.floor(position/.6),recording=state.mode==='record';
+    const active=recording?(phrase-1)*4+3:phrase,pending=recording?phrase*4+beat:phrase+1;
+    const distance=Math.min(76,w*.43),left=w/2-distance/2,right=w/2+distance/2;
+    signature(left,18,active,.95,position<.12?accent():white);
+    signature(right,18,pending,.56);
+    line([[left-13,30],[left+13,30]],.9,accent());
+    line([[right-13,30],[right-8,30]],.33);line([[right+8,30],[right+13,30]],.33);
+    if(recording&&mod(position,.6)<.11)box(right-13,6,26,24,.65,accent());
+    for(let i=0;i<4;i++) {
+      const x=w/2-21+i*14;
+      rect(x,40,7,1,i<=beat?.85:.16,i===beat?accent():white);
+    }
+  }
+  function clipped(time) {
+    const recording=state.mode==='record',phrase=Math.floor(time/4.8),phase=mod(time,4.8),span=w-24;
+    const targetLow=.26+hash(phrase)*.1,targetHigh=.61+hash(phrase+3)*.12;
+    const lo=recording?.2+(targetLow-.2)*clamp(phase/.6):.32;
+    const hi=recording?.8+(targetHigh-.8)*clamp((phase-.6)/.6):.68;
+    const driver=.5+.44*Math.sin(time*1.7),position=clamp(driver,lo,hi),x=12+driver*span,pin=12+position*span;
+    line([[12,25],[w-12,25]],.16);
+    line([[12+lo*span,17],[12+lo*span,33]],.75);line([[12+hi*span,17],[12+hi*span,33]],.75);
+    diamond(x,10,3,.55);
+    line([[x,14],[x,19]],.3);
+    rect(pin-1,20,2,10,1,accent());
+    if(Math.abs(x-pin)>3) {
+      const direction=x>pin?1:-1;
+      for(let i=1;i<=3;i++) {
+        const at=pin+(x-pin)*i/4;
+        line([[at-direction,25],[at+direction,25]],.4);
+      }
+    }
+    if(recording) {
+      const contacts=[];let previousSide=0;
+      for(let age=1.2;age<=phase;age+=.04) {
+        const value=.5+.44*Math.sin((phrase*4.8+age)*1.7),side=value<lo?-1:value>hi?1:0;
+        if(side&&side!==previousSide)contacts.push(side<0?lo:hi);
+        previousSide=side;
+      }
+      contacts.slice(-2).forEach((value,i)=>line([[12+value*span-4,38+i*4],[12+value*span+4,38+i*4]],.7,accent()));
+    }
+  }
+  const intervals=[.23,.46,.31],repeats=[3,2,4],repeatSum=repeats.reduce((a,b)=>a+b,0);
+  function ratchet(time) {
+    const span=w-12,recording=state.mode==='record';
+    let start=6;
+    if(recording) {
+      const step=Math.floor(time/1.3),active=mod(step,3),phase=mod(time,1.3)/1.3;
+      intervals.forEach((fraction,i)=>{
+        const width=fraction*span-7;
+        line([[start,18],[start,34]],.42);
+        const extent=i===active?width*clamp(phase/.63):width;
+        line([[start,27],[start+extent,27]],i===active?1:.32,i===active?accent():white);
+        if(i===active)line([[start+extent,19],[start+extent,34]],1,accent());
+        else line([[start+width,23],[start+width,31]],.4);
+        const count=i===active?Math.floor(clamp((phase-.64)/.3)*repeats[i]):repeats[i];
+        for(let j=0;j<count;j++)rect(start+j*5,9,2,2,i===active?.9:.35,i===active?accent():white);
+        start+=fraction*span;
+      });
+    } else {
+      const step=mod(Math.floor(time/.34),repeatSum),phase=fract(time/.34);
+      let passed=0;
+      intervals.forEach((fraction,i)=>{
+        const width=fraction*span-7,active=step>=passed&&step<passed+repeats[i],read=step-passed;
+        line([[start,18],[start,34]],.42);line([[start,27],[start+width,27]],active?.6:.24);line([[start+width,23],[start+width,31]],.4);
+        for(let j=0;j<repeats[i];j++)rect(start+j*5,9,2,2,active&&j<=read?.9:.2,active&&j===read?accent():white);
+        if(active) {const x=start+phase*width;line([[x,19],[x,34]],1,accent());}
+        start+=fraction*span;passed+=repeats[i];
+      });
+    }
+  }
+  function lease(time) {
+    const event=Math.floor(time/.9),phase=mod(time,.9),active=mod(event,3),pitch=(w-6)/3,recording=state.mode==='record';
+    const code=id=>'+'+String(Math.floor(hash(id+19)*99)).padStart(3,'0');
+    for(let i=0;i<3;i++) {
+      const x=3+pitch*(i+.5),temporary=i===active&&phase<.68,identity=['A.01','B.02','C.03'][i];
+      text(temporary?code(event):identity,x,14,temporary?1:.66,temporary?accent():white);
+      if(recording) {
+        const committed=event-mod(event-i,3)-(i===active&&phase<.68?3:0);
+        text(code(committed),x,33,i===active&&phase>=.68?.9:.32,i===active&&phase>=.68?accent():white);
+      } else line([[x-10,32],[x+10,32]],.15);
+      if(temporary)rect(x-10,24,20*(1-phase/.68),1,.65,accent());
+    }
+  }
+  const drive=[.12,.47,.79,.59,.54,.62,.46,.31,.12];
+  const low=.35,high=.68;
+  function schmittState(index,progress) {
+    let on=false;
+    for(let i=0;i<=index;i++){if(drive[i]>=high)on=true;else if(drive[i]<=low)on=false;}
+    const value=drive[index]+(drive[index+1]-drive[index])*progress;
+    if(value>=high)on=true;else if(value<=low)on=false;
+    return {value,on};
+  }
+  function schmitt(time) {
+    const duration=.5,phase=mod(time,duration*(drive.length-1))/duration,index=Math.floor(phase),progress=fract(phase),current=schmittState(index,progress),span=w-24;
+    const x=value=>12+value*span,upper=11,lower=30;
+    line([[12,lower],[x(high),lower],[x(high),upper],[w-12,upper]],current.on?.19:.64);
+    line([[w-12,upper],[x(low),upper],[x(low),lower],[12,lower]],current.on?.64:.19);
+    line([[x(low)-3,36],[x(low)+3,36]],.55);line([[x(high)-3,36],[x(high)+3,36]],.55);
+    const at=x(current.value),y=current.on?upper:lower;
+    diamond(at,y,3,1,accent());
+    if(current.value>low&&current.value<high)line([[at,y],[at,21]],.27,accent());
+    rect(w-7,y-3,2,6,.9,accent());
+    if(state.mode==='record') {
+      const history=[];let previous=false;
+      for(let i=0;i<=index;i++) {
+        const checked=schmittState(i,i===index?progress:1);
+        if(checked.on!==previous)history.push({on:checked.on,at:i});
+        previous=checked.on;
+      }
+      history.forEach((entry,i)=>line([[12+i*18,42],[21+i*18,42]],.9,entry.on?accent():white));
+    }
+  }
+  const renderers={handoff,clipped,ratchet,lease,schmitt};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{
+    const latest=entries.filter(entry=>entry.target===root).reduce((a,b)=>!a||b.time>=a.time?b:a,null);
+    if(latest){visible=latest.isIntersecting;schedule();}
+  }).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-6')?.querySelector('[data-style="ratchet"]').click();
+
+(() => {
+  const root=document.getElementById('study-7');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'skew',mode:'play',paused:reduced.matches,accent:true};
+  const names={skew:'Skew Profile',receipt:'Duration Receipt',throat:'Stepped Throat',shear:'Shear Belt',carrier:'Carrier Window'};
+  const descriptions={
+    skew:['Eğik kalibrasyon sabit; okuma uçları üç köşeli profil üzerinde ilerliyor.','Darbeler profilin köşelerini sırayla çiziyor; tamamlanan iz yerinde tutuluyor.'],
+    receipt:['Kısa ve uzun izler kayıtlı süreleri taşıyor; imleç sessiz boşlukları da okuyor.','Kısa darbe nokta, uzun ses çizgi bırakıyor; sessizlik kağıtta boşluk olarak kalıyor.'],
+    throat:['İki basamaklı ağız yanlara açılıyor; sinyal, aralarındaki boşluktan geçiyor.','Sol taraf darbeyi alıyor; sağ taraf bir örnek gecikmeyle açıklığı kilitliyor.'],
+    shear:['Düzenli nokta kuşağı eğilip kayıyor; noktaların komşuluğu korunuyor.','Yeni bir kesit sabit kuşağı büküyor; önceki kesit iki silik iz halinde tutuluyor.'],
+    carrier:['İnce taşıyıcı yalnız iki pencerede görünür; enerji birinden diğerine aktarılır.','Pencereler yerinde kalır; darbe içlerindeki keskin taşıyıcıyı dışa doğru açar.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  const energy=time=>.15+.65*Math.pow(Math.max(0,Math.sin(time*2.4)),6)+.2*Math.pow(Math.max(0,Math.sin(time*5.9+1)),10);
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  // The preview is deterministic drawing, not weather, physics or RF measurement.
+  function skew(time) {
+    const n=3,pitch=w/n,step=Math.floor(time*3.4),phase=fract(time*3.4);
+    for(let panel=0;panel<n;panel++) {
+      const origin=panel*pitch+6,width=pitch-15;
+      for(let i=0;i<3;i++)line([[origin+i*width/3,37],[origin+i*width/3+10,7]],.13);
+      for(let i=0;i<4;i++)line([[origin+2,8+i*10],[origin+width,8+i*10]],.14);
+      const points=[];
+      const active=mod(step,18),head=mod(step+panel*2,6),recording=state.mode==='record';
+      const cycle=recording?Math.floor(step/18)-(panel*6>active?1:0):0;
+      for(let i=0;i<7;i++)points.push([origin+width*(.16+hash(panel*31+i+cycle*13)*.69),7+i*5]);
+      if(recording) {
+        const count=active>=panel*6+6?7:active<panel*6?7:active-panel*6+1;
+        line(points.slice(0,count),active>=panel*6&&active<panel*6+6?1:.4);
+        if(active>=panel*6&&active<panel*6+6) {
+          const a=points[count-1],b=points[Math.min(6,count)],end=[a[0]+(b[0]-a[0])*phase,a[1]+(b[1]-a[1])*phase];
+          line([a,end],1,accent());rect(end[0]-1,end[1]-1,2,2,1,accent());
+        }
+      } else {
+        line(points,.62);const a=points[head],b=points[head+1],x=a[0]+(b[0]-a[0])*phase,y=a[1]+(b[1]-a[1])*phase;
+        rect(x-1.5,y-1.5,3,3,1,accent());
+      }
+    }
+  }
+  const durations=[.08,.31,.12,.48,.09,.22,.61,.12],gaps=[.16,.18,.27,.14,.32,.17,.2,.21];
+  const starts=[];let phraseLength=0;
+  durations.forEach((duration,i)=>{starts.push(phraseLength);phraseLength+=duration+gaps[i];});
+  function receipt(time) {
+    const phase=mod(time,phraseLength),activeLane=mod(Math.floor(time/phraseLength),2),scale=(w-12)/phraseLength,recording=state.mode==='record';
+    for(let row=0;row<2;row++) {
+      const y=13+row*19,live=row===activeLane;
+      durations.forEach((duration,i)=>{
+        const x=6+starts[i]*scale,isActive=phase>=starts[i]&&phase<starts[i]+duration;
+        const visible=recording&&live?clamp((phase-starts[i])/duration):1;
+        if(visible<=0)return;
+        const color=live&&isActive?accent():white;
+        if(duration<=.12&&visible===1)rect(x,y-1,2,2,live?.95:.28,color);
+        else line([[x,y],[x+Math.max(1,duration*scale*visible),y]],live?.95:.28,color);
+      });
+      line([[2,y-4],[2,y+4]],.24);line([[w-2,y-4],[w-2,y+4]],.24);
+      if(live) {
+        const x=6+phase*scale;
+        line([[x-2,y-6],[x,y-4],[x+2,y-6]],.95,accent());
+      }
+    }
+  }
+  function throat(time) {
+    const center=w/2,recording=state.mode==='record',a=2+Math.floor(energy(time)*6),b=recording?2+Math.floor(energy(time-.22)*6):a;
+    const left=center-8-a*3,right=center+8+b*3;
+    line([[7,22],[left-8,22]],.2);line([[right+8,22],[w-7,22]],.2);
+    line([[left-7,6],[left,6],[left,13],[left+4,13],[left+4,31],[left,31],[left,38],[left-7,38]],.95,recording?accent():white);
+    line([[right+7,6],[right,6],[right,13],[right-4,13],[right-4,31],[right,31],[right,38],[right+7,38]],.95,accent());
+    for(let i=-4;i<=4;i++)rect(center+i*7,42,1,1,.18);
+    if(recording) {
+      const beat=Math.floor(time*2.5),age=fract(time*2.5),x=left-7-(1-age)*Math.min(23,left-12);
+      line([[x-4,22],[x+4,22]],1,accent());
+      for(let i=0;i<3;i++)rect(center-6+i*6,22+(mod(beat+i,3)-1)*4,2,2,i===mod(beat,3)?1:.25);
+    } else {
+      const reach=right-left-14,x=left+7+fract(time*.9)*reach;
+      line([[x-6,22],[x+6,22]],1,accent());
+      rect(x,21,2,2,1);
+    }
+  }
+  function shear(time) {
+    const recording=state.mode==='record',columns=Math.max(14,Math.floor(w/9)),rows=5,pitch=(w-12)/columns;
+    const step=Math.floor(time*2.5),phase=fract(time*2.5),shape=recording?step*.67:time*.8;
+    function point(col,row,form) {
+      const u=col/(columns-1),y=(row-2)*4.7;
+      const bend=Math.sin(u*Math.PI*1.4-form)*(.4+.6*Math.sin(u*Math.PI));
+      return [6+u*(w-12)+y*bend*.43,22+y+Math.sin(u*Math.PI)*Math.cos(form+u*3)*5];
+    }
+    for(let row=0;row<rows;row++)for(let col=0;col<columns;col++) {
+      const position=point(col,row,shape),selected=col===mod(step,columns);
+      if(recording&&selected)for(let history=1;history<=2;history++) {
+        const past=point(col,row,shape-history*.67);
+        rect(past[0],past[1],1,1,.18/history);
+      }
+      if(recording&&selected) {
+        const previous=point(col,row,shape-.67),mix=clamp(phase/.36);
+        position[0]=previous[0]+(position[0]-previous[0])*mix;position[1]=previous[1]+(position[1]-previous[1])*mix;
+      }
+      rect(position[0],position[1],selected?2:1,selected?2:1,selected?1:.26+row*.055,selected?accent():white);
+    }
+    if(recording) {
+      const x=6+mod(step,columns)/(columns-1)*(w-12);
+      line([[x-3,4],[x+3,4]],.8,accent());
+    }
+  }
+  function carrier(time) {
+    const recording=state.mode==='record';
+    for(let window=0;window<2;window++) {
+      const phase=time*.55+window*Math.PI;
+      const center=recording?w*(window===0?.3:.7):w*(.5+Math.sin(phase)*.25);
+      const signal=energy(time-window*.31),half=recording?3+signal*w*.14:w*(.105+.045*Math.cos(phase));
+      const amplitude=recording?5+signal*11:4+12*(.5+.5*Math.cos(phase));
+      const left=Math.max(2,center-half),right=Math.min(w-2,center+half),points=[];
+      for(let x=left;x<=right;x+=1) {
+        const relative=(x-center)/half,envelope=Math.pow(Math.max(0,1-relative*relative),1.4);
+        const triangle=1-4*Math.abs(fract(x/7-time*(recording?1.3:.7)+window*.3)-.5);
+        points.push([x,22+triangle*amplitude*envelope]);
+      }
+      line(points,.9,window===1?accent():white);
+      line([[left,20],[left,24]],.45);line([[right,20],[right,24]],.45);
+    }
+  }
+  const renderers={skew,receipt,throat,shear,carrier};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-7')?.querySelector('[data-style="shear"]').click();
+
+(() => {
+  const root=document.getElementById('study-8');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'skew',mode:'play',paused:reduced.matches,accent:true};
+  const names={skew:'Skew Profile',receipt:'Duration Receipt',throat:'Stepped Throat',shear:'Shear Belt',carrier:'Carrier Window'};
+  const descriptions={
+    skew:['Eğik kalibrasyon sabit; okuma uçları üç köşeli profil üzerinde ilerliyor.','Darbeler profilin köşelerini sırayla çiziyor; tamamlanan iz yerinde tutuluyor.'],
+    receipt:['Kısa ve uzun izler kayıtlı süreleri taşıyor; imleç sessiz boşlukları da okuyor.','Kısa darbe nokta, uzun ses çizgi bırakıyor; sessizlik kağıtta boşluk olarak kalıyor.'],
+    throat:['İki basamaklı ağız yanlara açılıyor; sinyal, aralarındaki boşluktan geçiyor.','Sol taraf darbeyi alıyor; sağ taraf bir örnek gecikmeyle açıklığı kilitliyor.'],
+    shear:['Düzenli nokta kuşağı eğilip kayıyor; noktaların komşuluğu korunuyor.','Yeni bir kesit sabit kuşağı büküyor; önceki kesit iki silik iz halinde tutuluyor.'],
+    carrier:['İnce taşıyıcı yalnız iki pencerede görünür; enerji birinden diğerine aktarılır.','Pencereler yerinde kalır; darbe içlerindeki keskin taşıyıcıyı dışa doğru açar.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  const energy=time=>.15+.65*Math.pow(Math.max(0,Math.sin(time*2.4)),6)+.2*Math.pow(Math.max(0,Math.sin(time*5.9+1)),10);
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  // The preview is deterministic drawing, not weather, physics or RF measurement.
+  function skew(time) {
+    const n=3,pitch=w/n,step=Math.floor(time*3.4),phase=fract(time*3.4);
+    for(let panel=0;panel<n;panel++) {
+      const origin=panel*pitch+6,width=pitch-15;
+      for(let i=0;i<3;i++)line([[origin+i*width/3,37],[origin+i*width/3+10,7]],.13);
+      for(let i=0;i<4;i++)line([[origin+2,8+i*10],[origin+width,8+i*10]],.14);
+      const points=[];
+      const active=mod(step,18),head=mod(step+panel*2,6),recording=state.mode==='record';
+      const cycle=recording?Math.floor(step/18)-(panel*6>active?1:0):0;
+      for(let i=0;i<7;i++)points.push([origin+width*(.16+hash(panel*31+i+cycle*13)*.69),7+i*5]);
+      if(recording) {
+        const count=active>=panel*6+6?7:active<panel*6?7:active-panel*6+1;
+        line(points.slice(0,count),active>=panel*6&&active<panel*6+6?1:.4);
+        if(active>=panel*6&&active<panel*6+6) {
+          const a=points[count-1],b=points[Math.min(6,count)],end=[a[0]+(b[0]-a[0])*phase,a[1]+(b[1]-a[1])*phase];
+          line([a,end],1,accent());rect(end[0]-1,end[1]-1,2,2,1,accent());
+        }
+      } else {
+        line(points,.62);const a=points[head],b=points[head+1],x=a[0]+(b[0]-a[0])*phase,y=a[1]+(b[1]-a[1])*phase;
+        rect(x-1.5,y-1.5,3,3,1,accent());
+      }
+    }
+  }
+  const durations=[.08,.31,.12,.48,.09,.22,.61,.12],gaps=[.16,.18,.27,.14,.32,.17,.2,.21];
+  const starts=[];let phraseLength=0;
+  durations.forEach((duration,i)=>{starts.push(phraseLength);phraseLength+=duration+gaps[i];});
+  function receipt(time) {
+    const phase=mod(time,phraseLength),activeLane=mod(Math.floor(time/phraseLength),2),scale=(w-12)/phraseLength,recording=state.mode==='record';
+    for(let row=0;row<2;row++) {
+      const y=13+row*19,live=row===activeLane;
+      durations.forEach((duration,i)=>{
+        const x=6+starts[i]*scale,isActive=phase>=starts[i]&&phase<starts[i]+duration;
+        const visible=recording&&live?clamp((phase-starts[i])/duration):1;
+        if(visible<=0)return;
+        const color=live&&isActive?accent():white;
+        if(duration<=.12&&visible===1)rect(x,y-1,2,2,live?.95:.28,color);
+        else line([[x,y],[x+Math.max(1,duration*scale*visible),y]],live?.95:.28,color);
+      });
+      line([[2,y-4],[2,y+4]],.24);line([[w-2,y-4],[w-2,y+4]],.24);
+      if(live) {
+        const x=6+phase*scale;
+        line([[x-2,y-6],[x,y-4],[x+2,y-6]],.95,accent());
+      }
+    }
+  }
+  function throat(time) {
+    const center=w/2,recording=state.mode==='record',a=2+Math.floor(energy(time)*6),b=recording?2+Math.floor(energy(time-.22)*6):a;
+    const left=center-8-a*3,right=center+8+b*3;
+    line([[7,22],[left-8,22]],.2);line([[right+8,22],[w-7,22]],.2);
+    line([[left-7,6],[left,6],[left,13],[left+4,13],[left+4,31],[left,31],[left,38],[left-7,38]],.95,recording?accent():white);
+    line([[right+7,6],[right,6],[right,13],[right-4,13],[right-4,31],[right,31],[right,38],[right+7,38]],.95,accent());
+    for(let i=-4;i<=4;i++)rect(center+i*7,42,1,1,.18);
+    if(recording) {
+      const beat=Math.floor(time*2.5),age=fract(time*2.5),x=left-7-(1-age)*Math.min(23,left-12);
+      line([[x-4,22],[x+4,22]],1,accent());
+      for(let i=0;i<3;i++)rect(center-6+i*6,22+(mod(beat+i,3)-1)*4,2,2,i===mod(beat,3)?1:.25);
+    } else {
+      const reach=right-left-14,x=left+7+fract(time*.9)*reach;
+      line([[x-6,22],[x+6,22]],1,accent());
+      rect(x,21,2,2,1);
+    }
+  }
+  function shear(time) {
+    const recording=state.mode==='record',columns=Math.max(14,Math.floor(w/9)),rows=5,pitch=(w-12)/columns;
+    const step=Math.floor(time*2.5),phase=fract(time*2.5),shape=recording?step*.67:time*.8;
+    function point(col,row,form) {
+      const u=col/(columns-1),y=(row-2)*4.7;
+      const bend=Math.sin(u*Math.PI*1.4-form)*(.4+.6*Math.sin(u*Math.PI));
+      return [6+u*(w-12)+y*bend*.43,22+y+Math.sin(u*Math.PI)*Math.cos(form+u*3)*5];
+    }
+    for(let row=0;row<rows;row++)for(let col=0;col<columns;col++) {
+      const position=point(col,row,shape),selected=col===mod(step,columns);
+      if(recording&&selected)for(let history=1;history<=2;history++) {
+        const past=point(col,row,shape-history*.67);
+        rect(past[0],past[1],1,1,.18/history);
+      }
+      if(recording&&selected) {
+        const previous=point(col,row,shape-.67),mix=clamp(phase/.36);
+        position[0]=previous[0]+(position[0]-previous[0])*mix;position[1]=previous[1]+(position[1]-previous[1])*mix;
+      }
+      rect(position[0],position[1],selected?2:1,selected?2:1,selected?1:.26+row*.055,selected?accent():white);
+    }
+    if(recording) {
+      const x=6+mod(step,columns)/(columns-1)*(w-12);
+      line([[x-3,4],[x+3,4]],.8,accent());
+    }
+  }
+  function carrier(time) {
+    const recording=state.mode==='record';
+    for(let window=0;window<2;window++) {
+      const phase=time*.55+window*Math.PI;
+      const center=recording?w*(window===0?.3:.7):w*(.5+Math.sin(phase)*.25);
+      const signal=energy(time-window*.31),half=recording?3+signal*w*.14:w*(.105+.045*Math.cos(phase));
+      const amplitude=recording?5+signal*11:4+12*(.5+.5*Math.cos(phase));
+      const left=Math.max(2,center-half),right=Math.min(w-2,center+half),points=[];
+      for(let x=left;x<=right;x+=1) {
+        const relative=(x-center)/half,envelope=Math.pow(Math.max(0,1-relative*relative),1.4);
+        const triangle=1-4*Math.abs(fract(x/7-time*(recording?1.3:.7)+window*.3)-.5);
+        points.push([x,22+triangle*amplitude*envelope]);
+      }
+      line(points,.9,window===1?accent():white);
+      line([[left,20],[left,24]],.45);line([[right,20],[right,24]],.45);
+    }
+  }
+  const renderers={skew,receipt,throat,shear,carrier};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-8')?.querySelector('[data-style="receipt"]').click();
+
+(() => {
+  const root=document.getElementById('study-9');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'skew',mode:'play',paused:reduced.matches,accent:true};
+  const names={skew:'Skew Profile',receipt:'Duration Receipt',throat:'Stepped Throat',shear:'Shear Belt',carrier:'Carrier Window'};
+  const descriptions={
+    skew:['Eğik kalibrasyon sabit; okuma uçları üç köşeli profil üzerinde ilerliyor.','Darbeler profilin köşelerini sırayla çiziyor; tamamlanan iz yerinde tutuluyor.'],
+    receipt:['Kısa ve uzun izler kayıtlı süreleri taşıyor; imleç sessiz boşlukları da okuyor.','Kısa darbe nokta, uzun ses çizgi bırakıyor; sessizlik kağıtta boşluk olarak kalıyor.'],
+    throat:['İki basamaklı ağız yanlara açılıyor; sinyal, aralarındaki boşluktan geçiyor.','Sol taraf darbeyi alıyor; sağ taraf bir örnek gecikmeyle açıklığı kilitliyor.'],
+    shear:['Düzenli nokta kuşağı eğilip kayıyor; noktaların komşuluğu korunuyor.','Yeni bir kesit sabit kuşağı büküyor; önceki kesit iki silik iz halinde tutuluyor.'],
+    carrier:['İnce taşıyıcı yalnız iki pencerede görünür; enerji birinden diğerine aktarılır.','Pencereler yerinde kalır; darbe içlerindeki keskin taşıyıcıyı dışa doğru açar.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  const energy=time=>.15+.65*Math.pow(Math.max(0,Math.sin(time*2.4)),6)+.2*Math.pow(Math.max(0,Math.sin(time*5.9+1)),10);
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  // The preview is deterministic drawing, not weather, physics or RF measurement.
+  function skew(time) {
+    const n=3,pitch=w/n,step=Math.floor(time*3.4),phase=fract(time*3.4);
+    for(let panel=0;panel<n;panel++) {
+      const origin=panel*pitch+6,width=pitch-15;
+      for(let i=0;i<3;i++)line([[origin+i*width/3,37],[origin+i*width/3+10,7]],.13);
+      for(let i=0;i<4;i++)line([[origin+2,8+i*10],[origin+width,8+i*10]],.14);
+      const points=[];
+      const active=mod(step,18),head=mod(step+panel*2,6),recording=state.mode==='record';
+      const cycle=recording?Math.floor(step/18)-(panel*6>active?1:0):0;
+      for(let i=0;i<7;i++)points.push([origin+width*(.16+hash(panel*31+i+cycle*13)*.69),7+i*5]);
+      if(recording) {
+        const count=active>=panel*6+6?7:active<panel*6?7:active-panel*6+1;
+        line(points.slice(0,count),active>=panel*6&&active<panel*6+6?1:.4);
+        if(active>=panel*6&&active<panel*6+6) {
+          const a=points[count-1],b=points[Math.min(6,count)],end=[a[0]+(b[0]-a[0])*phase,a[1]+(b[1]-a[1])*phase];
+          line([a,end],1,accent());rect(end[0]-1,end[1]-1,2,2,1,accent());
+        }
+      } else {
+        line(points,.62);const a=points[head],b=points[head+1],x=a[0]+(b[0]-a[0])*phase,y=a[1]+(b[1]-a[1])*phase;
+        rect(x-1.5,y-1.5,3,3,1,accent());
+      }
+    }
+  }
+  const durations=[.08,.31,.12,.48,.09,.22,.61,.12],gaps=[.16,.18,.27,.14,.32,.17,.2,.21];
+  const starts=[];let phraseLength=0;
+  durations.forEach((duration,i)=>{starts.push(phraseLength);phraseLength+=duration+gaps[i];});
+  function receipt(time) {
+    const phase=mod(time,phraseLength),activeLane=mod(Math.floor(time/phraseLength),2),scale=(w-12)/phraseLength,recording=state.mode==='record';
+    for(let row=0;row<2;row++) {
+      const y=13+row*19,live=row===activeLane;
+      durations.forEach((duration,i)=>{
+        const x=6+starts[i]*scale,isActive=phase>=starts[i]&&phase<starts[i]+duration;
+        const visible=recording&&live?clamp((phase-starts[i])/duration):1;
+        if(visible<=0)return;
+        const color=live&&isActive?accent():white;
+        if(duration<=.12&&visible===1)rect(x,y-1,2,2,live?.95:.28,color);
+        else line([[x,y],[x+Math.max(1,duration*scale*visible),y]],live?.95:.28,color);
+      });
+      line([[2,y-4],[2,y+4]],.24);line([[w-2,y-4],[w-2,y+4]],.24);
+      if(live) {
+        const x=6+phase*scale;
+        line([[x-2,y-6],[x,y-4],[x+2,y-6]],.95,accent());
+      }
+    }
+  }
+  function throat(time) {
+    const center=w/2,recording=state.mode==='record',a=2+Math.floor(energy(time)*6),b=recording?2+Math.floor(energy(time-.22)*6):a;
+    const left=center-8-a*3,right=center+8+b*3;
+    line([[7,22],[left-8,22]],.2);line([[right+8,22],[w-7,22]],.2);
+    line([[left-7,6],[left,6],[left,13],[left+4,13],[left+4,31],[left,31],[left,38],[left-7,38]],.95,recording?accent():white);
+    line([[right+7,6],[right,6],[right,13],[right-4,13],[right-4,31],[right,31],[right,38],[right+7,38]],.95,accent());
+    for(let i=-4;i<=4;i++)rect(center+i*7,42,1,1,.18);
+    if(recording) {
+      const beat=Math.floor(time*2.5),age=fract(time*2.5),x=left-7-(1-age)*Math.min(23,left-12);
+      line([[x-4,22],[x+4,22]],1,accent());
+      for(let i=0;i<3;i++)rect(center-6+i*6,22+(mod(beat+i,3)-1)*4,2,2,i===mod(beat,3)?1:.25);
+    } else {
+      const reach=right-left-14,x=left+7+fract(time*.9)*reach;
+      line([[x-6,22],[x+6,22]],1,accent());
+      rect(x,21,2,2,1);
+    }
+  }
+  function shear(time) {
+    const recording=state.mode==='record',columns=Math.max(14,Math.floor(w/9)),rows=5,pitch=(w-12)/columns;
+    const step=Math.floor(time*2.5),phase=fract(time*2.5),shape=recording?step*.67:time*.8;
+    function point(col,row,form) {
+      const u=col/(columns-1),y=(row-2)*4.7;
+      const bend=Math.sin(u*Math.PI*1.4-form)*(.4+.6*Math.sin(u*Math.PI));
+      return [6+u*(w-12)+y*bend*.43,22+y+Math.sin(u*Math.PI)*Math.cos(form+u*3)*5];
+    }
+    for(let row=0;row<rows;row++)for(let col=0;col<columns;col++) {
+      const position=point(col,row,shape),selected=col===mod(step,columns);
+      if(recording&&selected)for(let history=1;history<=2;history++) {
+        const past=point(col,row,shape-history*.67);
+        rect(past[0],past[1],1,1,.18/history);
+      }
+      if(recording&&selected) {
+        const previous=point(col,row,shape-.67),mix=clamp(phase/.36);
+        position[0]=previous[0]+(position[0]-previous[0])*mix;position[1]=previous[1]+(position[1]-previous[1])*mix;
+      }
+      rect(position[0],position[1],selected?2:1,selected?2:1,selected?1:.26+row*.055,selected?accent():white);
+    }
+    if(recording) {
+      const x=6+mod(step,columns)/(columns-1)*(w-12);
+      line([[x-3,4],[x+3,4]],.8,accent());
+    }
+  }
+  function carrier(time) {
+    const recording=state.mode==='record';
+    for(let window=0;window<2;window++) {
+      const phase=time*.55+window*Math.PI;
+      const center=recording?w*(window===0?.3:.7):w*(.5+Math.sin(phase)*.25);
+      const signal=energy(time-window*.31),half=recording?3+signal*w*.14:w*(.105+.045*Math.cos(phase));
+      const amplitude=recording?5+signal*11:4+12*(.5+.5*Math.cos(phase));
+      const left=Math.max(2,center-half),right=Math.min(w-2,center+half),points=[];
+      for(let x=left;x<=right;x+=1) {
+        const relative=(x-center)/half,envelope=Math.pow(Math.max(0,1-relative*relative),1.4);
+        const triangle=1-4*Math.abs(fract(x/7-time*(recording?1.3:.7)+window*.3)-.5);
+        points.push([x,22+triangle*amplitude*envelope]);
+      }
+      line(points,.9,window===1?accent():white);
+      line([[left,20],[left,24]],.45);line([[right,20],[right,24]],.45);
+    }
+  }
+  const renderers={skew,receipt,throat,shear,carrier};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-9')?.querySelector('[data-style="skew"]').click();
+
+(() => {
+  const root=document.getElementById('study-10');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'wake',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={wake:'Wake Field',strata:'Revision Strata',perforation:'Perforation Logic',transcode:'Transcode Window',loom:'Wire Loom'};
+  const descriptions={
+    wake:['Bir darbe, küçük çizgilerden oluşan alanı yarıp arkasında kısa bir iz bırakıyor.','Sabit girişten çıkan her hece, zıt yönlere kıvrılan iki küçük iz bırakıyor.'],
+    strata:['Okuma iğnesi, korunmuş dört kayıt katmanının farklılıklarını sırayla aydınlatıyor.','Önceki katmanlar tutuluyor; yeni kayıt bir dal olarak açılıp kendi kesitini yazıyor.'],
+    perforation:['Sabit delik şablonu kaymıyor; okuma kafası kayıtlı adresleri tek tek ziyaret ediyor.','Yeni örnekler, değişmeyen kayıt deliklerinin arasına indeks sırasıyla işleniyor.'],
+    transcode:['Beş bitlik örnekler, sınırı geçince aynı değere ait köşeli bir ses çizgisine çözülüyor.','Gelen çizgi örneklenip beş bite çevriliyor; kodlar dönüşüm sınırının sağında tutuluyor.'],
+    loom:['Sabit portlar arasındaki beş bağlantıdan biri, parlak bir ses paketini taşıyor.','Her hece yeni bir hedef port seçiyor; önceki bağlantılar hafızada kalıyor.']
+  };
+  const white='#FFFFFF',orange='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n),mod=(n,m)=>(n%m+m)%m;
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // A deterministic illustrative rhythm. No audio is played, recorded, or measured.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function rawSample(index) { const time=index*.24;return clamp((Math.sin(index*.69)+Math.sin(index*1.37)*.28)*(.22+env(time)*.78),-1,1); }
+  const encode=index=>Math.round((rawSample(index)+1)*15.5);
+  const decode=code=>code/15.5-1;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function pointOn(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0);
+    for(let i=0;i<lengths.length;i++) { if(distance<=lengths[i]||i===lengths.length-1){const q=lengths[i]?distance/lengths[i]:0;return [mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)];}distance-=lengths[i]; }
+    return path[0];
+  }
+  function prefix(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0),out=[path[0]];
+    for(let i=0;i<lengths.length;i++){if(distance<lengths[i]){const q=lengths[i]?distance/lengths[i]:0;out.push([mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]);break;}out.push(path[i+1]);distance-=lengths[i];}
+    return out;
+  }
+  function wake(time) {
+    const recording=state.mode==='record',cols=Math.max(12,Math.min(24,Math.floor(w/8))),pitch=(w-10)/(cols-1),vortices=[];
+    let carrier=mod(time*25,w+36)-18;
+    if(recording) {
+      const birth=Math.floor(time*1.2);
+      for(let j=0;j<3;j++) {
+        const age=time-(birth-j)/1.2,x=w*.12+age*32,spread=4+age*2.4;
+        if(x>w-3)continue;
+        const strength=(.3+env((birth-j)/1.2))*Math.exp(-age*.42);
+        vortices.push({x,y:22-spread,spin:1,strength},{x,y:22+spread,spin:-1,strength});
+      }
+    } else {
+      for(let j=0;j<2;j++)vortices.push({x:carrier-10-j*14,y:16-j*2,spin:1,strength:.5-j*.12},{x:carrier-10-j*14,y:28+j*2,spin:-1,strength:.5-j*.12});
+    }
+    for(let row=0;row<5;row++)for(let col=0;col<cols;col++) {
+      const x=5+col*pitch,y=6+row*8;let vx=1,vy=0,weight=0;
+      vortices.forEach(v=>{const dx=x-v.x,dy=y-v.y,influence=Math.exp(-(dx*dx/380+dy*dy/130))*v.strength;vx-=dy*.12*influence*v.spin;vy+=dx*.11*influence*v.spin;weight+=influence;});
+      const norm=Math.hypot(vx,vy)||1,size=2+clamp(weight)*2;
+      line([[x-vx/norm*size/2,y-vy/norm*size/2],[x+vx/norm*size/2,y+vy/norm*size/2]],.2+clamp(weight)*.65);
+    }
+    if(recording) {
+      line([[w*.12-3,18],[w*.12-3,26]],.7,accent());
+      vortices.forEach(v=>marker(v.x,v.y,v.strength,accent(),2));
+    } else {
+      const level=env(time),half=3+level*3;
+      line([[carrier-half,22],[carrier,19],[carrier+half,22],[carrier,25],[carrier-half,22]],1,accent());
+    }
+  }
+  function strata(time) {
+    const recording=state.mode==='record',cycle=time*.18,active=mod(Math.floor(cycle),4),progress=fract(cycle),count=10,pitch=(w-8)/(count-1);
+    const ys=[];
+    for(let row=0;row<4;row++) {
+      const take=Math.floor(cycle)-mod(Math.floor(cycle)-row,4);
+      const seed=recording?take:row+2;
+      ys.push(Array.from({length:count},(_,col)=>7+row*9+Math.round(rawSample(seed*5+col)*2)));
+    }
+    const head=4+progress*(w-8);
+    for(let row=0;row<4;row++) {
+      const points=[],limit=recording&&row===active?head:w-4;
+      for(let col=0;col<count;col++) {
+        const x=4+col*pitch;if(x>limit)break;
+        if(col>0)points.push([x,ys[row][col-1]]);
+        points.push([x,ys[row][col]]);
+      }
+      if(points.length&&points[points.length-1][0]<limit)points.push([limit,points[points.length-1][1]]);
+      line(points,row===active?.95:.3+row*.08,recording&&row===active?accent():white);
+      if(!recording) {
+        const col=Math.min(count-1,Math.floor((head-4)/pitch));marker(head,ys[row][col],row===active?1:.65,row===active?accent():white,2);
+      } else if(row===active&&points.length) {
+        const end=points[points.length-1];marker(end[0],end[1],1,accent(),3);
+      }
+      if(row>0) {
+        const col=1+row*2,x=4+col*pitch;
+        if(!recording||row!==active||head>x)line([[x-3,ys[row-1][col]],[x,ys[row-1][col]],[x+3,ys[row][col]],[x+6,ys[row][col]]],.28);
+      }
+    }
+    if(!recording)line([[head,2],[head,42]],.35,accent());
+    else {rect(2,ys[active][0]-2,1,5,1,accent());line([[4,41],[head,41]],.4,accent());}
+  }
+  const punchOrder=[0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15];
+  function perforation(time) {
+    const recording=state.mode==='record',columns=16,pitch=(w-12)/columns,step=Math.floor(time*2.2),read=mod(step,columns),selected=recording?punchOrder[read]:read,batch=Math.floor(step/columns);
+    line([[2,8],[2,4],[w-6,4],[w-2,8],[w-2,40],[2,40],[2,8]],.3);
+    for(let col=0;col<columns;col++) {
+      const x=6+(col+.5)*pitch,width=Math.max(2,Math.min(4,pitch-3)),written=!recording||punchOrder.indexOf(col)<=read;
+      rect(x-1,6,2,2,.3);rect(x-1,36,2,2,.3);
+      if(written) {
+        const value=encode((recording?batch:2)*columns+col),long=(value&1)!==0,upper=(value>>1)&3,lower=(value>>3)&3;
+        if(upper)rect(x-width/2,11+upper*2,width,long?5:2,col===selected?1:.67,col===selected?accent():white);
+        if(lower)rect(x-width/2,24+lower,width,long?2:4,col===selected?1:.67,col===selected?accent():white);
+      } else marker(x,22,.12,white,1);
+      if(col===selected) {line([[x-pitch*.4,2],[x+pitch*.4,2]],1,accent());line([[x,9],[x,34]],.25,accent());marker(x,42,1,accent(),2);}
+    }
+  }
+  function transcode(time) {
+    const recording=state.mode==='record',mid=w/2,pitch=Math.max(10,Math.min(15,(w*.5-16)/5)),tick=Math.floor(time/.24),phase=fract(time/.24),room=w*.5-13;
+    line([[mid,4],[mid,40]],.45);line([[mid-3,4],[mid+3,4]],.7);line([[mid-3,40],[mid+3,40]],.7);
+    const drawBits=(x,value,alpha=1)=>{
+      for(let bit=0;bit<5;bit++) {const on=(value>>bit)&1;rect(x-2,10+bit*5,on?4:1,2,on?alpha:.16,on&&Math.abs(x-mid)<pitch*1.3?accent():white);}
+    };
+    const slots=Math.max(3,Math.floor(room/pitch));
+    for(let slot=0;slot<slots;slot++) {
+      const x=recording?mid+8+(slot+phase)*pitch:mid-8-(slot-phase)*pitch;
+      if(x<3||x>w-3||(!recording&&x>mid-3))continue;
+      drawBits(x,encode(recording?tick-slot:tick+slot),slot===0?1:.72);
+    }
+    if(recording) {
+      const points=[];
+      for(let x=3;x<mid-4;x+=2) {const index=tick+phase-(mid-4-x)/pitch;points.push([x,22-rawSample(index)*12]);}
+      line(points,.95);
+      const lastPoint=points[points.length-1];if(lastPoint)marker(lastPoint[0],lastPoint[1],1,accent(),3);
+      line([[mid-4,22-decode(encode(tick))*12],[mid+4,22-decode(encode(tick))*12]],.65,accent());
+    } else {
+      const points=[];
+      for(let slot=0;slot<slots;slot++) {
+        const x=mid+7+slot*pitch,y=22-decode(encode(tick-slot))*12;
+        if(slot>0)points.push([x,points[points.length-1][1]]);
+        points.push([x,y]);points.push([Math.min(w-3,x+pitch),y]);
+        marker(x,y,slot===0?1:.45,slot===0?accent():white,2);
+      }
+      line(points,.95);marker(mid+7,22-decode(encode(tick))*12,1,accent(),3);
+    }
+  }
+  function loom(time) {
+    const recording=state.mode==='record',n=5,left=10,pitch=(w-20)/(n-1),step=Math.floor(time*.9),phase=fract(time*.9),active=mod(step,n),fixed=[3,1,4,0,2];
+    for(let i=0;i<n;i++) {
+      const held=step-mod(step-i,n),target=recording?Math.min(4,Math.floor((rawSample(held*2)+1)*2.5)):fixed[i];
+      const x=left+i*pitch,x2=left+target*pitch,path=[[x,6],[x,11],[x2,33],[x2,38]],current=i===active;
+      line(path,current&&!recording?.75:.22);
+      if(current) {
+        const visiblePath=recording?prefix(path,phase):path;line(visiblePath,recording?.9:.4,recording?accent():white);
+        const packet=pointOn(path,phase);marker(packet[0],packet[1],1,accent(),3);
+        box(x-2,3,4,4,1,accent());box(x2-2,37,4,4,recording?phase:.8,accent());
+      }
+    }
+    for(let i=0;i<n;i++) {const x=left+i*pitch;box(x-2,3,4,4,.6);box(x-2,37,4,4,.6);}
+  }
+  const renderers={wake,strata,perforation,transcode,loom};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-10')?.querySelector('[data-style="transcode"]').click();
+
+(() => {
+  const root=document.getElementById('study-11');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'wake',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={wake:'Wake Field',strata:'Revision Strata',perforation:'Perforation Logic',transcode:'Transcode Window',loom:'Wire Loom'};
+  const descriptions={
+    wake:['Bir darbe, küçük çizgilerden oluşan alanı yarıp arkasında kısa bir iz bırakıyor.','Sabit girişten çıkan her hece, zıt yönlere kıvrılan iki küçük iz bırakıyor.'],
+    strata:['Okuma iğnesi, korunmuş dört kayıt katmanının farklılıklarını sırayla aydınlatıyor.','Önceki katmanlar tutuluyor; yeni kayıt bir dal olarak açılıp kendi kesitini yazıyor.'],
+    perforation:['Sabit delik şablonu kaymıyor; okuma kafası kayıtlı adresleri tek tek ziyaret ediyor.','Yeni örnekler, değişmeyen kayıt deliklerinin arasına indeks sırasıyla işleniyor.'],
+    transcode:['Beş bitlik örnekler, sınırı geçince aynı değere ait köşeli bir ses çizgisine çözülüyor.','Gelen çizgi örneklenip beş bite çevriliyor; kodlar dönüşüm sınırının sağında tutuluyor.'],
+    loom:['Sabit portlar arasındaki beş bağlantıdan biri, parlak bir ses paketini taşıyor.','Her hece yeni bir hedef port seçiyor; önceki bağlantılar hafızada kalıyor.']
+  };
+  const white='#FFFFFF',orange='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n),mod=(n,m)=>(n%m+m)%m;
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // A deterministic illustrative rhythm. No audio is played, recorded, or measured.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function rawSample(index) { const time=index*.24;return clamp((Math.sin(index*.69)+Math.sin(index*1.37)*.28)*(.22+env(time)*.78),-1,1); }
+  const encode=index=>Math.round((rawSample(index)+1)*15.5);
+  const decode=code=>code/15.5-1;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function pointOn(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0);
+    for(let i=0;i<lengths.length;i++) { if(distance<=lengths[i]||i===lengths.length-1){const q=lengths[i]?distance/lengths[i]:0;return [mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)];}distance-=lengths[i]; }
+    return path[0];
+  }
+  function prefix(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0),out=[path[0]];
+    for(let i=0;i<lengths.length;i++){if(distance<lengths[i]){const q=lengths[i]?distance/lengths[i]:0;out.push([mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]);break;}out.push(path[i+1]);distance-=lengths[i];}
+    return out;
+  }
+  function wake(time) {
+    const recording=state.mode==='record',cols=Math.max(12,Math.min(24,Math.floor(w/8))),pitch=(w-10)/(cols-1),vortices=[];
+    let carrier=mod(time*25,w+36)-18;
+    if(recording) {
+      const birth=Math.floor(time*1.2);
+      for(let j=0;j<3;j++) {
+        const age=time-(birth-j)/1.2,x=w*.12+age*32,spread=4+age*2.4;
+        if(x>w-3)continue;
+        const strength=(.3+env((birth-j)/1.2))*Math.exp(-age*.42);
+        vortices.push({x,y:22-spread,spin:1,strength},{x,y:22+spread,spin:-1,strength});
+      }
+    } else {
+      for(let j=0;j<2;j++)vortices.push({x:carrier-10-j*14,y:16-j*2,spin:1,strength:.5-j*.12},{x:carrier-10-j*14,y:28+j*2,spin:-1,strength:.5-j*.12});
+    }
+    for(let row=0;row<5;row++)for(let col=0;col<cols;col++) {
+      const x=5+col*pitch,y=6+row*8;let vx=1,vy=0,weight=0;
+      vortices.forEach(v=>{const dx=x-v.x,dy=y-v.y,influence=Math.exp(-(dx*dx/380+dy*dy/130))*v.strength;vx-=dy*.12*influence*v.spin;vy+=dx*.11*influence*v.spin;weight+=influence;});
+      const norm=Math.hypot(vx,vy)||1,size=2+clamp(weight)*2;
+      line([[x-vx/norm*size/2,y-vy/norm*size/2],[x+vx/norm*size/2,y+vy/norm*size/2]],.2+clamp(weight)*.65);
+    }
+    if(recording) {
+      line([[w*.12-3,18],[w*.12-3,26]],.7,accent());
+      vortices.forEach(v=>marker(v.x,v.y,v.strength,accent(),2));
+    } else {
+      const level=env(time),half=3+level*3;
+      line([[carrier-half,22],[carrier,19],[carrier+half,22],[carrier,25],[carrier-half,22]],1,accent());
+    }
+  }
+  function strata(time) {
+    const recording=state.mode==='record',cycle=time*.18,active=mod(Math.floor(cycle),4),progress=fract(cycle),count=10,pitch=(w-8)/(count-1);
+    const ys=[];
+    for(let row=0;row<4;row++) {
+      const take=Math.floor(cycle)-mod(Math.floor(cycle)-row,4);
+      const seed=recording?take:row+2;
+      ys.push(Array.from({length:count},(_,col)=>7+row*9+Math.round(rawSample(seed*5+col)*2)));
+    }
+    const head=4+progress*(w-8);
+    for(let row=0;row<4;row++) {
+      const points=[],limit=recording&&row===active?head:w-4;
+      for(let col=0;col<count;col++) {
+        const x=4+col*pitch;if(x>limit)break;
+        if(col>0)points.push([x,ys[row][col-1]]);
+        points.push([x,ys[row][col]]);
+      }
+      if(points.length&&points[points.length-1][0]<limit)points.push([limit,points[points.length-1][1]]);
+      line(points,row===active?.95:.3+row*.08,recording&&row===active?accent():white);
+      if(!recording) {
+        const col=Math.min(count-1,Math.floor((head-4)/pitch));marker(head,ys[row][col],row===active?1:.65,row===active?accent():white,2);
+      } else if(row===active&&points.length) {
+        const end=points[points.length-1];marker(end[0],end[1],1,accent(),3);
+      }
+      if(row>0) {
+        const col=1+row*2,x=4+col*pitch;
+        if(!recording||row!==active||head>x)line([[x-3,ys[row-1][col]],[x,ys[row-1][col]],[x+3,ys[row][col]],[x+6,ys[row][col]]],.28);
+      }
+    }
+    if(!recording)line([[head,2],[head,42]],.35,accent());
+    else {rect(2,ys[active][0]-2,1,5,1,accent());line([[4,41],[head,41]],.4,accent());}
+  }
+  const punchOrder=[0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15];
+  function perforation(time) {
+    const recording=state.mode==='record',columns=16,pitch=(w-12)/columns,step=Math.floor(time*2.2),read=mod(step,columns),selected=recording?punchOrder[read]:read,batch=Math.floor(step/columns);
+    line([[2,8],[2,4],[w-6,4],[w-2,8],[w-2,40],[2,40],[2,8]],.3);
+    for(let col=0;col<columns;col++) {
+      const x=6+(col+.5)*pitch,width=Math.max(2,Math.min(4,pitch-3)),written=!recording||punchOrder.indexOf(col)<=read;
+      rect(x-1,6,2,2,.3);rect(x-1,36,2,2,.3);
+      if(written) {
+        const value=encode((recording?batch:2)*columns+col),long=(value&1)!==0,upper=(value>>1)&3,lower=(value>>3)&3;
+        if(upper)rect(x-width/2,11+upper*2,width,long?5:2,col===selected?1:.67,col===selected?accent():white);
+        if(lower)rect(x-width/2,24+lower,width,long?2:4,col===selected?1:.67,col===selected?accent():white);
+      } else marker(x,22,.12,white,1);
+      if(col===selected) {line([[x-pitch*.4,2],[x+pitch*.4,2]],1,accent());line([[x,9],[x,34]],.25,accent());marker(x,42,1,accent(),2);}
+    }
+  }
+  function transcode(time) {
+    const recording=state.mode==='record',mid=w/2,pitch=Math.max(10,Math.min(15,(w*.5-16)/5)),tick=Math.floor(time/.24),phase=fract(time/.24),room=w*.5-13;
+    line([[mid,4],[mid,40]],.45);line([[mid-3,4],[mid+3,4]],.7);line([[mid-3,40],[mid+3,40]],.7);
+    const drawBits=(x,value,alpha=1)=>{
+      for(let bit=0;bit<5;bit++) {const on=(value>>bit)&1;rect(x-2,10+bit*5,on?4:1,2,on?alpha:.16,on&&Math.abs(x-mid)<pitch*1.3?accent():white);}
+    };
+    const slots=Math.max(3,Math.floor(room/pitch));
+    for(let slot=0;slot<slots;slot++) {
+      const x=recording?mid+8+(slot+phase)*pitch:mid-8-(slot-phase)*pitch;
+      if(x<3||x>w-3||(!recording&&x>mid-3))continue;
+      drawBits(x,encode(recording?tick-slot:tick+slot),slot===0?1:.72);
+    }
+    if(recording) {
+      const points=[];
+      for(let x=3;x<mid-4;x+=2) {const index=tick+phase-(mid-4-x)/pitch;points.push([x,22-rawSample(index)*12]);}
+      line(points,.95);
+      const lastPoint=points[points.length-1];if(lastPoint)marker(lastPoint[0],lastPoint[1],1,accent(),3);
+      line([[mid-4,22-decode(encode(tick))*12],[mid+4,22-decode(encode(tick))*12]],.65,accent());
+    } else {
+      const points=[];
+      for(let slot=0;slot<slots;slot++) {
+        const x=mid+7+slot*pitch,y=22-decode(encode(tick-slot))*12;
+        if(slot>0)points.push([x,points[points.length-1][1]]);
+        points.push([x,y]);points.push([Math.min(w-3,x+pitch),y]);
+        marker(x,y,slot===0?1:.45,slot===0?accent():white,2);
+      }
+      line(points,.95);marker(mid+7,22-decode(encode(tick))*12,1,accent(),3);
+    }
+  }
+  function loom(time) {
+    const recording=state.mode==='record',n=5,left=10,pitch=(w-20)/(n-1),step=Math.floor(time*.9),phase=fract(time*.9),active=mod(step,n),fixed=[3,1,4,0,2];
+    for(let i=0;i<n;i++) {
+      const held=step-mod(step-i,n),target=recording?Math.min(4,Math.floor((rawSample(held*2)+1)*2.5)):fixed[i];
+      const x=left+i*pitch,x2=left+target*pitch,path=[[x,6],[x,11],[x2,33],[x2,38]],current=i===active;
+      line(path,current&&!recording?.75:.22);
+      if(current) {
+        const visiblePath=recording?prefix(path,phase):path;line(visiblePath,recording?.9:.4,recording?accent():white);
+        const packet=pointOn(path,phase);marker(packet[0],packet[1],1,accent(),3);
+        box(x-2,3,4,4,1,accent());box(x2-2,37,4,4,recording?phase:.8,accent());
+      }
+    }
+    for(let i=0;i<n;i++) {const x=left+i*pitch;box(x-2,3,4,4,.6);box(x-2,37,4,4,.6);}
+  }
+  const renderers={wake,strata,perforation,transcode,loom};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-11')?.querySelector('[data-style="wake"]').click();
+
+(() => {
+  const root=document.getElementById('study-12');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'sieve',mode:'play',paused:reduced.matches,accent:true};
+  const names={sieve:'Rank Sieve',exchange:'Exchange Tray',press:'Impression Press',loupe:'Slice Loupe',seal:'Overstrike Seal'};
+  const descriptions={
+    sieve:['Sabit izler sırayla eleniyor; geriye yalnız seçilmiş olanlar kalıyor.','Her vuruş, silik bir izi aynı yerinde geri çağırıp hafızaya ekliyor.'],
+    exchange:['Aynı beş iz, ikişerli değiş tokuşlarla yeni bir sıra kuruyor.','Her yeni darbe yalnız bir komşu çifti takas ediyor; aralarda hareket duruyor.'],
+    press:['Baskı kafası sabit; okuma çentiği önceden basılmış izleri geziyor.','Kafa basıyor, kalkıyor; şerit bir adım ilerleyip sonraki darbeyi bekliyor.'],
+    loupe:['Alttaki küçük pencere, aynı ses izinin büyütülmüş ayrıntısını üstte gezdiriyor.','Yeni izler aşağıya yazılıyor; üstte yalnız yeni yakalanan bölüm büyütülüyor.'],
+    seal:['Tek bir mühür, üst üste duran çizgi aileleri üzerinden katman katman okunuyor.','Darbeler aynı noktaya farklı çizgiler basıyor; mühür dolunca üç adımda siliniyor.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  function bezier(x,x1,y1,x2,y2) {
+    x=clamp(x);let lo=0,hi=1,u=x;
+    const value=(a,b,p)=>3*(1-p)*(1-p)*p*a+3*(1-p)*p*p*b+p*p*p;
+    for(let i=0;i<12;i++){u=(lo+hi)/2;if(value(x1,x2,u)<x)lo=u;else hi=u;}
+    return x===0?0:x===1?1:value(y1,y2,u);
+  }
+  const ease=x=>bezier(x,.23,1,.32,1);
+  const move=x=>bezier(x,.77,0,.175,1);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Deterministic silent event sequence, not note analysis or hardware emulation.
+  function clock(time,period=.86) { return {step:Math.floor(time/period),phase:mod(time,period)/period}; }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function sample(x,y,id,alpha=1,color=white) {
+    // Abstract cut patterns identify retained samples, not letters or app icons.
+    const patterns=[[[0,-8],[0,8],[9,8]],[[0,-8],[9,-8],[9,8]],[[0,-8],[9,0],[0,8]],[[0,-8],[9,-8],[0,8],[9,8]],[[0,0],[9,-8],[9,8],[0,0]],[[0,-8],[4,0],[9,-8],[9,8]],[[0,-8],[9,-8],[9,0],[0,0],[0,8]]];
+    line(patterns[mod(id,7)].map(p=>[x+p[0]-4.5,y+p[1]]),alpha,color);
+    rect(x-5,y+11,2,1,alpha*.7,color);rect(x+3,y+11,2,1,alpha*.7,color);
+  }
+  function sieve(time) {
+    const {step,phase}=clock(time,.7),n=7,pitch=(w-12)/n,order=[3,0,5,2,6,1,4];
+    const cycle=mod(step,9),keep=state.mode==='play'?Math.max(2,7-cycle):Math.min(7,2+cycle);
+    const latest=state.mode==='play'?order[Math.min(cycle,4)]:order[Math.min(keep-1,6)];
+    for(let i=0;i<n;i++) {
+      const rank=order.indexOf(i),on=state.mode==='play'?rank>=7-keep:rank<keep;
+      const x=6+pitch*(i+.5),fresh=state.mode==='record'&&i===latest&&phase<.25;
+      if(fresh)rect(x-8,9,16,25,.88,accent());
+      sample(x,21,i,on?.92:.16,fresh?'#000':white);
+      if(on)line([[x-3,4],[x+3,4]],.5);
+    }
+    const selected=state.mode==='play'?order[5+mod(Math.floor(time*3),2)]:latest;
+    const x=6+pitch*(selected+.5);
+    line([[x-4,39],[x,35],[x+4,39]],.9,accent());
+  }
+  const swapPairs=[1,3,0,2,1,3,2,0,1,2];
+  const permutations=[[0,1,2,3,4]];
+  swapPairs.forEach(pair=>{const next=[...permutations.at(-1)];[next[pair],next[pair+1]]=[next[pair+1],next[pair]];permutations.push(next);});
+  function exchange(time) {
+    const {step,phase}=clock(time,state.mode==='play'?.8:1.04),slot=mod(step,swapPairs.length),pair=swapPairs[slot],current=permutations[slot];
+    const progress=move(phase/(state.mode==='play'?.3:.23)),pitch=(w-18)/5;
+    for(let i=0;i<5;i++) {
+      const moving=i===pair||i===pair+1,direction=i===pair?1:-1;
+      const x=9+pitch*(i+.5+(moving?direction*progress:0));
+      const y=22+(moving?direction*Math.sin(progress*Math.PI)*6:0);
+      sample(x,y,current[i],moving?.95:.55,moving?accent():white);
+      const anchor=9+pitch*(i+.5);
+      line([[anchor-4,40],[anchor+4,40]],.2);
+    }
+    const mid=9+pitch*(pair+1);
+    line([[mid-6,3],[mid+6,3]],phase<.3?.9:.3,accent());
+  }
+  function imprint(x,id,alpha=1,color=white) {
+    const cuts=1+mod(id,3);
+    for(let i=0;i<cuts;i++) {
+      const at=x-4+i*4,height=4+hash(id*13+i)*7;
+      line([[at,32-height],[at,32]],alpha,color);
+    }
+    line([[x-6,34],[x+6,34]],alpha*.5,color);
+  }
+  function press(time) {
+    const {step,phase}=clock(time,.92),head=w*.72,pitch=Math.min(27,(head-15)/4),baseline=34;
+    line([[4,baseline+4],[w-4,baseline+4]],.2);
+    line([[head-7,5],[head+7,5]],.3);
+    if(state.mode==='record') {
+      const descent=phase<.1?ease(phase/.1):phase<.16?1:phase<.29?1-ease((phase-.16)/.13):0;
+      const shift=ease((phase-.3)/.18)*pitch,y=9+descent*10;
+      line([[head,5],[head,y]],.6);box(head-8,y,16,5,.95,accent());
+      for(let j=0;j<4;j++)imprint(head-(j+1)*pitch-shift,step-j-1,.7-j*.12);
+      if(phase>.12)imprint(head-shift,step,1,phase<.3?accent():white);
+      if(descent>.95)line([[head-10,24],[head+10,24]],.9,accent());
+    } else {
+      box(head-8,9,16,5,.24);line([[head,5],[head,9]],.24);
+      const index=mod(step,5);
+      for(let i=0;i<5;i++)imprint(head-i*pitch,i,i===index?1:.48,i===index?accent():white);
+      const x=head-index*pitch;
+      line([[x-4,19],[x,23],[x+4,19]],.9,accent());
+    }
+  }
+  function loupe(time) {
+    const recording=state.mode==='record';
+    const forwardWriter=fract(time/galleryTheme.period);
+    const returnCycle=fract(time/(galleryTheme.period*2));
+    const writer=recording?forwardWriter:1-Math.abs(1-returnCycle*2);
+    const width=recording?clamp(writer,.025,.24):.24;
+    const start=recording?Math.max(0,writer-width):writer*(1-width);
+    const end=start+width,span=w-16;
+    const overview=u=>8+u*span,detail=u=>8+(u-start)/width*span;
+    const left=overview(start),right=overview(end);
+    line([[8,16],[w-8,16]],.32,white);line([[8,38],[w-8,38]],.24);
+    line([[8,28],[left,33]],.16);line([[w-8,28],[right,33]],.16);
+    box(left,33,right-left,10,.7,accent());
+    for(let i=0;i<17;i++) {
+      const position=(i+.35+hash(i)*.25)/17,amplitude=.35+hash(i*5)*.65;
+      const written=!recording||position<=writer;
+      const selected=position>=start&&position<=end&&written;
+      if(written)line([[overview(position),38-amplitude*2],[overview(position),38+amplitude*2]],selected?1:.4,selected?accent():white);
+      if(!selected)continue;
+      const x=detail(position),markWidth=Math.min(12,.018/width*span);
+      ctx.save();ctx.beginPath();ctx.rect(8,4,span,24);ctx.clip();
+      line([[x-markWidth,16],[x,16-amplitude*9],[x+markWidth*.4,16+amplitude*7],[x+markWidth,16]],1,white);
+      ctx.restore();
+    }
+    line([[8,6],[8,26]],.32,white);line([[w-8,6],[w-8,26]],.32,white);
+    if(recording)rect(overview(writer)-1,35,2,6,1,accent());
+  }
+  function seal(time) {
+    const {step,phase}=clock(time,.62),stage=mod(step,8),cx=w/2,spread=Math.min(76,w*.55);
+    const paths=[
+      [[-.5,-11],[.12,-11],[.5,11],[-.12,11],[-.5,-11]],
+      [[-.5,5],[-.1,-14],[.5,-5],[.1,14],[-.5,5]],
+      [[-.36,-15],[-.36,15],[.36,-15],[.36,15]],
+      [[-.5,0],[.5,0]],
+      [[-.22,-15],[.22,15]]
+    ];
+    const count=state.mode==='record'?(stage<5?stage+1:stage===5?5:stage===6?3:1):5;
+    paths.forEach((points,i)=>{
+      if(i>=count)return;
+      const selected=state.mode==='play'?i===mod(step,5):i===count-1&&stage<5;
+      const alpha=selected?1:state.mode==='play'?.23:.67;
+      line(points.map(p=>[cx+p[0]*spread,22+p[1]]),alpha,selected?accent():white);
+    });
+    const left=cx-spread*.5-13,right=cx+spread*.5+13;
+    line([[left+3,8],[left,8],[left,36],[left+3,36]],.23);
+    line([[right-3,8],[right,8],[right,36],[right-3,36]],.23);
+    if(state.mode==='record'&&phase<.16) {
+      line([[left-4,18],[left-1,18]],.95,accent());
+      line([[right+1,26],[right+4,26]],.95,accent());
+    }
+    for(let i=0;i<5;i++)rect(cx-10+i*5,42,2,1,i<count?.7:.12,i===mod(step,5)?accent():white);
+  }
+  const renderers={sieve,exchange,press,loupe,seal};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-12')?.querySelector('[data-style="loupe"]').click();
+
+(() => {
+  const root=document.getElementById('study-13');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'horizons',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={horizons:'Calibrated Horizons',vernier:'Delay Vernier',aperture:'Phase Aperture',pursuit:'Pursuit Orbit',folding:'Folding Topology'};
+  const descriptions={
+    horizons:['İnce bir koordinat zemini, ses darbelerini ufka doğru taşıyor.','Tarama kafası, yeni kesitleri perspektif zemine katman katman yazıyor.'],
+    vernier:['Farklı aralıklı iki cetvel kayıyor; aynı hizaya gelen çizgiler kısa süre parlıyor.','Alt cetvel her hecede yeni bir konuma oturuyor; önceki hizalar üst sırada tutuluyor.'],
+    aperture:['İki keskin yarık, sesle birbirinden ayrılıp yeniden hizalanıyor.','Yeni hece merkezden açılıyor; önceki açıklıklar ince birer kesit olarak tutuluyor.'],
+    pursuit:['Birbirini takip eden dört nokta, iç içe köşeli yörüngeler çiziyor.','Her darbe, takibin bir anını kilitliyor; yeni dörtgenler eski izlerin içine ekleniyor.'],
+    folding:['Tek bir katlı şeridin yüzeyleri, ses darbesini sırayla devrediyor.','Soldaki kıvrımlar sabitleniyor; yeni hece bir sonraki katı açıp kapatıyor.']
+  };
+  const white='#FFFFFF',orange='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n);
+  const mod=(n,m)=>(n%m+m)%m;
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Illustrative rhythm only: these are not instruments measuring frequency, delay, or phase.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function horizons(time) {
+    const recording=state.mode==='record',vanish=w*.5+Math.sin(time*.42)*w*.06,horizon=15,base=41;
+    line([[2,horizon],[w-2,horizon]],.65);
+    for(let i=0;i<7;i++) {
+      const end=2+(w-4)*i/6;
+      line([[vanish,horizon],[end,base]],.24);
+    }
+    const drift=recording?0:fract(time*.26);
+    for(let row=0;row<5;row++) {
+      const depth=fract((row+1-drift)/5),perspective=depth*depth;
+      const y=mix(horizon,base,perspective),x1=mix(vanish,2,perspective),x2=mix(vanish,w-2,perspective);
+      line([[x1,y],[x2,y]],.18+.35*depth);
+      if(!recording&&row>0) {
+        const value=env(time-depth*2),x=mix(x1,x2,.3+hash(row+8)*.4);
+        line([[x,y],[x,y-value*10*depth]],.9,row===3?accent():white);
+        marker(x,y-value*10*depth,.8,row===3?accent():white,2);
+      }
+    }
+    if(recording) {
+      const scan=fract(time/galleryTheme.period),depths=[.31,.53,.76,1];
+      depths.forEach((depth,row)=>{
+        const left=mix(vanish,2,depth),right=mix(vanish,w-2,depth),y=mix(horizon,base,depth);
+        const path=[];
+        for(let p=0;p<=scan;p+=.04) { const v=env(Math.floor(time*.18)*5+p*5-row*.27);path.push([mix(left,right,p),y-v*5*depth]); }
+        line(path,row===3?1:.25+row*.18,row===3?accent():white);
+        const head=path[path.length-1];if(head)marker(head[0],head[1],1,row===3?accent():white,2);
+      });
+    }
+    const value=env(time),scale=w*.18;
+    line([[w*.5-scale,5],[w*.5+scale,5]],.25);
+    marker(w*.5-scale+scale*2*value,5,1,accent(),3);
+    line([[2,3],[2,8]],.35);line([[w-2,3],[w-2,8]],.35);
+  }
+  function vernier(time) {
+    const recording=state.mode==='record',center=w/2,pitch=8,lowerPitch=9;
+    const step=Math.floor(time*2.4),shift=recording?(Math.floor(env(step/2.4)*8)-3)*2:Math.sin(time*.7)*18;
+    line([[2,17],[w-2,17]],.3);line([[2,27],[w-2,27]],.3);
+    for(let i=-Math.ceil(w/pitch);i<=Math.ceil(w/pitch);i++) {
+      const x=center+i*pitch;if(x<2||x>w-2)continue;
+      const major=mod(i,5)===0,near=Math.abs(mod(x-center-shift+lowerPitch/2,lowerPitch)-lowerPitch/2)<1;
+      rect(x,major?5:10,1,major?12:7,near?.95:.45,near?accent():white);
+    }
+    for(let i=-Math.ceil(w/lowerPitch);i<=Math.ceil(w/lowerPitch);i++) {
+      const x=center+i*lowerPitch+shift;if(x<2||x>w-2)continue;
+      const major=mod(i,5)===0,near=Math.abs(mod(x-center+pitch/2,pitch)-pitch/2)<1;
+      rect(x,27,1,major?12:7,near?.95:.45,near?accent():white);
+    }
+    line([[center-13,3],[center-13,1],[center+13,1],[center+13,3]],.65);
+    line([[center-13,41],[center-13,43],[center+13,43],[center+13,41]],.65);
+    const error=clamp(shift/18,-1,1)*11;
+    line([[center,22],[center+error,22]],.95,accent());marker(center+error,22,1,accent(),3);
+    if(recording)for(let history=1;history<=4;history++) {
+      const held=(Math.floor(env((step-history)/2.4)*8)-3)*2;
+      marker(center+held*2,3,.65-history*.1,white,2);
+    }
+  }
+  function aperture(time) {
+    const recording=state.mode==='record',mid=w/2,span=w*.43,live=env(time),opening=2+live*12;
+    const drawSlit=(size,offset,alpha,color)=>{
+      const left=mid-span+offset,right=mid+span+offset;
+      line([[left,22],[mid-span*.3+offset,22-size],[mid+span*.3+offset,22-size],[right,22]],alpha,color);
+      line([[left,22],[mid-span*.3+offset,22+size],[mid+span*.3+offset,22+size],[right,22]],alpha,color);
+    };
+    if(recording) {
+      for(let history=4;history>0;history--)drawSlit(2+env(time-history*.25)*12,-history*2,.12+(4-history)*.07,white);
+      drawSlit(opening,0,.95,accent());
+      line([[mid,22-opening+3],[mid,22+opening-3]],.28);
+      marker(mid-span,22,1,accent(),3);
+    } else {
+      const offset=Math.sin(time*.9)*6;
+      drawSlit(opening,-offset,.85,white);
+      drawSlit(2+env(time-.23)*12,offset,.55,white);
+      const seam=mid+Math.sin(time*.67)*span*.38;
+      line([[seam,22-opening],[seam,22+opening]],.8,accent());
+      marker(seam,22,1,accent(),3);
+    }
+    line([[2,18],[2,26]],.4);line([[w-2,18],[w-2,26]],.4);
+  }
+  function pursuitShape(iteration) {
+    // Four cyclic pursuers: the normalized corner vector is repeatedly moved 8% toward its neighbor.
+    const scale=Math.pow(Math.hypot(.92,.08),iteration),angle=Math.atan2(.08,.92)*iteration;
+    const ca=Math.cos(angle),sa=Math.sin(angle),sx=w*.39,sy=15;
+    return [[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>[w/2+(x*ca-y*sa)*scale*sx,22+(x*sa+y*ca)*scale*sy]);
+  }
+  function pursuit(time) {
+    const recording=state.mode==='record',level=env(time),phase=mod(time*.48,7),active=Math.floor(phase);
+    line([[w/2-3,22],[w/2+3,22]],.25);line([[w/2,19],[w/2,25]],.25);
+    if(recording) {
+      const fade=phase>6.3?1-(phase-6.3)/.7:1;
+      for(let i=0;i<Math.min(6,active+1);i++) {
+        const points=pursuitShape(i*3+2),newest=i===Math.min(5,active);
+        line([...points,points[0]],(newest?.95:.22+i*.07)*fade,newest?accent():white);
+        if(newest)points.forEach((p,j)=>marker(p[0],p[1],fade,j===0?accent():white,3));
+      }
+    } else {
+      const position=2+(1+Math.sin(time*.65))*3+level*2;
+      for(let i=4;i>=0;i--) {
+        const points=pursuitShape(position+i*3);
+        line([...points,points[0]],i===0?.8:.13+(4-i)*.08);
+        if(i===0)points.forEach((p,j)=>marker(p[0],p[1],1,j===mod(Math.floor(time*1.2),4)?accent():white,3));
+      }
+    }
+  }
+  function folding(time) {
+    const count=6,recording=state.mode==='record',cycle=mod(time*.58,count+1),active=Math.min(count-1,Math.floor(cycle)),take=Math.floor(time*.58/(count+1));
+    const spread=w*.88,left=(w-spread)/2,step=spread/count,upper=[],lower=[];
+    for(let i=0;i<=count;i++) {
+      let strength;
+      if(recording)strength=i<active?env((take*(count+1)+i+1)/.58):i===active?env(time):.05;
+      else strength=env(time-i*.19);
+      const fold=(i%2?1:-1)*(3+strength*9),x=left+i*step;
+      upper.push([x,22+fold-5]);lower.push([x,22+fold+5]);
+    }
+    for(let i=0;i<count;i++) {
+      const isActive=recording?i===active:i===mod(Math.floor(time*2),count);
+      const alpha=recording&&i>active?.18:i%2?.5:.9;
+      const face=[upper[i],upper[i+1],lower[i+1],lower[i],upper[i]];
+      line(face,alpha);
+      if(i%2===0)line([upper[i],lower[i+1]],alpha*.3);
+      if(isActive)line([upper[i+1],lower[i+1]],1,accent());
+      if(recording&&i<active)marker((upper[i][0]+upper[i+1][0])/2,39,.55,white,2);
+    }
+    if(!recording) {
+      const p=fract(time*.38)*count,index=Math.min(count-1,Math.floor(p)),f=fract(p);
+      marker(mix(upper[index][0],upper[index+1][0],f),mix(upper[index][1],upper[index+1][1],f),1,accent(),3);
+    }
+  }
+  const renderers={horizons,vernier,aperture,pursuit,folding};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-13')?.querySelector('[data-style="pursuit"]').click();
+
+(() => {
+  const root=document.getElementById('study-14');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'horizons',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={horizons:'Calibrated Horizons',vernier:'Delay Vernier',aperture:'Phase Aperture',pursuit:'Pursuit Orbit',folding:'Folding Topology'};
+  const descriptions={
+    horizons:['İnce bir koordinat zemini, ses darbelerini ufka doğru taşıyor.','Tarama kafası, yeni kesitleri perspektif zemine katman katman yazıyor.'],
+    vernier:['Farklı aralıklı iki cetvel kayıyor; aynı hizaya gelen çizgiler kısa süre parlıyor.','Alt cetvel her hecede yeni bir konuma oturuyor; önceki hizalar üst sırada tutuluyor.'],
+    aperture:['İki keskin yarık, sesle birbirinden ayrılıp yeniden hizalanıyor.','Yeni hece merkezden açılıyor; önceki açıklıklar ince birer kesit olarak tutuluyor.'],
+    pursuit:['Birbirini takip eden dört nokta, iç içe köşeli yörüngeler çiziyor.','Her darbe, takibin bir anını kilitliyor; yeni dörtgenler eski izlerin içine ekleniyor.'],
+    folding:['Tek bir katlı şeridin yüzeyleri, ses darbesini sırayla devrediyor.','Soldaki kıvrımlar sabitleniyor; yeni hece bir sonraki katı açıp kapatıyor.']
+  };
+  const white='#FFFFFF',orange='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n);
+  const mod=(n,m)=>(n%m+m)%m;
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Illustrative rhythm only: these are not instruments measuring frequency, delay, or phase.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function horizons(time) {
+    const recording=state.mode==='record',vanish=w*.5+Math.sin(time*.42)*w*.06,horizon=15,base=41;
+    line([[2,horizon],[w-2,horizon]],.65);
+    for(let i=0;i<7;i++) {
+      const end=2+(w-4)*i/6;
+      line([[vanish,horizon],[end,base]],.24);
+    }
+    const drift=recording?0:fract(time*.26);
+    for(let row=0;row<5;row++) {
+      const depth=fract((row+1-drift)/5),perspective=depth*depth;
+      const y=mix(horizon,base,perspective),x1=mix(vanish,2,perspective),x2=mix(vanish,w-2,perspective);
+      line([[x1,y],[x2,y]],.18+.35*depth);
+      if(!recording&&row>0) {
+        const value=env(time-depth*2),x=mix(x1,x2,.3+hash(row+8)*.4);
+        line([[x,y],[x,y-value*10*depth]],.9,row===3?accent():white);
+        marker(x,y-value*10*depth,.8,row===3?accent():white,2);
+      }
+    }
+    if(recording) {
+      const scan=fract(time/galleryTheme.period),depths=[.31,.53,.76,1];
+      depths.forEach((depth,row)=>{
+        const left=mix(vanish,2,depth),right=mix(vanish,w-2,depth),y=mix(horizon,base,depth);
+        const path=[];
+        for(let p=0;p<=scan;p+=.04) { const v=env(Math.floor(time*.18)*5+p*5-row*.27);path.push([mix(left,right,p),y-v*5*depth]); }
+        line(path,row===3?1:.25+row*.18,row===3?accent():white);
+        const head=path[path.length-1];if(head)marker(head[0],head[1],1,row===3?accent():white,2);
+      });
+    }
+    const value=env(time),scale=w*.18;
+    line([[w*.5-scale,5],[w*.5+scale,5]],.25);
+    marker(w*.5-scale+scale*2*value,5,1,accent(),3);
+    line([[2,3],[2,8]],.35);line([[w-2,3],[w-2,8]],.35);
+  }
+  function vernier(time) {
+    const recording=state.mode==='record',center=w/2,pitch=8,lowerPitch=9;
+    const step=Math.floor(time*2.4),shift=recording?(Math.floor(env(step/2.4)*8)-3)*2:Math.sin(time*.7)*18;
+    line([[2,17],[w-2,17]],.3);line([[2,27],[w-2,27]],.3);
+    for(let i=-Math.ceil(w/pitch);i<=Math.ceil(w/pitch);i++) {
+      const x=center+i*pitch;if(x<2||x>w-2)continue;
+      const major=mod(i,5)===0,near=Math.abs(mod(x-center-shift+lowerPitch/2,lowerPitch)-lowerPitch/2)<1;
+      rect(x,major?5:10,1,major?12:7,near?.95:.45,near?accent():white);
+    }
+    for(let i=-Math.ceil(w/lowerPitch);i<=Math.ceil(w/lowerPitch);i++) {
+      const x=center+i*lowerPitch+shift;if(x<2||x>w-2)continue;
+      const major=mod(i,5)===0,near=Math.abs(mod(x-center+pitch/2,pitch)-pitch/2)<1;
+      rect(x,27,1,major?12:7,near?.95:.45,near?accent():white);
+    }
+    line([[center-13,3],[center-13,1],[center+13,1],[center+13,3]],.65);
+    line([[center-13,41],[center-13,43],[center+13,43],[center+13,41]],.65);
+    const error=clamp(shift/18,-1,1)*11;
+    line([[center,22],[center+error,22]],.95,accent());marker(center+error,22,1,accent(),3);
+    if(recording)for(let history=1;history<=4;history++) {
+      const held=(Math.floor(env((step-history)/2.4)*8)-3)*2;
+      marker(center+held*2,3,.65-history*.1,white,2);
+    }
+  }
+  function aperture(time) {
+    const recording=state.mode==='record',mid=w/2,span=w*.43,live=env(time),opening=2+live*12;
+    const drawSlit=(size,offset,alpha,color)=>{
+      const left=mid-span+offset,right=mid+span+offset;
+      line([[left,22],[mid-span*.3+offset,22-size],[mid+span*.3+offset,22-size],[right,22]],alpha,color);
+      line([[left,22],[mid-span*.3+offset,22+size],[mid+span*.3+offset,22+size],[right,22]],alpha,color);
+    };
+    if(recording) {
+      for(let history=4;history>0;history--)drawSlit(2+env(time-history*.25)*12,-history*2,.12+(4-history)*.07,white);
+      drawSlit(opening,0,.95,accent());
+      line([[mid,22-opening+3],[mid,22+opening-3]],.28);
+      marker(mid-span,22,1,accent(),3);
+    } else {
+      const offset=Math.sin(time*.9)*6;
+      drawSlit(opening,-offset,.85,white);
+      drawSlit(2+env(time-.23)*12,offset,.55,white);
+      const seam=mid+Math.sin(time*.67)*span*.38;
+      line([[seam,22-opening],[seam,22+opening]],.8,accent());
+      marker(seam,22,1,accent(),3);
+    }
+    line([[2,18],[2,26]],.4);line([[w-2,18],[w-2,26]],.4);
+  }
+  function pursuitShape(iteration) {
+    // Four cyclic pursuers: the normalized corner vector is repeatedly moved 8% toward its neighbor.
+    const scale=Math.pow(Math.hypot(.92,.08),iteration),angle=Math.atan2(.08,.92)*iteration;
+    const ca=Math.cos(angle),sa=Math.sin(angle),sx=w*.39,sy=15;
+    return [[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>[w/2+(x*ca-y*sa)*scale*sx,22+(x*sa+y*ca)*scale*sy]);
+  }
+  function pursuit(time) {
+    const recording=state.mode==='record',level=env(time),phase=mod(time*.48,7),active=Math.floor(phase);
+    line([[w/2-3,22],[w/2+3,22]],.25);line([[w/2,19],[w/2,25]],.25);
+    if(recording) {
+      const fade=phase>6.3?1-(phase-6.3)/.7:1;
+      for(let i=0;i<Math.min(6,active+1);i++) {
+        const points=pursuitShape(i*3+2),newest=i===Math.min(5,active);
+        line([...points,points[0]],(newest?.95:.22+i*.07)*fade,newest?accent():white);
+        if(newest)points.forEach((p,j)=>marker(p[0],p[1],fade,j===0?accent():white,3));
+      }
+    } else {
+      const position=2+(1+Math.sin(time*.65))*3+level*2;
+      for(let i=4;i>=0;i--) {
+        const points=pursuitShape(position+i*3);
+        line([...points,points[0]],i===0?.8:.13+(4-i)*.08);
+        if(i===0)points.forEach((p,j)=>marker(p[0],p[1],1,j===mod(Math.floor(time*1.2),4)?accent():white,3));
+      }
+    }
+  }
+  function folding(time) {
+    const count=6,recording=state.mode==='record',cycle=mod(time*.58,count+1),active=Math.min(count-1,Math.floor(cycle)),take=Math.floor(time*.58/(count+1));
+    const spread=w*.88,left=(w-spread)/2,step=spread/count,upper=[],lower=[];
+    for(let i=0;i<=count;i++) {
+      let strength;
+      if(recording)strength=i<active?env((take*(count+1)+i+1)/.58):i===active?env(time):.05;
+      else strength=env(time-i*.19);
+      const fold=(i%2?1:-1)*(3+strength*9),x=left+i*step;
+      upper.push([x,22+fold-5]);lower.push([x,22+fold+5]);
+    }
+    for(let i=0;i<count;i++) {
+      const isActive=recording?i===active:i===mod(Math.floor(time*2),count);
+      const alpha=recording&&i>active?.18:i%2?.5:.9;
+      const face=[upper[i],upper[i+1],lower[i+1],lower[i],upper[i]];
+      line(face,alpha);
+      if(i%2===0)line([upper[i],lower[i+1]],alpha*.3);
+      if(isActive)line([upper[i+1],lower[i+1]],1,accent());
+      if(recording&&i<active)marker((upper[i][0]+upper[i+1][0])/2,39,.55,white,2);
+    }
+    if(!recording) {
+      const p=fract(time*.38)*count,index=Math.min(count-1,Math.floor(p)),f=fract(p);
+      marker(mix(upper[index][0],upper[index+1][0],f),mix(upper[index][1],upper[index+1][1],f),1,accent(),3);
+    }
+  }
+  const renderers={horizons,vernier,aperture,pursuit,folding};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-14')?.querySelector('[data-style="vernier"]').click();
+
+(() => {
+  const root=document.getElementById('study-15');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'relay',mode:'play',paused:reduced.matches,accent:true,gain:.82};
+  const names={relay:'Segment Relay',treaty:'Compression Treaty',loom:'Splice Loom',orbit:'Orbit Punchcard',hold:'Sample Hold Ladder'};
+  const descriptions={
+    relay:['Sinyal, özel bir segment alfabesindeki kontakları sırayla açıyor.','Her darbe bir segmenti yazıp kilitliyor; tamamlanan modül yerinde kalıyor.'],
+    treaty:['Üst ve alt dişler, sesin basıncıyla ortak bir aralık bırakıyor.','Yeni darbeler sağda iz bırakıyor; karşı kuvvet biraz gecikerek cevaplıyor.'],
+    loom:['Üç ince ses şeridi, bir kesme noktasında yer değiştiriyor.','Yeni şerit ortada dokunuyor, tamamlanan parçalar yanlara ayrılıyor.'],
+    orbit:['Üç farklı uzunlukta ritim halkası, sabit okuma çizgisinde buluşuyor.','Halkalar sabit; kayıt kafaları geçtikleri duraklara yeni delikler yazıyor.'],
+    hold:['Sabit seviyeleri okuyan bir imleç: küçük bir örnek-tut hafızası.','Her darbe yalnız bir basamağı güncelliyor; diğerleri son değerini tutuyor.']
+  };
+  const white='#FFFFFF',amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Synthetic energy and transport clocks. No compressor, spectral or pitch measurement.
+  function env(time) { return clamp((.15+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.28*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function relay(time) {
+    const count=Math.max(3,Math.min(6,Math.floor(w/33))),pitch=(w-4)/count,step=Math.floor(time*4),phase=fract(time*4);
+    for(let i=0;i<count;i++) {
+      const x=2+i*pitch,span=pitch-8,middle=x+span*.5;
+      const live=mod(step,count)===i,mask=state.mode==='record'?mod(step-i+count,4):live?3:0;
+      const segments=[[[x,12],[x+span,12]],[[middle,12],[middle,32]],[[x,32],[x+span,32]]];
+      segments.forEach((points,k)=>line(points,mask>=k+1?.95:.13,live?accent():white));
+      rect(x,21,2,2,.5);rect(x+span-1,21,2,2,.5);
+      if(i<count-1)line([[x+span+3,22],[x+pitch-3,22]],.25);
+      if(live)rect(x+span*phase,20.5,3,3,1,accent());
+    }
+  }
+  function treaty(time) {
+    const pitch=4,n=Math.ceil(w/pitch),speed=state.mode==='record'?1:0.6;
+    for(let i=0;i<n;i++) {
+      const u=i/(n-1),age=(1-u)*4.4;
+      const a=env(time*speed-age),b=env(time*speed-age-.25);
+      const low=2+17*a,high=2+Math.max(0,b-.3)*20;
+      rect(i*pitch,22+3,1,low,.78);
+      rect(i*pitch,22-3-high,1,high,.85,accent());
+      if(a>.57)rect(i*pitch,22+3+low+2,1,1,.4);
+    }
+    line([[0,22],[w,22]],.16);
+    if(state.mode==='record')line([[w-1,3],[w-1,41]],.75,accent());
+  }
+  function loom(time) {
+    // Two-second transport beat; five cells make an exact ten-second visual loop.
+    const middle=w*.52,ys=[10,22,34],loopSeconds=2,speed=(state.mode==='record'?25:24)/loopSeconds;
+    if(state.mode==='record') {
+      for(let lane=0;lane<3;lane++) {
+        const y=ys[lane];
+        line([[0,y],[middle-28,y],[middle,22],[middle+28,y],[w,y]],.14);
+        for(const direction of [-1,1])for(let j=0;j<Math.ceil(w/48);j++) {
+          const distance=j*25+mod(time*speed+lane*6,25),x=middle+direction*distance;
+          const len=6+hash(mod(j,5)+lane*13)*10;
+          const mapY=px=>22+(y-22)*clamp(Math.abs(px-middle)/28);
+          const end=x+direction*len;
+          line([[x,mapY(x)],[end,mapY(end)]],distance<25?1:.65,distance<25?accent():white);
+          line([[end,mapY(end)-2],[end,mapY(end)+2]],.5);
+        }
+      }
+      rect(middle-1,18-env(time)*9,2,8+env(time)*18,1,accent());
+      return;
+    }
+    for(let lane=0;lane<3;lane++) {
+      const y=ys[lane],next=ys[(lane+1)%3];
+      line([[0,y],[middle-10,y],[middle+10,next],[w,next]],.16);
+      for(let j=-1;j<Math.ceil(w/24)+2;j++) {
+        const raw=j*24-mod(time*speed+lane*8,24),len=7+hash(mod(j,5)+lane*9)*11;
+        const mapY=x=>x<middle-10?y:x>middle+10?next:y+(next-y)*(x-(middle-10))/20;
+        const points=[];
+        for(let k=0;k<=6;k++){const x=raw+k/6*len;points.push([x,mapY(x)]);}
+        const live=raw<middle&&raw+len>middle;
+        line(points,live?1:.75,live?accent():white);
+        line([[raw,mapY(raw)-2],[raw,mapY(raw)+2]],.45);
+        if(state.mode==='record'&&Math.abs(raw-middle)<20)rect(raw,mapY(raw)-1,3,3,.9,accent());
+      }
+    }
+    line([[middle-6,2],[middle+6,2]],.6,accent());
+    line([[middle-6,42],[middle+6,42]],.6,accent());
+  }
+  function orbit(time) {
+    const count=w<160?2:3,pitch=w/count,r=16;
+    for(let ring=0;ring<count;ring++) {
+      const cx=pitch*(ring+.5),n=[12,9,7][ring],rotation=state.mode==='record'?0:time*(.45+ring*.11),head=mod(time*(1.1+ring*.17),Math.PI*2);
+      arc(cx,22,r,0,Math.PI*2,.16);
+      for(let i=0;i<n;i++) {
+        const angle=i/n*Math.PI*2+rotation-Math.PI/2,on=mod(i*5+ring*3,n)<n*.45;
+        const fresh=state.mode==='record'&&mod(head-i/n*Math.PI*2,Math.PI*2)<.8;
+        const hit=state.mode==='play'&&Math.abs(Math.sin(angle+Math.PI/2))<.17&&Math.cos(angle+Math.PI/2)>0;
+        const x=cx+Math.cos(angle)*r,y=22+Math.sin(angle)*r;
+        if(on||fresh)rect(x-1,y-1,2,2,hit||fresh?1:.65,hit||fresh?accent():white);
+        else rect(x,y,1,1,.18);
+      }
+      const a=state.mode==='record'?head-Math.PI/2:-Math.PI/2;
+      line([[cx+Math.cos(a)*6,22+Math.sin(a)*6],[cx+Math.cos(a)*20,22+Math.sin(a)*20]],.85,accent());
+      rect(cx-1,21,2,2,.65);
+    }
+  }
+  function hold(time) {
+    const n=Math.max(4,Math.min(7,Math.floor(w/29))),pitch=(w-4)/n,step=Math.floor(time*2.7),active=mod(step,n),phase=fract(time*2.7);
+    let previous;
+    for(let i=0;i<n;i++) {
+      const cycle=state.mode==='record'?Math.floor((step-i+n)/n):1;
+      const target=7+hash(i+cycle*17)*29,old=7+hash(i+(cycle-1)*17)*29;
+      // Latch: only the currently written slot moves; stored values remain fixed.
+      const y=state.mode==='record'&&i===active?old+(target-old)*clamp(phase/.22):target;
+      const x=2+i*pitch;
+      if(previous)line([[previous.x,previous.y],[x,previous.y],[x,y]],.16);
+      line([[x,y],[x+pitch-5,y]],i===active?1:.72,i===active?accent():white);
+      rect(x,39,2,1,.2);rect(x+pitch-5,39,2,1,.2);
+      if(i===active) {box(x+pitch*.5-2,y-2,4,4,1,accent());line([[x+pitch*.5,3],[x+pitch*.5,7]],.65,accent());}
+      previous={x:x+pitch-5,y};
+    }
+  }
+  const renderers={relay,treaty,loom,orbit,hold};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-15')?.querySelector('[data-style="loom"]').click();
+
+(() => {
+  const root=document.getElementById('study-16');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'coupled',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={coupled:'Coupled Nodes',bearing:'Bearing Fan',relay:'Causal Relay',boxes:'State Boxes',branch:'Branch Memory'};
+  const descriptions={
+    coupled:['Üç düğüm, sesi birbirine devrederek küçük bir geri besleme devresi kuruyor.','İlk düğüm heceyi yakalıyor; iki kısa gecikmeyle diğer düğümlere iz bırakıyor.'],
+    bearing:['İki segmentli kadran, aynı ritmi farklı açılardan tarıyor.','Konuşma darbeleri ibreyi kademeli konumlara taşıyor; son üç açı hafızada kalıyor.'],
+    relay:['Bir darbe, dört neden–sonuç istasyonunu sırayla uyandırıyor.','İstasyonlar sırayla kilitleniyor; yakalanan değer en sonda küçük bir fişe dönüşüyor.'],
+    boxes:['Dört minik koordinat odası, aynı ritmin farklı anlarını köşeli rotalarda dolaştırıyor.','Her darbe bir koordinat karesine yazılıyor; diğer üçü son yakaladıkları anı tutuyor.'],
+    branch:['Okuma noktası, dallanan hafızanın uçlarını tek tek ziyaret ediyor.','Kayıt sürdükçe küçük bir ağaç çiziliyor; yeni dallar, eski izleri koruyarak ekleniyor.']
+  };
+  const white='#FFFFFF',orange='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n);
+  const mod=(n,m)=>(n%m+m)%m;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Synthetic, deterministic envelope: no microphone, real FFT, phase, or stereo measurement.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white,dashed=false) {
+    if(!points.length)return;
+    ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.setLineDash(dashed?[1,4]:[]);
+    ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]);
+  }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function ring(x,y,r,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function pointOn(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0);
+    for(let i=0;i<lengths.length;i++) {
+      if(distance<=lengths[i]||i===lengths.length-1) { const q=lengths[i]?distance/lengths[i]:0;return [mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]; }
+      distance-=lengths[i];
+    }
+    return path[0];
+  }
+  function prefix(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0),out=[path[0]];
+    for(let i=0;i<lengths.length;i++) {
+      if(distance<lengths[i]) { const q=lengths[i]?distance/lengths[i]:0;out.push([mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]);break; }
+      out.push(path[i+1]);distance-=lengths[i];
+    }
+    return out;
+  }
+  function coupled(time) {
+    const xs=[w*.13,w*.5,w*.87],recording=state.mode==='record';
+    const nodes=xs.map((x,i)=>({x,y:22+(recording?0:Math.sin(time*1.5-i*.8)*3),r:5+env(time-i*.18)*6}));
+    for(let i=0;i<2;i++) {
+      const a=nodes[i],b=nodes[i+1],direction=Math.atan2(b.y-a.y,b.x-a.x);
+      const path=[[a.x+Math.cos(direction)*(a.r+3),a.y+Math.sin(direction)*(a.r+3)],[b.x-Math.cos(direction)*(b.r+3),b.y-Math.sin(direction)*(b.r+3)]];
+      line(path,.5,white,true);
+      const phase=fract(time*.95-i*.18),dot=pointOn(path,phase);
+      marker(dot[0],dot[1],.35+env(time-i*.18),accent(),2);
+    }
+    if(!recording) {
+      const back=[[xs[2],12],[xs[2],4],[xs[0],4],[xs[0],12]];
+      line(back,.22,white,true);
+      const dot=pointOn(back,fract(time*.28));marker(dot[0],dot[1],.7,white,2);
+    }
+    nodes.forEach((n,i)=>{
+      ring(n.x,n.y,n.r,.9);
+      marker(n.x,n.y,.5+env(time-i*.18),i===0?accent():white,3);
+      if(recording) {
+        const strength=env(time-i*.18),extent=3+strength*12;
+        line([[n.x-extent/2,39],[n.x+extent/2,39]],.8,i===0?accent():white);
+        rect(n.x-1,34,2,2,.35+strength);
+      }
+    });
+  }
+  function bearing(time) {
+    const radius=Math.min(22,w*.15),centers=[w*.27,w*.73],cy=32;
+    const a0=Math.PI*1.02,a1=Math.PI*1.98,span=a1-a0;
+    centers.forEach((cx,i)=>{
+      const end=state.mode==='record'?Math.floor(env(time-i*.16)*8)/8:clamp(.5+.46*Math.sin(time*1.6+i*1.9)*(0.5+env(time)*.5));
+      for(let layer=0;layer<3;layer++)for(let segment=0;segment<15;segment++) {
+        const start=a0+segment*span/15,finish=start+span/15*.52;
+        const close=Math.abs(segment/14-end)<.12;
+        arc(cx,cy,radius-layer*4,start,finish,close?.9:.23,close&&layer===0?accent():white);
+      }
+      const needle=value=>a0+clamp(value)*span;
+      if(state.mode==='record')for(let history=3;history>0;history--) {
+        const angle=needle(Math.floor(env(time-history*.21-i*.16)*8)/8);
+        marker(cx+Math.cos(angle)*(radius-2),cy+Math.sin(angle)*(radius-2),.16+(3-history)*.1,white,2);
+      }
+      const angle=needle(end);
+      line([[cx,cy],[cx+Math.cos(angle)*(radius-2),cy+Math.sin(angle)*(radius-2)]],.95,accent());
+      marker(cx,cy,1,white,3);
+      line([[cx-5,41],[cx+5,41]],.35);
+    });
+    line([[w*.5-3,22],[w*.5+3,22]],.5,white,true);
+  }
+  function relay(time) {
+    const xs=[w*.08,w*.36,w*.64,w*.92],ys=[22,11,33,22],cycle=fract(time*.34),phase=cycle*4;
+    const selected=Math.min(3,Math.floor(phase)),recording=state.mode==='record';
+    for(let i=0;i<3;i++) {
+      const knee=(xs[i]+xs[i+1])/2,path=[[xs[i]+6,ys[i]],[knee,ys[i]],[knee,ys[i+1]],[xs[i+1]-6,ys[i+1]]];
+      line(path,.22);
+      if(!recording&&selected===i) { const dot=pointOn(path,fract(phase));marker(dot[0],dot[1],1,accent());line(prefix(path,fract(phase)),.7); }
+      if(recording&&phase>i+1)line(path,.8);
+    }
+    xs.forEach((x,i)=>{
+      const y=ys[i],latched=recording&&phase>i+.25,active=selected===i;
+      if(i===0)ring(x,y,5,active?1:.6,active?accent():white);
+      else if(i===3)box(x-4,y-6,8,12,active?1:.6,active?accent():white);
+      else box(x-5,y-5,10,10,active||latched?1:.4,active?accent():white);
+      if(latched)rect(x-2,y-2,4,4,.9);
+      else if(active)marker(x,y,.6+env(time)*.4,accent(),3);
+      if(i>0&&i<3) {
+        const portY=i===1?y+9:y-9;
+        line([[x-4,portY],[x+4,portY]],latched?.85:.23);
+      }
+    });
+    if(recording) {
+      const ready=clamp((phase-3.3)*2),x=xs[3];
+      rect(x-3,37,6,2,ready,accent());rect(x-3,41,6,1,ready*.5);
+    }
+  }
+  function boxes(time) {
+    const count=4,gap=8,size=Math.min(27,(w-gap*(count-1)-4)/count),left=(w-(size*count+gap*(count-1)))/2;
+    const step=Math.floor(time*2.2),selected=mod(step,4),recording=state.mode==='record';
+    for(let i=0;i<count;i++) {
+      const x=left+i*(size+gap),y=(44-size)/2,center=[x+size/2,22],active=i===selected;
+      box(x,y,size,size,active?.75:.28);
+      line([[center[0]-3,22],[center[0]+3,22]],.2);line([[center[0],19],[center[0],25]],.2);
+      const sample=recording?step-mod(step-i,4):time*2.2-i*.7;
+      const inset=4,route=[[x+inset,y+inset],[x+size-inset,y+inset],[x+size-inset,y+size-inset],[x+inset,y+size-inset],[x+inset,y+inset]];
+      if(recording) {
+        const px=mix(x+inset,x+size-inset,hash(sample+25)),py=mix(y+inset,y+size-inset,hash(sample+61));
+        line([[px,y+size-2],[px,py],[x+2,py]],.25,active?accent():white);
+        marker(px,py,active?1:.72,active?accent():white,3);
+        if(active)rect(x+size/2-3,y+size+4,6,1,1,accent());
+      } else {
+        const progress=fract(sample*.15),p=pointOn(route,progress),q=pointOn(route,fract(progress-.15));
+        line([[q[0],q[1]],[p[0],q[1]],[p[0],p[1]]],.35);
+        line([[p[0],22],[center[0],22],[center[0],p[1]]],.13);
+        marker(p[0],p[1],.8+env(time-i*.15)*.2,active?accent():white,3);
+      }
+    }
+  }
+  function branch(time) {
+    const x0=4,x1=w*.25,x2=w*.53,x3=w-5,ys=[6,16,28,38];
+    const paths=ys.map((y,i)=>[[x0,22],[x1,22],[x1,i<2?11:33],[x2,i<2?11:33],[x2,y],[x3,y]]);
+    const recording=state.mode==='record',cycle=mod(time*.62,4.8),selected=Math.min(3,Math.floor(cycle));
+    paths.forEach((path,i)=>{
+      if(recording) {
+        const progress=clamp(cycle-i),fade=cycle>4.25?1-clamp((cycle-4.25)/.55):1;
+        if(progress>0) {
+          line(prefix(path,progress),(.48+(i===selected?.42:0))*fade,i===selected?accent():white);
+          const tip=pointOn(path,progress);marker(tip[0],tip[1],fade,i===selected?accent():white,3);
+          if(progress===1)box(x3-2,ys[i]-2,4,4,.6*fade);
+        }
+      } else {
+        line(path,i===selected?.8:.2);
+        box(x3-2,ys[i]-2,4,4,i===selected?1:.4,i===selected?accent():white);
+        if(i===selected) { const position=fract(time*.62),tip=pointOn(path,position);marker(tip[0],tip[1],1,accent(),3); }
+      }
+    });
+    marker(x0,22,1,accent(),3);
+  }
+  const renderers={coupled,bearing,relay,boxes,branch};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) {
+    raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;
+    if(!last)last=now;
+    const elapsed=now-last;
+    if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }
+    raf=requestAnimationFrame(frame);
+  }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-16')?.querySelector('[data-style="coupled"]').click();
+
+(() => {
+  const root=document.getElementById('study-17');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'coupled',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={coupled:'Coupled Nodes',bearing:'Bearing Fan',relay:'Causal Relay',boxes:'State Boxes',branch:'Branch Memory'};
+  const descriptions={
+    coupled:['Üç düğüm, sesi birbirine devrederek küçük bir geri besleme devresi kuruyor.','İlk düğüm heceyi yakalıyor; iki kısa gecikmeyle diğer düğümlere iz bırakıyor.'],
+    bearing:['İki segmentli kadran, aynı ritmi farklı açılardan tarıyor.','Konuşma darbeleri ibreyi kademeli konumlara taşıyor; son üç açı hafızada kalıyor.'],
+    relay:['Bir darbe, dört neden–sonuç istasyonunu sırayla uyandırıyor.','İstasyonlar sırayla kilitleniyor; yakalanan değer en sonda küçük bir fişe dönüşüyor.'],
+    boxes:['Dört minik koordinat odası, aynı ritmin farklı anlarını köşeli rotalarda dolaştırıyor.','Her darbe bir koordinat karesine yazılıyor; diğer üçü son yakaladıkları anı tutuyor.'],
+    branch:['Okuma noktası, dallanan hafızanın uçlarını tek tek ziyaret ediyor.','Kayıt sürdükçe küçük bir ağaç çiziliyor; yeni dallar, eski izleri koruyarak ekleniyor.']
+  };
+  const white='#FFFFFF',orange='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n);
+  const mod=(n,m)=>(n%m+m)%m;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Synthetic, deterministic envelope: no microphone, real FFT, phase, or stereo measurement.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white,dashed=false) {
+    if(!points.length)return;
+    ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.setLineDash(dashed?[1,4]:[]);
+    ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]);
+  }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function ring(x,y,r,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function pointOn(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0);
+    for(let i=0;i<lengths.length;i++) {
+      if(distance<=lengths[i]||i===lengths.length-1) { const q=lengths[i]?distance/lengths[i]:0;return [mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]; }
+      distance-=lengths[i];
+    }
+    return path[0];
+  }
+  function prefix(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0),out=[path[0]];
+    for(let i=0;i<lengths.length;i++) {
+      if(distance<lengths[i]) { const q=lengths[i]?distance/lengths[i]:0;out.push([mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]);break; }
+      out.push(path[i+1]);distance-=lengths[i];
+    }
+    return out;
+  }
+  function coupled(time) {
+    const xs=[w*.13,w*.5,w*.87],recording=state.mode==='record';
+    const nodes=xs.map((x,i)=>({x,y:22+(recording?0:Math.sin(time*1.5-i*.8)*3),r:5+env(time-i*.18)*6}));
+    for(let i=0;i<2;i++) {
+      const a=nodes[i],b=nodes[i+1],direction=Math.atan2(b.y-a.y,b.x-a.x);
+      const path=[[a.x+Math.cos(direction)*(a.r+3),a.y+Math.sin(direction)*(a.r+3)],[b.x-Math.cos(direction)*(b.r+3),b.y-Math.sin(direction)*(b.r+3)]];
+      line(path,.5,white,true);
+      const phase=fract(time*.95-i*.18),dot=pointOn(path,phase);
+      marker(dot[0],dot[1],.35+env(time-i*.18),accent(),2);
+    }
+    if(!recording) {
+      const back=[[xs[2],12],[xs[2],4],[xs[0],4],[xs[0],12]];
+      line(back,.22,white,true);
+      const dot=pointOn(back,fract(time*.28));marker(dot[0],dot[1],.7,white,2);
+    }
+    nodes.forEach((n,i)=>{
+      ring(n.x,n.y,n.r,.9);
+      marker(n.x,n.y,.5+env(time-i*.18),i===0?accent():white,3);
+      if(recording) {
+        const strength=env(time-i*.18),extent=3+strength*12;
+        line([[n.x-extent/2,39],[n.x+extent/2,39]],.8,i===0?accent():white);
+        rect(n.x-1,34,2,2,.35+strength);
+      }
+    });
+  }
+  function bearing(time) {
+    const radius=Math.min(22,w*.15),centers=[w*.27,w*.73],cy=32;
+    const a0=Math.PI*1.02,a1=Math.PI*1.98,span=a1-a0;
+    centers.forEach((cx,i)=>{
+      const end=state.mode==='record'?Math.floor(env(time-i*.16)*8)/8:clamp(.5+.46*Math.sin(time*1.6+i*1.9)*(0.5+env(time)*.5));
+      for(let layer=0;layer<3;layer++)for(let segment=0;segment<15;segment++) {
+        const start=a0+segment*span/15,finish=start+span/15*.52;
+        const close=Math.abs(segment/14-end)<.12;
+        arc(cx,cy,radius-layer*4,start,finish,close?.9:.23,close&&layer===0?accent():white);
+      }
+      const needle=value=>a0+clamp(value)*span;
+      if(state.mode==='record')for(let history=3;history>0;history--) {
+        const angle=needle(Math.floor(env(time-history*.21-i*.16)*8)/8);
+        marker(cx+Math.cos(angle)*(radius-2),cy+Math.sin(angle)*(radius-2),.16+(3-history)*.1,white,2);
+      }
+      const angle=needle(end);
+      line([[cx,cy],[cx+Math.cos(angle)*(radius-2),cy+Math.sin(angle)*(radius-2)]],.95,accent());
+      marker(cx,cy,1,white,3);
+      line([[cx-5,41],[cx+5,41]],.35);
+    });
+    line([[w*.5-3,22],[w*.5+3,22]],.5,white,true);
+  }
+  function relay(time) {
+    const xs=[w*.08,w*.36,w*.64,w*.92],ys=[22,11,33,22],cycle=fract(time*.34),phase=cycle*4;
+    const selected=Math.min(3,Math.floor(phase)),recording=state.mode==='record';
+    for(let i=0;i<3;i++) {
+      const knee=(xs[i]+xs[i+1])/2,path=[[xs[i]+6,ys[i]],[knee,ys[i]],[knee,ys[i+1]],[xs[i+1]-6,ys[i+1]]];
+      line(path,.22);
+      if(!recording&&selected===i) { const dot=pointOn(path,fract(phase));marker(dot[0],dot[1],1,accent());line(prefix(path,fract(phase)),.7); }
+      if(recording&&phase>i+1)line(path,.8);
+    }
+    xs.forEach((x,i)=>{
+      const y=ys[i],latched=recording&&phase>i+.25,active=selected===i;
+      if(i===0)ring(x,y,5,active?1:.6,active?accent():white);
+      else if(i===3)box(x-4,y-6,8,12,active?1:.6,active?accent():white);
+      else box(x-5,y-5,10,10,active||latched?1:.4,active?accent():white);
+      if(latched)rect(x-2,y-2,4,4,.9);
+      else if(active)marker(x,y,.6+env(time)*.4,accent(),3);
+      if(i>0&&i<3) {
+        const portY=i===1?y+9:y-9;
+        line([[x-4,portY],[x+4,portY]],latched?.85:.23);
+      }
+    });
+    if(recording) {
+      const ready=clamp((phase-3.3)*2),x=xs[3];
+      rect(x-3,37,6,2,ready,accent());rect(x-3,41,6,1,ready*.5);
+    }
+  }
+  function boxes(time) {
+    const count=4,gap=8,size=Math.min(27,(w-gap*(count-1)-4)/count),left=(w-(size*count+gap*(count-1)))/2;
+    const step=Math.floor(time*2.2),selected=mod(step,4),recording=state.mode==='record';
+    for(let i=0;i<count;i++) {
+      const x=left+i*(size+gap),y=(44-size)/2,center=[x+size/2,22],active=i===selected;
+      box(x,y,size,size,active?.75:.28);
+      line([[center[0]-3,22],[center[0]+3,22]],.2);line([[center[0],19],[center[0],25]],.2);
+      const sample=recording?step-mod(step-i,4):time*2.2-i*.7;
+      const inset=4,route=[[x+inset,y+inset],[x+size-inset,y+inset],[x+size-inset,y+size-inset],[x+inset,y+size-inset],[x+inset,y+inset]];
+      if(recording) {
+        const px=mix(x+inset,x+size-inset,hash(sample+25)),py=mix(y+inset,y+size-inset,hash(sample+61));
+        line([[px,y+size-2],[px,py],[x+2,py]],.25,active?accent():white);
+        marker(px,py,active?1:.72,active?accent():white,3);
+        if(active)rect(x+size/2-3,y+size+4,6,1,1,accent());
+      } else {
+        const progress=fract(sample*.15),p=pointOn(route,progress),q=pointOn(route,fract(progress-.15));
+        line([[q[0],q[1]],[p[0],q[1]],[p[0],p[1]]],.35);
+        line([[p[0],22],[center[0],22],[center[0],p[1]]],.13);
+        marker(p[0],p[1],.8+env(time-i*.15)*.2,active?accent():white,3);
+      }
+    }
+  }
+  function branch(time) {
+    const x0=4,x1=w*.25,x2=w*.53,x3=w-5,ys=[6,16,28,38];
+    const paths=ys.map((y,i)=>[[x0,22],[x1,22],[x1,i<2?11:33],[x2,i<2?11:33],[x2,y],[x3,y]]);
+    const recording=state.mode==='record',cycle=mod(time*.62,4.8),selected=Math.min(3,Math.floor(cycle));
+    paths.forEach((path,i)=>{
+      if(recording) {
+        const progress=clamp(cycle-i),fade=cycle>4.25?1-clamp((cycle-4.25)/.55):1;
+        if(progress>0) {
+          line(prefix(path,progress),(.48+(i===selected?.42:0))*fade,i===selected?accent():white);
+          const tip=pointOn(path,progress);marker(tip[0],tip[1],fade,i===selected?accent():white,3);
+          if(progress===1)box(x3-2,ys[i]-2,4,4,.6*fade);
+        }
+      } else {
+        line(path,i===selected?.8:.2);
+        box(x3-2,ys[i]-2,4,4,i===selected?1:.4,i===selected?accent():white);
+        if(i===selected) { const position=fract(time*.62),tip=pointOn(path,position);marker(tip[0],tip[1],1,accent(),3); }
+      }
+    });
+    marker(x0,22,1,accent(),3);
+  }
+  const renderers={coupled,bearing,relay,boxes,branch};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) {
+    raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;
+    if(!last)last=now;
+    const elapsed=now-last;
+    if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }
+    raf=requestAnimationFrame(frame);
+  }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-17')?.querySelector('[data-style="bearing"]').click();
+
+(() => {
+  const root=document.getElementById('study-18');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'coupled',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={coupled:'Coupled Nodes',bearing:'Bearing Fan',relay:'Causal Relay',boxes:'State Boxes',branch:'Branch Memory'};
+  const descriptions={
+    coupled:['Üç düğüm, sesi birbirine devrederek küçük bir geri besleme devresi kuruyor.','İlk düğüm heceyi yakalıyor; iki kısa gecikmeyle diğer düğümlere iz bırakıyor.'],
+    bearing:['İki segmentli kadran, aynı ritmi farklı açılardan tarıyor.','Konuşma darbeleri ibreyi kademeli konumlara taşıyor; son üç açı hafızada kalıyor.'],
+    relay:['Bir darbe, dört neden–sonuç istasyonunu sırayla uyandırıyor.','İstasyonlar sırayla kilitleniyor; yakalanan değer en sonda küçük bir fişe dönüşüyor.'],
+    boxes:['Dört minik koordinat odası, aynı ritmin farklı anlarını köşeli rotalarda dolaştırıyor.','Her darbe bir koordinat karesine yazılıyor; diğer üçü son yakaladıkları anı tutuyor.'],
+    branch:['Okuma noktası, dallanan hafızanın uçlarını tek tek ziyaret ediyor.','Kayıt sürdükçe küçük bir ağaç çiziliyor; yeni dallar, eski izleri koruyarak ekleniyor.']
+  };
+  const white='#FFFFFF',orange='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n);
+  const mod=(n,m)=>(n%m+m)%m;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  // Synthetic, deterministic envelope: no microphone, real FFT, phase, or stereo measurement.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white,dashed=false) {
+    if(!points.length)return;
+    ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.setLineDash(dashed?[1,4]:[]);
+    ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.setLineDash([]);
+  }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function ring(x,y,r,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke(); }
+  function arc(x,y,r,a,b,alpha=1,color=white) { ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.beginPath();ctx.arc(x,y,r,a,b);ctx.stroke(); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function pointOn(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0);
+    for(let i=0;i<lengths.length;i++) {
+      if(distance<=lengths[i]||i===lengths.length-1) { const q=lengths[i]?distance/lengths[i]:0;return [mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]; }
+      distance-=lengths[i];
+    }
+    return path[0];
+  }
+  function prefix(path,progress) {
+    const lengths=path.slice(1).map((p,i)=>Math.hypot(p[0]-path[i][0],p[1]-path[i][1]));
+    let distance=clamp(progress)*lengths.reduce((a,b)=>a+b,0),out=[path[0]];
+    for(let i=0;i<lengths.length;i++) {
+      if(distance<lengths[i]) { const q=lengths[i]?distance/lengths[i]:0;out.push([mix(path[i][0],path[i+1][0],q),mix(path[i][1],path[i+1][1],q)]);break; }
+      out.push(path[i+1]);distance-=lengths[i];
+    }
+    return out;
+  }
+  function coupled(time) {
+    const xs=[w*.13,w*.5,w*.87],recording=state.mode==='record';
+    const nodes=xs.map((x,i)=>({x,y:22+(recording?0:Math.sin(time*1.5-i*.8)*3),r:5+env(time-i*.18)*6}));
+    for(let i=0;i<2;i++) {
+      const a=nodes[i],b=nodes[i+1],direction=Math.atan2(b.y-a.y,b.x-a.x);
+      const path=[[a.x+Math.cos(direction)*(a.r+3),a.y+Math.sin(direction)*(a.r+3)],[b.x-Math.cos(direction)*(b.r+3),b.y-Math.sin(direction)*(b.r+3)]];
+      line(path,.5,white,true);
+      const phase=fract(time*.95-i*.18),dot=pointOn(path,phase);
+      marker(dot[0],dot[1],.35+env(time-i*.18),accent(),2);
+    }
+    if(!recording) {
+      const back=[[xs[2],12],[xs[2],4],[xs[0],4],[xs[0],12]];
+      line(back,.22,white,true);
+      const dot=pointOn(back,fract(time*.28));marker(dot[0],dot[1],.7,white,2);
+    }
+    nodes.forEach((n,i)=>{
+      ring(n.x,n.y,n.r,.9);
+      marker(n.x,n.y,.5+env(time-i*.18),i===0?accent():white,3);
+      if(recording) {
+        const strength=env(time-i*.18),extent=3+strength*12;
+        line([[n.x-extent/2,39],[n.x+extent/2,39]],.8,i===0?accent():white);
+        rect(n.x-1,34,2,2,.35+strength);
+      }
+    });
+  }
+  function bearing(time) {
+    const radius=Math.min(22,w*.15),centers=[w*.27,w*.73],cy=32;
+    const a0=Math.PI*1.02,a1=Math.PI*1.98,span=a1-a0;
+    centers.forEach((cx,i)=>{
+      const end=state.mode==='record'?Math.floor(env(time-i*.16)*8)/8:clamp(.5+.46*Math.sin(time*1.6+i*1.9)*(0.5+env(time)*.5));
+      for(let layer=0;layer<3;layer++)for(let segment=0;segment<15;segment++) {
+        const start=a0+segment*span/15,finish=start+span/15*.52;
+        const close=Math.abs(segment/14-end)<.12;
+        arc(cx,cy,radius-layer*4,start,finish,close?.9:.23,close&&layer===0?accent():white);
+      }
+      const needle=value=>a0+clamp(value)*span;
+      if(state.mode==='record')for(let history=3;history>0;history--) {
+        const angle=needle(Math.floor(env(time-history*.21-i*.16)*8)/8);
+        marker(cx+Math.cos(angle)*(radius-2),cy+Math.sin(angle)*(radius-2),.16+(3-history)*.1,white,2);
+      }
+      const angle=needle(end);
+      line([[cx,cy],[cx+Math.cos(angle)*(radius-2),cy+Math.sin(angle)*(radius-2)]],.95,accent());
+      marker(cx,cy,1,white,3);
+      line([[cx-5,41],[cx+5,41]],.35);
+    });
+    line([[w*.5-3,22],[w*.5+3,22]],.5,white,true);
+  }
+  function relay(time) {
+    const xs=[w*.08,w*.36,w*.64,w*.92],ys=[22,11,33,22],cycle=fract(time*.34),phase=cycle*4;
+    const selected=Math.min(3,Math.floor(phase)),recording=state.mode==='record';
+    for(let i=0;i<3;i++) {
+      const knee=(xs[i]+xs[i+1])/2,path=[[xs[i]+6,ys[i]],[knee,ys[i]],[knee,ys[i+1]],[xs[i+1]-6,ys[i+1]]];
+      line(path,.22);
+      if(!recording&&selected===i) { const dot=pointOn(path,fract(phase));marker(dot[0],dot[1],1,accent());line(prefix(path,fract(phase)),.7); }
+      if(recording&&phase>i+1)line(path,.8);
+    }
+    xs.forEach((x,i)=>{
+      const y=ys[i],latched=recording&&phase>i+.25,active=selected===i;
+      if(i===0)ring(x,y,5,active?1:.6,active?accent():white);
+      else if(i===3)box(x-4,y-6,8,12,active?1:.6,active?accent():white);
+      else box(x-5,y-5,10,10,active||latched?1:.4,active?accent():white);
+      if(latched)rect(x-2,y-2,4,4,.9);
+      else if(active)marker(x,y,.6+env(time)*.4,accent(),3);
+      if(i>0&&i<3) {
+        const portY=i===1?y+9:y-9;
+        line([[x-4,portY],[x+4,portY]],latched?.85:.23);
+      }
+    });
+    if(recording) {
+      const ready=clamp((phase-3.3)*2),x=xs[3];
+      rect(x-3,37,6,2,ready,accent());rect(x-3,41,6,1,ready*.5);
+    }
+  }
+  function boxes(time) {
+    const count=4,gap=8,size=Math.min(27,(w-gap*(count-1)-4)/count),left=(w-(size*count+gap*(count-1)))/2;
+    const step=Math.floor(time*2.2),selected=mod(step,4),recording=state.mode==='record';
+    for(let i=0;i<count;i++) {
+      const x=left+i*(size+gap),y=(44-size)/2,center=[x+size/2,22],active=i===selected;
+      box(x,y,size,size,active?.75:.28);
+      line([[center[0]-3,22],[center[0]+3,22]],.2);line([[center[0],19],[center[0],25]],.2);
+      const sample=recording?step-mod(step-i,4):time*2.2-i*.7;
+      const inset=4,route=[[x+inset,y+inset],[x+size-inset,y+inset],[x+size-inset,y+size-inset],[x+inset,y+size-inset],[x+inset,y+inset]];
+      if(recording) {
+        const px=mix(x+inset,x+size-inset,hash(sample+25)),py=mix(y+inset,y+size-inset,hash(sample+61));
+        line([[px,y+size-2],[px,py],[x+2,py]],.25,active?accent():white);
+        marker(px,py,active?1:.72,active?accent():white,3);
+        if(active)rect(x+size/2-3,y+size+4,6,1,1,accent());
+      } else {
+        const progress=fract(sample*.15),p=pointOn(route,progress),q=pointOn(route,fract(progress-.15));
+        line([[q[0],q[1]],[p[0],q[1]],[p[0],p[1]]],.35);
+        line([[p[0],22],[center[0],22],[center[0],p[1]]],.13);
+        marker(p[0],p[1],.8+env(time-i*.15)*.2,active?accent():white,3);
+      }
+    }
+  }
+  function branch(time) {
+    const x0=4,x1=w*.25,x2=w*.53,x3=w-5,ys=[6,16,28,38];
+    const paths=ys.map((y,i)=>[[x0,22],[x1,22],[x1,i<2?11:33],[x2,i<2?11:33],[x2,y],[x3,y]]);
+    const recording=state.mode==='record',cycle=mod(time*.62,4.8),selected=Math.min(3,Math.floor(cycle));
+    paths.forEach((path,i)=>{
+      if(recording) {
+        const progress=clamp(cycle-i),fade=cycle>4.25?1-clamp((cycle-4.25)/.55):1;
+        if(progress>0) {
+          line(prefix(path,progress),(.48+(i===selected?.42:0))*fade,i===selected?accent():white);
+          const tip=pointOn(path,progress);marker(tip[0],tip[1],fade,i===selected?accent():white,3);
+          if(progress===1)box(x3-2,ys[i]-2,4,4,.6*fade);
+        }
+      } else {
+        line(path,i===selected?.8:.2);
+        box(x3-2,ys[i]-2,4,4,i===selected?1:.4,i===selected?accent():white);
+        if(i===selected) { const position=fract(time*.62),tip=pointOn(path,position);marker(tip[0],tip[1],1,accent(),3); }
+      }
+    });
+    marker(x0,22,1,accent(),3);
+  }
+  const renderers={coupled,bearing,relay,boxes,branch};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) {
+    raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;
+    if(!last)last=now;
+    const elapsed=now-last;
+    if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }
+    raf=requestAnimationFrame(frame);
+  }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-18')?.querySelector('[data-style="boxes"]').click();
+
+(() => {
+  const root=document.getElementById('study-19');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'), ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'), caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'register',mode:'play',paused:reduced.matches,accent:true,gain:0.82};
+  const names={register:'Gate Register',packets:'Packet Stitch',comb:'Raster Comb',parity:'Parity Bloom',bus:'Address Bus'};
+  const descriptions={
+    register:['Ses darbeleri, sabit bit hücrelerinde bir adım ilerliyor.','Yeni kayıt verisi sağdan yazılıyor; önceki bitler yer değiştiriyor.'],
+    packets:['Kesikli ses paketleri, sabit okuma iğnesinin altından geçiyor.','Her yeni hece ayrı bir veri zarfı; merkezde dikilip sola bırakılıyor.'],
+    comb:['Yedi ince tarama çizgisi sesle bükülüp tekrar hizalanıyor.','Tarayıcı, konuşmanın kesitini satır satır yakalıyor.'],
+    parity:['Küçük bir mantık devresi gibi, simetrik bitler açılıp kapanıyor.','Hece darbeleri merkezden dışarı yeni bir ikili desen yazıyor.'],
+    bus:['Sinyal, köşeli veri yollarında duraklar arasında dolaşıyor.','Yeni darbeler merkezde doğup ayrı kayıt yollarına yönleniyor.']
+  };
+  const white='#FFFFFF', amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  // A deterministic synthetic rhythm, not microphone input or a measured spectrum.
+  function env(time) { return clamp((0.15+0.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+0.28*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function register(time) {
+    const n=Math.max(6,Math.min(14,Math.floor(w/14))),pitch=(w-4)/n,cell=Math.max(3,pitch-4),step=Math.floor(time*3.6),phase=fract(time*3.6);
+    for(let col=0;col<n;col++) {
+      const sample=state.mode==='record'?step-n+col:col;
+      const bits=Math.floor(hash(sample+8)*127),x=2+col*pitch;
+      for(let row=0;row<7;row++) {
+        const on=(bits>>row)&1;
+        rect(x,8+row*4,cell,2,on?0.85:0.09,col===n-1&&state.mode==='record'?accent():white);
+      }
+      rect(x,39,cell,1,col===mod(step,n)?1:0.13,accent());
+    }
+    if(state.mode==='record')line([[w-1,4],[w-1,36]],1-phase*0.65,accent());
+  }
+  function packets(time) {
+    const head=state.mode==='record'?w*.64:w*.35,speed=27,spacing=35,offset=mod(time*speed,spacing);
+    line([[0,22],[w,22]],.13);
+    for(let i=-2;i<Math.ceil(w/spacing)+2;i++) {
+      const index=i+Math.floor(time*speed/spacing),x=i*spacing-offset;
+      const v=hash(index+23),size=12+v*17,height=6+Math.round(v*6)*2;
+      const active=x<=head&&x+size>=head;
+      box(x,22-height/2,size,height,active?1:.55,active?accent():white);
+      for(let k=3;k<size-2;k+=4)rect(x+k,20,1,4,.3+hash(index+k)*.6);
+      rect(x+size+3,22,2,1,.35);
+    }
+    line([[head,3],[head,41]],.9,accent());
+    rect(head-2,2,5,2,1,accent());
+  }
+  function comb(time) {
+    const gain=env(time),scan=mod(time*.22,1)*w;
+    for(let row=0;row<7;row++) {
+      const points=[],center=(row-3)*4.2;
+      for(let x=1;x<w;x+=2) {
+        const u=x/w,envelope=Math.pow(Math.sin(u*Math.PI),2);
+        const wave=Math.sin(u*13-time*2.5+row*.16)*Math.cos(u*4+time*.9);
+        const y=22+center+envelope*wave*(3+gain*9)*(1-Math.abs(row-3)*.11);
+        points.push([x,clamp(y,2,42)]);
+      }
+      const selected=mod(Math.floor(time*5),7)===row;
+      line(points,state.mode==='record'?(selected?1:.22):.8,row===3?accent():white);
+    }
+    if(state.mode==='record')rect(scan,3,1,38,.55,accent());
+  }
+  function parity(time) {
+    const pitch=4,cols=Math.floor((w-8)/pitch),half=Math.floor(cols/2),rows=9,step=Math.floor(time/2.4),gain=Math.pow(Math.sin(Math.PI*fract(time/2.4)),2),radius=state.mode==='record'?2+fract(time/2.4)*(half+8):5+gain*half;
+    const left=(w-cols*pitch)/2;
+    for(let col=0;col<cols;col++)for(let row=0;row<rows;row++) {
+      const x=Math.abs(col-half),y=Math.abs(row-4),band=x+y*2;
+      const gate=((x^(y*3)^step)%7)<3;
+      const on=gate&&band<radius+6;
+      if(!on)continue;
+      const frontier=Math.abs(band-radius)<2;
+      rect(left+col*pitch,5+row*pitch,2,2,frontier?1:.35+.4*(1-y/5),frontier?accent():white);
+    }
+    if(state.mode==='record') { rect(w/2-1,20,2,4,1,accent());line([[2,18],[2,26]],.4);line([[w-2,18],[w-2,26]],.4); }
+  }
+  function bus(time) {
+    const start=7,end=w-7,mid=w/2,ys=[7,17,27,37];
+    ys.forEach((y,i)=>{
+      const knee=w*(.25+i*.13),points=[[start,22],[knee,22],[knee,y],[end,y]];
+      line(points,.18);
+      box(end-2,y-2,4,4,.35);
+      const phase=fract(time*(.37+i*.05)+i*.23),length=end-start+Math.abs(y-22),dist=phase*length;
+      const horizontal=knee-start,vertical=Math.abs(y-22);
+      let x,py;
+      if(dist<horizontal){x=start+dist;py=22;}else if(dist<horizontal+vertical){x=knee;py=22+Math.sign(y-22)*(dist-horizontal);}else{x=knee+dist-horizontal-vertical;py=y;}
+      const emitting=state.mode==='record';
+      rect(x-1,py-1,3,3,1,i===mod(Math.floor(time*2),4)?accent():white);
+      if(emitting&&phase<.22)line([[start,22],[Math.min(x,knee),22]],.8,accent());
+      if(!emitting&&phase>.8)rect(end-3,y-3,6,6,(phase-.8)*4,accent());
+    });
+    box(start-3,19,6,6,.85,accent());
+    if(state.mode==='record')rect(mid-1,21,2,2,.35+env(time));
+  }
+  const renderers={register,packets,comb,parity,bus};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));
+    draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) {
+    raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;
+    if(!last)last=now;
+    const elapsed=now-last;
+    if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }
+    raf=requestAnimationFrame(frame);
+  }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-19')?.querySelector('[data-style="comb"]').click();
+
+(() => {
+  const root=document.getElementById('study-20');
+  if(!root)return;
+  const canvas=root.querySelector('canvas'), ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'), caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'register',mode:'play',paused:reduced.matches,accent:true,gain:0.82};
+  const names={register:'Gate Register',packets:'Packet Stitch',comb:'Raster Comb',parity:'Parity Bloom',bus:'Address Bus'};
+  const descriptions={
+    register:['Ses darbeleri, sabit bit hücrelerinde bir adım ilerliyor.','Yeni kayıt verisi sağdan yazılıyor; önceki bitler yer değiştiriyor.'],
+    packets:['Kesikli ses paketleri, sabit okuma iğnesinin altından geçiyor.','Her yeni hece ayrı bir veri zarfı; merkezde dikilip sola bırakılıyor.'],
+    comb:['Yedi ince tarama çizgisi sesle bükülüp tekrar hizalanıyor.','Tarayıcı, konuşmanın kesitini satır satır yakalıyor.'],
+    parity:['Küçük bir mantık devresi gibi, simetrik bitler açılıp kapanıyor.','Hece darbeleri merkezden dışarı yeni bir ikili desen yazıyor.'],
+    bus:['Sinyal, köşeli veri yollarında duraklar arasında dolaşıyor.','Yeni darbeler merkezde doğup ayrı kayıt yollarına yönleniyor.']
+  };
+  const white='#FFFFFF', amber='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const mod=(x,n)=>(x%n+n)%n;
+  const fract=x=>x-Math.floor(x);
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  // A deterministic synthetic rhythm, not microphone input or a measured spectrum.
+  function env(time) { return clamp((0.15+0.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+0.28*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  const accent=()=>state.accent?galleryTheme.accent:white;
+  function ink(alpha=1,color=white) { ctx.globalAlpha=color===white?galleryGrayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function register(time) {
+    const n=Math.max(6,Math.min(14,Math.floor(w/14))),pitch=(w-4)/n,cell=Math.max(3,pitch-4),step=Math.floor(time*3.6),phase=fract(time*3.6);
+    for(let col=0;col<n;col++) {
+      const sample=state.mode==='record'?step-n+col:col;
+      const bits=Math.floor(hash(sample+8)*127),x=2+col*pitch;
+      for(let row=0;row<7;row++) {
+        const on=(bits>>row)&1;
+        rect(x,8+row*4,cell,2,on?0.85:0.09,col===n-1&&state.mode==='record'?accent():white);
+      }
+      rect(x,39,cell,1,col===mod(step,n)?1:0.13,accent());
+    }
+    if(state.mode==='record')line([[w-1,4],[w-1,36]],1-phase*0.65,accent());
+  }
+  function packets(time) {
+    const head=state.mode==='record'?w*.64:w*.35,speed=27,spacing=35,offset=mod(time*speed,spacing);
+    line([[0,22],[w,22]],.13);
+    for(let i=-2;i<Math.ceil(w/spacing)+2;i++) {
+      const index=i+Math.floor(time*speed/spacing),x=i*spacing-offset;
+      const v=hash(index+23),size=12+v*17,height=6+Math.round(v*6)*2;
+      const active=x<=head&&x+size>=head;
+      box(x,22-height/2,size,height,active?1:.55,active?accent():white);
+      for(let k=3;k<size-2;k+=4)rect(x+k,20,1,4,.3+hash(index+k)*.6);
+      rect(x+size+3,22,2,1,.35);
+    }
+    line([[head,3],[head,41]],.9,accent());
+    rect(head-2,2,5,2,1,accent());
+  }
+  function comb(time) {
+    const gain=env(time),scan=mod(time*.22,1)*w;
+    for(let row=0;row<7;row++) {
+      const points=[],center=(row-3)*4.2;
+      for(let x=1;x<w;x+=2) {
+        const u=x/w,envelope=Math.pow(Math.sin(u*Math.PI),2);
+        const wave=Math.sin(u*13-time*2.5+row*.16)*Math.cos(u*4+time*.9);
+        const y=22+center+envelope*wave*(3+gain*9)*(1-Math.abs(row-3)*.11);
+        points.push([x,clamp(y,2,42)]);
+      }
+      const selected=mod(Math.floor(time*5),7)===row;
+      line(points,state.mode==='record'?(selected?1:.22):.8,row===3?accent():white);
+    }
+    if(state.mode==='record')rect(scan,3,1,38,.55,accent());
+  }
+  function parity(time) {
+    const pitch=4,cols=Math.floor((w-8)/pitch),half=Math.floor(cols/2),rows=9,step=Math.floor(time/2.4),gain=Math.pow(Math.sin(Math.PI*fract(time/2.4)),2),radius=state.mode==='record'?2+fract(time/2.4)*(half+8):5+gain*half;
+    const left=(w-cols*pitch)/2;
+    for(let col=0;col<cols;col++)for(let row=0;row<rows;row++) {
+      const x=Math.abs(col-half),y=Math.abs(row-4),band=x+y*2;
+      const gate=((x^(y*3)^step)%7)<3;
+      const on=gate&&band<radius+6;
+      if(!on)continue;
+      const frontier=Math.abs(band-radius)<2;
+      rect(left+col*pitch,5+row*pitch,2,2,frontier?1:.35+.4*(1-y/5),frontier?accent():white);
+    }
+    if(state.mode==='record') { rect(w/2-1,20,2,4,1,accent());line([[2,18],[2,26]],.4);line([[w-2,18],[w-2,26]],.4); }
+  }
+  function bus(time) {
+    const start=7,end=w-7,mid=w/2,ys=[7,17,27,37];
+    ys.forEach((y,i)=>{
+      const knee=w*(.25+i*.13),points=[[start,22],[knee,22],[knee,y],[end,y]];
+      line(points,.18);
+      box(end-2,y-2,4,4,.35);
+      const phase=fract(time*(.37+i*.05)+i*.23),length=end-start+Math.abs(y-22),dist=phase*length;
+      const horizontal=knee-start,vertical=Math.abs(y-22);
+      let x,py;
+      if(dist<horizontal){x=start+dist;py=22;}else if(dist<horizontal+vertical){x=knee;py=22+Math.sign(y-22)*(dist-horizontal);}else{x=knee+dist-horizontal-vertical;py=y;}
+      const emitting=state.mode==='record';
+      rect(x-1,py-1,3,3,1,i===mod(Math.floor(time*2),4)?accent():white);
+      if(emitting&&phase<.22)line([[start,22],[Math.min(x,knee),22]],.8,accent());
+      if(!emitting&&phase>.8)rect(end-3,y-3,6,6,(phase-.8)*4,accent());
+    });
+    box(start-3,19,6,6,.85,accent());
+    if(state.mode==='record')rect(mid-1,21,2,2,.35+env(time));
+  }
+  const renderers={register,packets,comb,parity,bus};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](galleryMotionTime(state.style,t,w,state.mode));ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';
+    pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));
+    draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) {
+    raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;
+    if(!last)last=now;
+    const elapsed=now-last;
+    if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }
+    raf=requestAnimationFrame(frame);
+  }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',draw);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+
+})();
+
+document.getElementById('study-20')?.querySelector('[data-style="parity"]').click();
+
+// MATRIX_RENDERERS_START
+// Selected original matrix motions, on the existing sharp 2px / 4px lattice.
+function drawMatrixStudy(ctx,w,time,style,mode) {
+  const tau=Math.PI*2,frac=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n;
+  const cols=Math.max(2,Math.floor((w-(style==='parity-bloom'?8:4))/4)),left=Math.round((w-cols*4)/2);
+  const white='#FFFFFF',accent=galleryTheme.accent;
+  const cell=(c,r,level=1,hot=false,y=3)=>{
+    ctx.globalAlpha=hot?1:galleryGrayAlpha(level);
+    ctx.fillStyle=hot?accent:white;
+    ctx.fillRect(left+c*4,y+r*4,2,2);
+  };
+  ctx.clearRect(0,0,w,44);
+  if(style==='figure-eight'){
+    const cells=new Uint8Array(cols*10),p=time/8;
+    function dot(x,y,ink=2,fat=false){
+      const c=Math.round((x+1)*.5*(cols-1)),r=Math.round((y+1)*4.5);
+      if(c<0||c>=cols||r<0||r>9)return;
+      const at=r*cols+c;cells[at]=Math.max(cells[at],ink);
+      if(fat&&r<9)cells[at+cols]=Math.max(cells[at+cols],Math.min(ink,2));
+    }
+    function path(fn,head,length=.24,ghost=true,fat=true){
+      if(ghost)for(let i=0;i<180;i+=3){const pt=fn(i/180);dot(pt[0],pt[1],1);}
+      const n=Math.max(80,Math.ceil(cols*length*3));
+      for(let j=n;j>=0;j--){
+        const age=j/n,pt=fn(frac(head-age*length));
+        dot(pt[0],pt[1],age<.12?4:age<.4?3:2,fat);
+      }
+    }
+    const curve=q=>[Math.sin(q*tau)*.9,Math.sin(q*tau*2)*.72];
+    path(curve,p,.31);path(curve,p+.5,.14,false,false);
+    for(let r=0;r<10;r++)for(let c=0;c<cols;c++){
+      const ink=cells[r*cols+c];if(ink)cell(c,r,[0,.16,.56,1,1][ink],ink===4);
+    }
+  }else if(style==='echo-orchard'){
+    // Same snare events as the original 108 BPM sample, including its quiet tail.
+    const step=60/108/2,duration=Math.round(step*32*32000)/32000;
+    const snare=[4,12,20].map(s=>s*step);
+    function ageAt(t){
+      const local=mod(t,duration);
+      for(let i=snare.length-1;i>=0;i--)if(local>=snare[i])return local-snare[i];
+      return local+duration-snare[snare.length-1];
+    }
+    const echoes=Array.from({length:5},(_,i)=>{
+      const age=ageAt(time-i*.16);
+      // Expansion eases into the last footprint. Never delete the quiet frame.
+      const settling=Math.min(1,Math.max(0,(age-.9)/.8));
+      const travelAge=age<=.9?age:.9+.4*(2*settling-settling*settling);
+      return {cx:(i-2)*.37,radius:.09+travelAge*.29,
+        strength:Math.max(.16,Math.exp(-age*1.4)*(1-i*.11)),age};
+    });
+    for(let c=0;c<cols;c++)for(let r=0;r<10;r++){
+      const u=c/(cols-1)*2-1,v=r/9*2-1,grain=mod(c*13+r*23+(c^r)*7,19)/19;
+      if(grain<=.15)continue;
+      let level=0,hot=false;
+      echoes.forEach((echo,i)=>{
+        const shell=Math.abs(Math.hypot((u-echo.cx)*1.7,v*.38)-echo.radius);
+        if(shell<.07&&echo.strength>level){
+          level=echo.strength;hot=i===0&&echo.age<1.3&&shell<.026;
+        }
+      });
+      if(level)cell(c,r,level,hot);
+    }
+  }else if(style==='spiral-sink'){
+    for(let c=0;c<cols;c++)for(let r=0;r<10;r++){
+      const u=c/(cols-1)*2-1,v=r/9*2-1;
+      const radius=Math.hypot(u,v*.92),angle=Math.atan2(v*.92,u);
+      const turn=mod(angle/tau+radius*.95+time*.11,1/3);
+      let level=0,hot=false;
+      if(radius<1.04&&radius>.1&&turn<.09){
+        level=turn<.027?1:turn<.055?.56:.32;
+        hot=turn<.027&&mod(radius+time*.11,.45)<.14;
+      }
+      if(radius<.11){level=1;hot=true;}
+      if(level)cell(c,r,level,hot);
+    }
+  }else if(style==='orbit-register'){
+    const phase=time/5,angle=phase*6.28,ax=Math.cos(angle)*.7,ay=Math.sin(angle)*.75;
+    const hash=(x,y)=>frac(Math.sin(x*127.1+y*311.7)*43758.5453);
+    for(let c=0;c<cols;c++)for(let r=0;r<10;r++){
+      const u=c/(cols-1)*2-1,v=r/9*2-1;
+      const da=Math.hypot((u-ax)*1.5,v-ay),db=Math.hypot((u+ax)*1.5,v+ay);
+      const ring=Math.hypot(u/.72,v/.78);
+      const hot=da<.16||db<.16;
+      const on=hot||(Math.abs(ring-1)<.11&&mod(c+r,3)===0)||((da<.48||db<.48)&&mod(c+r,2)===0);
+      if(!on)continue;
+      if(mode==='record'&&c>frac(phase)*cols)continue;
+      cell(c,r,hash(c,7+r)>.88?1:.32,hot||(mode==='record'&&frac(phase)*cols-c<2));
+    }
+  }else if(style==='parity-bloom'){
+    const half=Math.floor(cols/2),step=Math.floor(time/2.4);
+    const gain=Math.sin(Math.PI*frac(time/2.4))**2;
+    const radius=mode==='record'?2+frac(time/2.4)*(half+8):5+gain*half;
+    for(let c=0;c<cols;c++)for(let r=0;r<9;r++){
+      const x=Math.abs(c-half),y=Math.abs(r-4),band=x+y*2;
+      if(((x^(y*3)^step)%7)>=3||band>=radius+6)continue;
+      cell(c,r,.35+.4*(1-y/5),Math.abs(band-radius)<2,5);
+    }
+    if(mode==='record')cell(Math.floor(cols/2),4,1,true,5);
+  }
+  ctx.globalAlpha=1;
+}
+// MATRIX_RENDERERS_END
+
+(() => {
+  const root=document.querySelector('.matrix-gallery');
+  if(!root)return;
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const panels=[...root.querySelectorAll('[data-matrix]')].map(el=>{
+    const canvas=el.querySelector('canvas');
+    return {el,canvas,ctx:canvas.getContext('2d'),w:1,style:el.dataset.matrix,
+      mode:'play',paused:reduced.matches,visible:false};
+  });
+  let time=1.72,last=0,raf=0;
+  function draw(p){drawMatrixStudy(p.ctx,p.w,time,p.style,p.mode);}
+  function sync(p){
+    p.el.querySelector('[data-pause]').setAttribute('aria-pressed',String(p.paused));
+    p.el.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===p.mode)));
+    draw(p);schedule();
+  }
+  function resize(){
+    const dpr=Math.min(devicePixelRatio||1,2);
+    panels.forEach(p=>{
+      p.w=Math.max(1,p.canvas.getBoundingClientRect().width);
+      p.canvas.width=Math.round(p.w*dpr);p.canvas.height=44*dpr;
+      p.ctx.setTransform(dpr,0,0,dpr,0,0);draw(p);
+    });
+  }
+  function active(){return root.isConnected&&!document.hidden&&panels.some(p=>p.visible&&!p.paused);}
+  function schedule(){if(!raf&&active()){last=0;raf=requestAnimationFrame(frame);}}
+  function frame(now){
+    raf=0;if(!active())return;
+    if(!last)last=now;
+    const dt=now-last;
+    if(dt>=1000/30){
+      time+=Math.min(dt/1000,.08);last=now;
+      panels.forEach(p=>{if(p.visible&&!p.paused)draw(p);});
+    }
+    raf=requestAnimationFrame(frame);
+  }
+  panels.forEach(p=>{
+    p.el.querySelector('[data-pause]').addEventListener('click',()=>{p.paused=!p.paused;sync(p);});
+    p.el.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{p.mode=b.dataset.mode;sync(p);}));
+    sync(p);
+  });
+  reduced.addEventListener('change',e=>panels.forEach(p=>{p.paused=e.matches;sync(p);}));
+  document.addEventListener('visibilitychange',schedule);
+  window.addEventListener('gallery-palette',()=>panels.forEach(draw));
+  new ResizeObserver(resize).observe(root);
+  const observer=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{const p=panels.find(p=>p.el===entry.target);if(p){p.visible=entry.isIntersecting;if(p.visible)draw(p);}});
+    schedule();
+  });
+  panels.forEach(p=>observer.observe(p.el));
+  resize();
+})();
+(() => {
+const studies=[...document.querySelectorAll('.study')],pause=document.getElementById('pause');let paused=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function syncPause(){pause.textContent=paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(paused));studies.forEach(s=>{const b=s.querySelector('[data-pause]');if((b.getAttribute('aria-pressed')==='true')!==paused)b.click()});}
+document.querySelectorAll('[data-mode-global]').forEach(button=>button.addEventListener('click',()=>{const mode=button.dataset.modeGlobal;document.querySelectorAll('[data-mode-global]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));studies.forEach(s=>s.querySelector('[data-mode="'+mode+'"]').click());}));
+pause.addEventListener('click',()=>{paused=!paused;syncPause()});matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',e=>{paused=e.matches;syncPause()});syncPause();
+})();
+
+document.querySelectorAll('[data-accent]').forEach(button=>button.addEventListener('click',()=>{
+  galleryTheme.accent=button.dataset.accent;
+  document.querySelectorAll('[data-accent]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+  window.dispatchEvent(new Event('gallery-palette'));
+}));

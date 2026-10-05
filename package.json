@@ -1,0 +1,11 @@
+{
+  "name": "iwrzwr-visual-archive",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "export:thermal-core": "node export-thermal-core.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

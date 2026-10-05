@@ -1,0 +1,227 @@
+<div id="iwr-night-fieldops" aria-label="Set 10: Field Operations, beş hareketli ses ekranı">
+  <div class="viz-controls">
+    <button type="button" class="btn" data-mode="play" aria-pressed="true">Çalma</button>
+    <button type="button" class="btn" data-mode="record" aria-pressed="false">Kayıt</button>
+    <button type="button" class="btn btn-ghost" data-pause aria-pressed="false">Duraklat</button>
+    <span class="text-small text-muted">Örnek ses ritmi · sessiz demo</span>
+  </div>
+  <div class="fo-layout">
+    <div class="fo-stage">
+      <div class="fo-phone" aria-label="iwrzwr: Field Operations önizlemesi">
+        <div class="fo-header">
+          <div class="fo-status" aria-hidden="true"><span>9:41</span><span data-record hidden>REC</span><span>••• &nbsp; ▰</span></div>
+          <div class="fo-controls">
+            <div class="fo-circle" aria-hidden="true"></div>
+            <canvas role="img" aria-label="Section Gate: sabit tel çerçevenin içinden alınan hareketli kesit"></canvas>
+            <div class="fo-circle" aria-hidden="true"><i data-lucide="plus"></i></div>
+          </div>
+        </div>
+        <div class="fo-pads" aria-hidden="true"><div><i data-lucide="mic"></i></div><div><i data-lucide="mic"></i></div></div>
+      </div>
+      <div class="text-small text-muted fo-spec">126px header · 44px alan · 24px boşluk</div>
+    </div>
+    <div class="fo-options" role="group" aria-label="Field Operations seçenekleri">
+      <button type="button" class="btn btn-block" data-style="section" aria-pressed="true">1 · Section Gate</button>
+      <button type="button" class="btn btn-block" data-style="strain" aria-pressed="false">2 · Field Strain</button>
+      <button type="button" class="btn btn-block" data-style="atlas" aria-pressed="false">3 · Compression Atlas</button>
+      <button type="button" class="btn btn-block" data-style="flare" aria-pressed="false">4 · Flare Stem</button>
+      <button type="button" class="btn btn-block" data-style="slots" aria-pressed="false">5 · Event Slots</button>
+    </div>
+  </div>
+  <div class="fo-caption" data-description aria-live="polite">Sabit hacmi kesen düzlem, altı çizginin gerçek kesişimlerini ortaya çıkarıyor.</div>
+</div>
+<style>
+  #iwr-night-fieldops .fo-layout { display:grid; grid-template-columns:minmax(0,402px) minmax(190px,1fr); gap:24px; align-items:center; margin-top:20px; }
+  #iwr-night-fieldops .fo-stage { min-width:0; }
+  #iwr-night-fieldops .fo-options { display:grid; gap:8px; }
+  #iwr-night-fieldops .fo-phone { --fo-screen:#000; --fo-pad:#cdcdcd; --fo-divider:#b6b6b6; --fo-ink:#f1f0e8; color:var(--fo-ink); background:var(--fo-pad); border-radius:30px; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
+  #iwr-night-fieldops .fo-header { height:126px; position:relative; background:var(--fo-screen); border-radius:0 0 32px 40px; }
+  #iwr-night-fieldops .fo-status { position:absolute; top:24px; left:28px; right:28px; display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:500; }
+  #iwr-night-fieldops [data-record] { color:#ff8141; font-family:ui-monospace,monospace; font-size:11px; }
+  #iwr-night-fieldops [hidden] { display:none; }
+  #iwr-night-fieldops .fo-controls { position:absolute; top:62px; left:20px; right:20px; display:flex; align-items:center; gap:24px; height:44px; }
+  #iwr-night-fieldops .fo-circle { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:50%; background:#141414; box-shadow:inset 0 0 0 1px #303030; }
+  #iwr-night-fieldops .fo-circle svg { width:20px; height:20px; stroke-width:1.5; }
+  #iwr-night-fieldops canvas { display:block; height:44px; width:100%; flex:1; min-width:0; }
+  #iwr-night-fieldops .fo-pads { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--fo-divider); }
+  #iwr-night-fieldops .fo-pads>div { display:grid; place-items:center; height:120px; background:var(--fo-pad); color:#929292; }
+  #iwr-night-fieldops .fo-pads svg { width:18px; height:18px; }
+  #iwr-night-fieldops .fo-spec { margin-top:10px; }
+  #iwr-night-fieldops .fo-caption { margin-top:16px; min-height:44px; }
+  @media(max-width:630px) { #iwr-night-fieldops .fo-layout { grid-template-columns:minmax(0,1fr); gap:18px; } #iwr-night-fieldops .fo-stage { width:100%; max-width:402px; margin:auto; } }
+</style>
+<script>
+(() => {
+  const root=document.getElementById('iwr-night-fieldops');
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'section',mode:'play',paused:reduced.matches,accent:true};
+  const names={section:'Section Gate',strain:'Field Strain',atlas:'Compression Atlas',flare:'Flare Stem',slots:'Event Slots'};
+  const descriptions={
+    section:['Sabit hacmi kesen düzlem, altı çizginin gerçek kesişimlerini ortaya çıkarıyor.','Yeni kesit katman katman yazılıyor; önceki beş kesit yerinde kalıyor.'],
+    strain:['Bağlı koordinat çizgileri yerel bir çekimle bükülüyor; kenarlar hep aynı yerde.','Her darbe sabit bir kavşağı çekip bırakıyor; sessizlikte bütün alan yeniden düz.'],
+    atlas:['Altmış işaret korunuyor; yalnız bir hücrenin yerleşimi dönüşüyor.','Sıradaki on iki işaret bekleme rafından açılıyor; yazılmış hücreler sabit kalıyor.'],
+    flare:['Beş çizgi tek boğazdan açılıyor; ses yalnız ortak açıklığı değiştiriyor.','Boğaz darbeyle açılıp kapanıyor; biten darbeler uçlarda küçük çentikler bırakıyor.'],
+    slots:['Basamak yüksekliği ses şiddeti değil, geçen süre; imleç dolu ve boş aralıkları okuyor.','Süre basamakları açık uçtan büyüyor; ses bitince kapanıyor, sessizlik boş kalıyor.']
+  };
+  const white='#f1f0e8',amber='#ff963e';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  const fract=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,mix=(a,b,p)=>a+(b-a)*p;
+  const accent=()=>state.accent?amber:white;
+  // Silent deterministic timing, not microphone input or a physical simulation.
+  function pulse(time,period=1.8,length=.95) { const age=mod(time,period);return age>=length?0:Math.pow(Math.sin(Math.PI*age/length),2); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function area(points,alpha=.12,color=white) { if(points.length<3)return;ink(alpha,color);ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill(); }
+  function marker(x,y,alpha=1,color=white,size=2) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function project(x,y,z) { return [10+x*(w-30)+z*10,22-y*12-z*6]; }
+  function sectionCurve(x,z,take=0) { return .48*Math.sin(x*5.5+take*.7)+.24*Math.cos(z*4.4+x*2.1+take*.4); }
+  function section(time) {
+    const recording=state.mode==='record',step=Math.floor(time*.85),phase=fract(time*.85),active=mod(step,6),cut=recording?(active+.5)/6:.08+fract(time*.18)*.84;
+    for(const z of[0,1])line([project(0,-1,z),project(1,-1,z),project(1,1,z),project(0,1,z),project(0,-1,z)],.24);
+    for(const x of[0,1])for(const y of[-1,1])line([project(x,y,0),project(x,y,1)],.24);
+    const plane=[project(cut,-1,0),project(cut,-1,1),project(cut,1,1),project(cut,1,0),project(cut,-1,0)];
+    area(plane,.035,accent());line(plane,.6,accent());
+    if(recording) {
+      for(let station=0;station<6;station++) {
+        const x=(station+.5)/6,take=step-mod(step-station,6),live=station===active,extent=live?phase:1,points=[];
+        for(let j=0;j<=12;j++) { const z=j/12;if(z>extent)break;points.push(project(x,sectionCurve(x,z,take),z)); }
+        if(live)points.push(project(x,sectionCurve(x,extent,take),extent));
+        line(points,live?1:.36,live?accent():white);
+        if(live&&points.length){const p=points[points.length-1];marker(p[0],p[1],1,accent(),3);}
+      }
+    } else {
+      const cross=[];
+      for(let rail=0;rail<6;rail++) {
+        const z=rail/5,points=[],slice=[];
+        for(let j=0;j<=24;j++){const x=j/24;points.push(project(x,sectionCurve(x,z),z));}
+        line(points,.13);
+        for(let j=0;j<=6;j++){const x=clamp(cut-.04+j*.08/6);slice.push(project(x,sectionCurve(x,z),z));}
+        line(slice,.9);
+        const hit=project(cut,sectionCurve(cut,z),z);cross.push(hit);marker(hit[0],hit[1],1,accent(),2);
+      }
+      line(cross,.9,accent());
+    }
+  }
+  function strainPoint(u,v,loci) {
+    const pin=Math.sin(Math.PI*u)*Math.sin(Math.PI*v);let dx=0,dy=0;
+    for(const locus of loci) {
+      const a=(u-locus.u)/.2,b=(v-locus.v)/.42,influence=Math.exp(-(a*a+b*b))*locus.force*pin;
+      dx+=(locus.u-u)*.38*influence;dy+=locus.pull*.32*influence;
+    }
+    return [5+(u+dx)*(w-10),5+(v+dy)*34];
+  }
+  function strain(time) {
+    const recording=state.mode==='record',loci=[];
+    if(recording) {
+      const step=Math.floor(time/1.8),age=mod(time,1.8),u=[.25,.5,.75][mod(step,3)],v=mod(step,2)?.75:.25;
+      const force=age<.85?Math.pow(1-age/.85,2):0;
+      loci.push({u,v,force,pull:mod(step,2)?-1:1});
+    } else {
+      loci.push({u:.15+fract(time*.12)*.7,v:.5,force:pulse(time),pull:Math.sin(time*.8)>=0?1:-1});
+    }
+    for(let row=0;row<5;row++) {
+      const points=[];for(let j=0;j<=28;j++)points.push(strainPoint(j/28,row/4,loci));line(points,row===2?.56:.31);
+    }
+    for(let col=0;col<9;col++) {
+      const points=[];for(let j=0;j<=16;j++)points.push(strainPoint(col/8,j/16,loci));line(points,.32);
+    }
+    for(const locus of loci)if(locus.force>.005) {
+      const p=strainPoint(locus.u,locus.v,loci),radius=2+locus.force*2;
+      line([[p[0]-radius,p[1]],[p[0]+radius,p[1]]],.95,accent());line([[p[0],p[1]-radius],[p[0],p[1]+radius]],.95,accent());
+    }
+  }
+  function atlasPosition(pattern,index,width) {
+    const col=index%3,row=Math.floor(index/3);
+    switch(mod(pattern,5)) {
+      case 0:return [width*(.2+col*.3),9+row*8];
+      case 1:return [width*(.13+(index%6)*.148),14+Math.floor(index/6)*15];
+      case 2:{const side=Math.floor(index/3),q=index%3;return [[width*(.2+q*.2),9],[width*.8,9+q*8],[width*(.8-q*.2),33],[width*.2,33-q*8]][side];}
+      case 3:return [width*(.36+(index%2)*.28),7+Math.floor(index/2)*5.8];
+      default:return [width*(.14+col*.28+row*.055),8+row*8+col*1.5];
+    }
+  }
+  function atlas(time) {
+    const recording=state.mode==='record',step=Math.floor(time*.8),phase=fract(time*.8),active=mod(step,5),epoch=Math.floor(step/5),cell=(w-8)/5;
+    for(let i=0;i<5;i++) {
+      const origin=4+i*cell,width=cell-3;
+      line([[origin,40],[origin+width,40]],i===active?.8:.2,i===active?accent():white);
+      for(let index=0;index<12;index++) {
+        let a,b,q;
+        if(recording) {
+          const rack=[width*(.12+(index%6)*.15),32+Math.floor(index/6)*5];
+          const target=atlasPosition(i+epoch,index,width);
+          a=rack;b=target;q=i<active?1:i>active?0:clamp(phase/.38);
+        } else {
+          const pattern=i+epoch+(i<active?1:0);a=atlasPosition(pattern,index,width);b=atlasPosition(pattern+1,index,width);q=i===active?phase:0;
+        }
+        const x=origin+mix(a[0],b[0],q),y=mix(a[1],b[1],q);
+        marker(x,y,i===active?.96:recording&&i>active?.38:.7,i===active?accent():white,2);
+      }
+    }
+  }
+  function flare(time) {
+    const recording=state.mode==='record',step=Math.floor(time/1.8),age=mod(time,1.8),beat=pulse(time),opening=recording?1+beat*6:1.2+pulse(time,2.4,1.65)*6,throat=w*.2,shoulder=w*.38,rim=w*.76;
+    line([[4,22],[throat,22]],.85);
+    line([[throat-3,18],[throat-3,26]],.36);
+    for(let track=0;track<5;track++) {
+      const offset=track-2,endpoint=8+track*7,points=[[throat,22],[shoulder,22+offset*.7],[rim,22+offset*opening],[w-9,endpoint]];
+      line(points,track===2?.8:.66,recording&&track===mod(step,5)?accent():white);
+      line([[w-7,endpoint],[w-3,endpoint]],.35);
+      if(recording&&track<=mod(step,5)&&(track<mod(step,5)||age>.95)) {
+        line([[w-10,endpoint-2],[w-7,endpoint-2],[w-7,endpoint+2],[w-4,endpoint+2]],track===mod(step,5)?1:.65,track===mod(step,5)?accent():white);
+      }
+    }
+    if(!recording)line([[rim-3,22-opening*2-3],[rim,22-opening*2-3],[rim,22+opening*2+3],[rim-3,22+opening*2+3]],.48,accent());
+  }
+  const slotPhrases=[{start:0,length:3},{start:4,length:2},{start:8,length:4},{start:13,length:2}];
+  function slots(time) {
+    const recording=state.mode==='record',units=16,cursor=mod(time*2.2,units),pitch=(w-8)/units,base=37;
+    line([[4,base],[w-4,base]],.25);
+    for(let i=0;i<=units;i++)line([[4+i*pitch,39],[4+i*pitch,41]],.18);
+    for(const phrase of slotPhrases) {
+      const elapsed=recording?clamp(cursor-phrase.start,0,phrase.length):phrase.length;
+      if(elapsed<=0)continue;
+      const start=4+phrase.start*pitch,top=[[start,base]],live=cursor>=phrase.start&&cursor<phrase.start+phrase.length;
+      for(let cell=0;cell<Math.ceil(elapsed);cell++) {
+        const x=start+cell*pitch,y=base-(cell+1)*6,end=start+Math.min(elapsed,cell+1)*pitch;
+        top.push([x,y],[end,y]);
+      }
+      const end=top[top.length-1],closed=!recording||elapsed===phrase.length;
+      area([...top,[end[0],base]],live?.17:.09,live?accent():white);
+      line(top,live?.95:.57,live?accent():white);
+      if(closed)line([end,[end[0],base]],.57);
+      else {marker(end[0],end[1],1,accent(),3);line([[end[0]-2,base+2],[end[0]+2,base+2]],.85,accent());}
+    }
+    const x=4+cursor*pitch;
+    if(!recording) {line([[x,5],[x,base+1]],.6,accent());line([[x-2,4],[x,6],[x+2,4]],.9,accent());}
+    else line([[x-2,4],[x+2,4]],.9,accent());
+  }
+  const renderers={section,strain,atlas,flare,slots};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](t);ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{
+    const latest=entries.filter(entry=>entry.target===root).reduce((a,b)=>!a||b.time>=a.time?b:a,null);
+    if(latest){visible=latest.isIntersecting;schedule();}
+  }).observe(root);
+  resize();sync();
+  if(globalThis.Tweak){const tweak=new Tweak({container:root.querySelector('.fo-phone'),onChange:sync});tweak.addToggle(state,'accent',{label:'Kehribar vurgu'});}
+})();
+</script>

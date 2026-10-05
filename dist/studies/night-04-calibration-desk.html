@@ -1,0 +1,232 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>04 Calibration Desk · iwrzwr</title><style>:root{color-scheme:dark;--background:#000;--foreground:#eee;--muted-foreground:#999}*{box-sizing:border-box}body{margin:0;padding:24px;background:#000;color:#eee;font:16px/1.5 Arial,Helvetica,sans-serif}button{font:inherit;cursor:pointer}.viz-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}.btn{color:#bbb;background:#141414;border:1px solid #333;border-radius:6px;min-height:44px;padding:9px 14px;text-align:left}.btn[aria-pressed=true]{color:#fff;border-color:#ddd;background:#262626}.btn-block{width:100%}.text-small{font-size:14px}.text-muted{color:#999}:focus-visible{outline:2px solid #fff;outline-offset:3px}[hidden]{display:none!important}h3{font-size:18px;font-weight:500}figcaption{font-size:16px}canvas{max-width:100%}@media(max-width:520px){body{padding:16px}}</style><link rel="stylesheet" href="../typography.css"><script src="../motion-runtime.js"></script></head><body><div id="iwr-night-calibration" aria-label="Set 04: Calibration Desk, beş hareketli ses ekranı">
+  <div class="viz-controls">
+    <button type="button" class="btn" data-mode="play" aria-pressed="true">Çalma</button>
+    <button type="button" class="btn" data-mode="record" aria-pressed="false">Kayıt</button>
+    <button type="button" class="btn btn-ghost" data-pause aria-pressed="false">Duraklat</button>
+    <span class="text-small text-muted">Örnek ses ritmi · sessiz demo</span>
+  </div>
+  <div class="nd-layout">
+    <div class="nd-stage">
+      <div class="nd-phone" aria-label="iwrzwr: Calibration Desk önizlemesi">
+        <div class="nd-header">
+          <div class="nd-status" aria-hidden="true"><span>9:41</span><span data-record hidden>REC</span><span>••• &nbsp; ▰</span></div>
+          <div class="nd-controls">
+            <div class="nd-circle" aria-hidden="true"></div>
+            <canvas role="img" aria-label="Calibrated Horizons: dar bir perspektif düzleminde ölçüm izleri"></canvas>
+            <div class="nd-circle" aria-hidden="true"><i data-lucide="plus"></i></div>
+          </div>
+        </div>
+        <div class="nd-pads" aria-hidden="true"><div><i data-lucide="mic"></i></div><div><i data-lucide="mic"></i></div></div>
+      </div>
+      <div class="text-small text-muted nd-spec">126px header · 44px alan · 24px boşluk</div>
+    </div>
+    <div class="nd-options" role="group" aria-label="Calibration Desk seçenekleri">
+      <button type="button" class="btn btn-block" data-style="horizons" aria-pressed="true">1 · Calibrated Horizons</button>
+      <button type="button" class="btn btn-block" data-style="vernier" aria-pressed="false">2 · Delay Vernier</button>
+      <button type="button" class="btn btn-block" data-style="aperture" aria-pressed="false">3 · Phase Aperture</button>
+      <button type="button" class="btn btn-block" data-style="pursuit" aria-pressed="false">4 · Pursuit Orbit</button>
+      <button type="button" class="btn btn-block" data-style="folding" aria-pressed="false">5 · Folding Topology</button>
+    </div>
+  </div>
+  <div class="nd-caption" data-description aria-live="polite">İnce bir koordinat zemini, ses darbelerini ufka doğru taşıyor.</div>
+</div>
+<style>
+  #iwr-night-calibration .nd-layout { display:grid; grid-template-columns:minmax(0,402px) minmax(190px,1fr); gap:24px; align-items:center; margin-top:20px; }
+  #iwr-night-calibration .nd-stage { min-width:0; }
+  #iwr-night-calibration .nd-options { display:grid; gap:8px; }
+  #iwr-night-calibration .nd-phone { --nd-screen:#000; --nd-pad:#cdcdcd; --nd-divider:#b6b6b6; --nd-ink:#f1f0e8; color:var(--nd-ink); background:var(--nd-pad); border-radius:30px; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
+  #iwr-night-calibration .nd-header { height:126px; position:relative; background:var(--nd-screen); border-radius:0 0 32px 40px; }
+  #iwr-night-calibration .nd-status { position:absolute; top:24px; left:28px; right:28px; display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:500; }
+  #iwr-night-calibration [data-record] { color:#FF0000; font-family:ui-monospace,monospace; font-size:11px; }
+  #iwr-night-calibration [hidden] { display:none; }
+  #iwr-night-calibration .nd-controls { position:absolute; top:62px; left:20px; right:20px; display:flex; align-items:center; gap:24px; height:44px; }
+  #iwr-night-calibration .nd-circle { width:44px; height:44px; flex:none; display:grid; place-items:center; border-radius:50%; background:#141414; box-shadow:inset 0 0 0 1px #303030; }
+  #iwr-night-calibration .nd-circle svg { width:20px; height:20px; stroke-width:1.5; }
+  #iwr-night-calibration canvas { display:block; height:44px; width:100%; flex:1; min-width:0; }
+  #iwr-night-calibration .nd-pads { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--nd-divider); }
+  #iwr-night-calibration .nd-pads>div { display:grid; place-items:center; height:120px; background:var(--nd-pad); color:#929292; }
+  #iwr-night-calibration .nd-pads svg { width:18px; height:18px; }
+  #iwr-night-calibration .nd-spec { margin-top:10px; }
+  #iwr-night-calibration .nd-caption { margin-top:16px; min-height:44px; }
+  @media(max-width:630px) { #iwr-night-calibration .nd-layout { grid-template-columns:minmax(0,1fr); gap:18px; } #iwr-night-calibration .nd-stage { width:100%; max-width:402px; margin:auto; } }
+</style>
+<script>
+(() => {
+  const root=document.getElementById('iwr-night-calibration');
+  const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+  const pause=root.querySelector('[data-pause]'),caption=root.querySelector('[data-description]');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const state={style:'horizons',mode:'play',paused:reduced.matches,accent:true,gain:0.9};
+  const names={horizons:'Calibrated Horizons',vernier:'Delay Vernier',aperture:'Phase Aperture',pursuit:'Pursuit Orbit',folding:'Folding Topology'};
+  const descriptions={
+    horizons:['İnce bir koordinat zemini, ses darbelerini ufka doğru taşıyor.','Tarama kafası, yeni kesitleri perspektif zemine katman katman yazıyor.'],
+    vernier:['Farklı aralıklı iki cetvel kayıyor; aynı hizaya gelen çizgiler kısa süre parlıyor.','Alt cetvel her hecede yeni bir konuma oturuyor; önceki hizalar üst sırada tutuluyor.'],
+    aperture:['İki keskin yarık, sesle birbirinden ayrılıp yeniden hizalanıyor.','Yeni hece merkezden açılıyor; önceki açıklıklar ince birer kesit olarak tutuluyor.'],
+    pursuit:['Birbirini takip eden dört nokta, iç içe köşeli yörüngeler çiziyor.','Her darbe, takibin bir anını kilitliyor; yeni dörtgenler eski izlerin içine ekleniyor.'],
+    folding:['Tek bir katlı şeridin yüzeyleri, ses darbesini sırayla devrediyor.','Soldaki kıvrımlar sabitleniyor; yeni hece bir sonraki katı açıp kapatıyor.']
+  };
+  const white='#f1f0e8',orange='#FF0000';
+  let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
+  const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
+  const fract=n=>n-Math.floor(n);
+  const mod=(n,m)=>(n%m+m)%m;
+  const mix=(a,b,p)=>a+(b-a)*p;
+  const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
+  const accent=()=>state.accent?orange:white;
+  // Illustrative rhythm only: these are not instruments measuring frequency, delay, or phase.
+  function env(time) { return clamp((.13+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.27*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function ink(alpha=1,color=white) { ctx.globalAlpha=clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
+  function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
+  function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
+  function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
+  function marker(x,y,alpha=1,color=white,size=3) { rect(x-size/2,y-size/2,size,size,alpha,color); }
+  function horizons(time) {
+    const recording=state.mode==='record',vanish=w*.5+Math.sin(time*.42)*w*.06,horizon=15,base=41;
+    line([[2,horizon],[w-2,horizon]],.65);
+    for(let i=0;i<7;i++) {
+      const end=2+(w-4)*i/6;
+      line([[vanish,horizon],[end,base]],.24);
+    }
+    const drift=recording?0:fract(time*.26);
+    for(let row=0;row<5;row++) {
+      const depth=fract((row+1-drift)/5),perspective=depth*depth;
+      const y=mix(horizon,base,perspective),x1=mix(vanish,2,perspective),x2=mix(vanish,w-2,perspective);
+      line([[x1,y],[x2,y]],.18+.35*depth);
+      if(!recording&&row>0) {
+        const value=env(time-depth*2),x=mix(x1,x2,.3+hash(row+8)*.4);
+        line([[x,y],[x,y-value*10*depth]],.9,row===3?accent():white);
+        marker(x,y-value*10*depth,.8,row===3?accent():white,2);
+      }
+    }
+    if(recording) {
+      const scan=fract(time*.18),depths=[.31,.53,.76,1];
+      depths.forEach((depth,row)=>{
+        const left=mix(vanish,2,depth),right=mix(vanish,w-2,depth),y=mix(horizon,base,depth);
+        const path=[];
+        for(let p=0;p<=scan;p+=.04) { const v=env(Math.floor(time*.18)*5+p*5-row*.27);path.push([mix(left,right,p),y-v*5*depth]); }
+        line(path,row===3?1:.25+row*.18,row===3?accent():white);
+        const head=path[path.length-1];if(head)marker(head[0],head[1],1,row===3?accent():white,2);
+      });
+    }
+    const value=env(time),scale=w*.18;
+    line([[w*.5-scale,5],[w*.5+scale,5]],.25);
+    marker(w*.5-scale+scale*2*value,5,1,accent(),3);
+    line([[2,3],[2,8]],.35);line([[w-2,3],[w-2,8]],.35);
+  }
+  function vernier(time) {
+    const recording=state.mode==='record',center=w/2,pitch=8,lowerPitch=9;
+    const step=Math.floor(time*2.4),shift=recording?(Math.floor(env(step/2.4)*8)-3)*2:Math.sin(time*.7)*18;
+    line([[2,17],[w-2,17]],.3);line([[2,27],[w-2,27]],.3);
+    for(let i=-Math.ceil(w/pitch);i<=Math.ceil(w/pitch);i++) {
+      const x=center+i*pitch;if(x<2||x>w-2)continue;
+      const major=mod(i,5)===0,near=Math.abs(mod(x-center-shift+lowerPitch/2,lowerPitch)-lowerPitch/2)<1;
+      rect(x,major?5:10,1,major?12:7,near?.95:.45,near?accent():white);
+    }
+    for(let i=-Math.ceil(w/lowerPitch);i<=Math.ceil(w/lowerPitch);i++) {
+      const x=center+i*lowerPitch+shift;if(x<2||x>w-2)continue;
+      const major=mod(i,5)===0,near=Math.abs(mod(x-center+pitch/2,pitch)-pitch/2)<1;
+      rect(x,27,1,major?12:7,near?.95:.45,near?accent():white);
+    }
+    line([[center-13,3],[center-13,1],[center+13,1],[center+13,3]],.65);
+    line([[center-13,41],[center-13,43],[center+13,43],[center+13,41]],.65);
+    const error=clamp(shift/18,-1,1)*11;
+    line([[center,22],[center+error,22]],.95,accent());marker(center+error,22,1,accent(),3);
+    if(recording)for(let history=1;history<=4;history++) {
+      const held=(Math.floor(env((step-history)/2.4)*8)-3)*2;
+      marker(center+held*2,3,.65-history*.1,white,2);
+    }
+  }
+  function aperture(time) {
+    const recording=state.mode==='record',mid=w/2,span=w*.43,live=env(time),opening=2+live*12;
+    const drawSlit=(size,offset,alpha,color)=>{
+      const left=mid-span+offset,right=mid+span+offset;
+      line([[left,22],[mid-span*.3+offset,22-size],[mid+span*.3+offset,22-size],[right,22]],alpha,color);
+      line([[left,22],[mid-span*.3+offset,22+size],[mid+span*.3+offset,22+size],[right,22]],alpha,color);
+    };
+    if(recording) {
+      for(let history=4;history>0;history--)drawSlit(2+env(time-history*.25)*12,-history*2,.12+(4-history)*.07,white);
+      drawSlit(opening,0,.95,accent());
+      line([[mid,22-opening+3],[mid,22+opening-3]],.28);
+      marker(mid-span,22,1,accent(),3);
+    } else {
+      const offset=Math.sin(time*.9)*6;
+      drawSlit(opening,-offset,.85,white);
+      drawSlit(2+env(time-.23)*12,offset,.55,white);
+      const seam=mid+Math.sin(time*.67)*span*.38;
+      line([[seam,22-opening],[seam,22+opening]],.8,accent());
+      marker(seam,22,1,accent(),3);
+    }
+    line([[2,18],[2,26]],.4);line([[w-2,18],[w-2,26]],.4);
+  }
+  function pursuitShape(iteration) {
+    // Four cyclic pursuers: the normalized corner vector is repeatedly moved 8% toward its neighbor.
+    const scale=Math.pow(Math.hypot(.92,.08),iteration),angle=Math.atan2(.08,.92)*iteration;
+    const ca=Math.cos(angle),sa=Math.sin(angle),sx=w*.39,sy=15;
+    return [[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>[w/2+(x*ca-y*sa)*scale*sx,22+(x*sa+y*ca)*scale*sy]);
+  }
+  function pursuit(time) {
+    const recording=state.mode==='record',level=env(time),phase=mod(time*.48,7),active=Math.floor(phase);
+    line([[w/2-3,22],[w/2+3,22]],.25);line([[w/2,19],[w/2,25]],.25);
+    if(recording) {
+      const fade=phase>6.3?1-(phase-6.3)/.7:1;
+      for(let i=0;i<Math.min(6,active+1);i++) {
+        const points=pursuitShape(i*3+2),newest=i===Math.min(5,active);
+        line([...points,points[0]],(newest?.95:.22+i*.07)*fade,newest?accent():white);
+        if(newest)points.forEach((p,j)=>marker(p[0],p[1],fade,j===0?accent():white,3));
+      }
+    } else {
+      const position=2+(1+Math.sin(time*.65))*3+level*2;
+      for(let i=4;i>=0;i--) {
+        const points=pursuitShape(position+i*3);
+        line([...points,points[0]],i===0?.8:.13+(4-i)*.08);
+        if(i===0)points.forEach((p,j)=>marker(p[0],p[1],1,j===mod(Math.floor(time*1.2),4)?accent():white,3));
+      }
+    }
+  }
+  function folding(time) {
+    const count=6,recording=state.mode==='record',cycle=mod(time*.58,count+1),active=Math.min(count-1,Math.floor(cycle)),take=Math.floor(time*.58/(count+1));
+    const spread=w*.88,left=(w-spread)/2,step=spread/count,upper=[],lower=[];
+    for(let i=0;i<=count;i++) {
+      let strength;
+      if(recording)strength=i<active?env((take*(count+1)+i+1)/.58):i===active?env(time):.05;
+      else strength=env(time-i*.19);
+      const fold=(i%2?1:-1)*(3+strength*9),x=left+i*step;
+      upper.push([x,22+fold-5]);lower.push([x,22+fold+5]);
+    }
+    for(let i=0;i<count;i++) {
+      const isActive=recording?i===active:i===mod(Math.floor(time*2),count);
+      const alpha=recording&&i>active?.18:i%2?.5:.9;
+      const face=[upper[i],upper[i+1],lower[i+1],lower[i],upper[i]];
+      line(face,alpha);
+      if(i%2===0)line([upper[i],lower[i+1]],alpha*.3);
+      if(isActive)line([upper[i+1],lower[i+1]],1,accent());
+      if(recording&&i<active)marker((upper[i][0]+upper[i+1][0])/2,39,.55,white,2);
+    }
+    if(!recording) {
+      const p=fract(time*.38)*count,index=Math.min(count-1,Math.floor(p)),f=fract(p);
+      marker(mix(upper[index][0],upper[index+1][0],f),mix(upper[index][1],upper[index+1][1],f),1,accent(),3);
+    }
+  }
+  const renderers={horizons,vernier,aperture,pursuit,folding};
+  function draw() { ctx.clearRect(0,0,w,44);ctx.save();ctx.beginPath();ctx.rect(0,0,w,44);ctx.clip();renderers[state.style](t);ctx.restore(); }
+  function sync() {
+    root.querySelectorAll('[data-style]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.style===state.style)));
+    root.querySelectorAll('[data-mode]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.mode===state.mode)));
+    const description=descriptions[state.style][state.mode==='record'?1:0];caption.textContent=description;canvas.setAttribute('aria-label',names[state.style]+': '+description);
+    root.querySelector('[data-record]').hidden=state.mode!=='record';pause.textContent=state.paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(state.paused));draw();schedule();
+  }
+  function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
+  function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07);last=now;draw(); }raf=requestAnimationFrame(frame); }
+  root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
+  root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
+  pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
+  reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});
+  document.addEventListener('visibilitychange',schedule);
+  new ResizeObserver(resize).observe(canvas);
+  new IntersectionObserver(entries=>{const latest=entries.reduce((a,b)=>b.target===root&&(!a||b.time>=a.time)?b:a,null);if(latest){visible=latest.isIntersecting;schedule();}}).observe(root);
+  resize();sync();
+  if(globalThis.Tweak) { const tweak=new Tweak({container:root.querySelector('.nd-phone'),onChange:sync});tweak.addToggle(state,'accent',{label:'Kehribar vurgu'});tweak.addSlider(state,'gain',{label:'Tepki yoğunluğu',min:.3,max:1.2,step:.1}); }
+})();
+</script>
+<script src="../isolate.js"></script></body></html>

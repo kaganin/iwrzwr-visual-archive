@@ -1,0 +1,575 @@
+[
+  {
+    "id": "all",
+    "title": "Tüm alternatifler",
+    "group": "Tüm çalışmalar",
+    "count": 152,
+    "names": [],
+    "url": "studies/all.html"
+  },
+  {
+    "id": "latest",
+    "title": "Son seçki · 11 çalışma",
+    "group": "Seçkiler",
+    "count": 11,
+    "names": [
+      "Slice Loupe",
+      "Flare Stem",
+      "Delay Vernier",
+      "Field Strain",
+      "Splice Loom",
+      "Section Gate",
+      "Figure Eight",
+      "Spiral Sink",
+      "Orbit Register",
+      "Echo Orchard",
+      "Parity Bloom"
+    ],
+    "url": "studies/latest.html"
+  },
+  {
+    "id": "twenty",
+    "title": "İlk 20 seçim",
+    "group": "Seçkiler",
+    "count": 20,
+    "names": [],
+    "url": "studies/twenty.html"
+  },
+  {
+    "id": "soundwave-directions",
+    "title": "Soundwave Directions",
+    "group": "İlk denemeler",
+    "count": 5,
+    "names": [
+      "Siri Ribbon",
+      "Mono Wave",
+      "Silk Layers",
+      "Liquid Wave",
+      "Fine Spectrum"
+    ],
+    "url": "studies/soundwave-directions.html"
+  },
+  {
+    "id": "geek-soundwaves",
+    "title": "Geek Soundwaves",
+    "group": "İlk denemeler",
+    "count": 5,
+    "names": [
+      "Teletext Pulse",
+      "Vector Scope",
+      "Wireframe Echo",
+      "ASCII Stream",
+      "Spectral Tape"
+    ],
+    "url": "studies/geek-soundwaves.html"
+  },
+  {
+    "id": "vector-soundwave-studies",
+    "title": "Vector Studies",
+    "group": "İlk denemeler",
+    "count": 5,
+    "names": [
+      "Phosphor Sweep",
+      "XY Dust",
+      "Phase Braid",
+      "Terminal Trace",
+      "Contour Memory"
+    ],
+    "url": "studies/vector-soundwave-studies.html"
+  },
+  {
+    "id": "sound-machines",
+    "title": "Sound Machines",
+    "group": "İlk denemeler",
+    "count": 5,
+    "names": [
+      "Resonance Sand",
+      "Harmonic Motor",
+      "Spring Rail",
+      "Pendulum Choir",
+      "Grain Conveyor"
+    ],
+    "url": "studies/sound-machines.html"
+  },
+  {
+    "id": "night-01-raster-protocol",
+    "title": "01 Raster Protocol",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Gate Register",
+      "Packet Stitch",
+      "Raster Comb",
+      "Parity Bloom",
+      "Address Bus"
+    ],
+    "url": "studies/night-01-raster-protocol.html"
+  },
+  {
+    "id": "night-02-causal-instruments",
+    "title": "02 Causal Instruments",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Coupled Nodes",
+      "Bearing Fan",
+      "Causal Relay",
+      "State Boxes",
+      "Branch Memory"
+    ],
+    "url": "studies/night-02-causal-instruments.html"
+  },
+  {
+    "id": "night-03-pocket-machines",
+    "title": "03 Pocket Machines",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Segment Relay",
+      "Compression Treaty",
+      "Splice Loom",
+      "Orbit Punchcard",
+      "Sample Hold Ladder"
+    ],
+    "url": "studies/night-03-pocket-machines.html"
+  },
+  {
+    "id": "night-04-calibration-desk",
+    "title": "04 Calibration Desk",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Calibrated Horizons",
+      "Delay Vernier",
+      "Phase Aperture",
+      "Pursuit Orbit",
+      "Folding Topology"
+    ],
+    "url": "studies/night-04-calibration-desk.html"
+  },
+  {
+    "id": "night-05-plotter-logic",
+    "title": "05 Plotter Logic",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Broken Grid",
+      "Step Weave",
+      "Cell Courier",
+      "Factor Constellation",
+      "Gesture Fragments"
+    ],
+    "url": "studies/night-05-plotter-logic.html"
+  },
+  {
+    "id": "night-06-selective-memory",
+    "title": "06 Selective Memory",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Rank Sieve",
+      "Exchange Tray",
+      "Impression Press",
+      "Slice Loupe",
+      "Overstrike Seal"
+    ],
+    "url": "studies/night-06-selective-memory.html"
+  },
+  {
+    "id": "night-07-signal-translations",
+    "title": "07 Signal Translations",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Wake Field",
+      "Revision Strata",
+      "Perforation Logic",
+      "Transcode Window",
+      "Wire Loom"
+    ],
+    "url": "studies/night-07-signal-translations.html"
+  },
+  {
+    "id": "night-08-quiet-telemetry",
+    "title": "08 Quiet Telemetry",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Skew Profile",
+      "Duration Receipt",
+      "Stepped Throat",
+      "Shear Belt",
+      "Carrier Window"
+    ],
+    "url": "studies/night-08-quiet-telemetry.html"
+  },
+  {
+    "id": "night-09-control-laws",
+    "title": "09 Control Laws",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Quantized Handoff",
+      "Clipped Travel",
+      "Retrigger Ratchet",
+      "Context Lease",
+      "Schmitt Memory"
+    ],
+    "url": "studies/night-09-control-laws.html"
+  },
+  {
+    "id": "night-10-field-operations",
+    "title": "10 Field Operations",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Section Gate",
+      "Field Strain",
+      "Compression Atlas",
+      "Flare Stem",
+      "Event Slots"
+    ],
+    "url": "studies/night-10-field-operations.html"
+  },
+  {
+    "id": "night-11-shared-resources",
+    "title": "11 Shared Resources",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Choke Pair",
+      "Voice Vacancy",
+      "Docked Phrase",
+      "Masked Recall",
+      "Routed Emphasis"
+    ],
+    "url": "studies/night-11-shared-resources.html"
+  },
+  {
+    "id": "night-12-inference-engines",
+    "title": "12 Inference Engines",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Ricochet Register",
+      "Identity Hold",
+      "Critical Sections",
+      "Deferred Yield",
+      "Range Reduction"
+    ],
+    "url": "studies/night-12-inference-engines.html"
+  },
+  {
+    "id": "night-13-conditional-machines",
+    "title": "13 Conditional Machines",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Confidence Fence",
+      "Vector Closure",
+      "Cycle Escapement",
+      "Reversible Detour",
+      "Mutation Quota"
+    ],
+    "url": "studies/night-13-conditional-machines.html"
+  },
+  {
+    "id": "night-14-visible-invariants",
+    "title": "14 Visible Invariants",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Moment Balance",
+      "Marginal Print",
+      "Area Contract",
+      "Registration Residual",
+      "Occlusion Order"
+    ],
+    "url": "studies/night-14-visible-invariants.html"
+  },
+  {
+    "id": "night-15-procedural-marks",
+    "title": "15 Procedural Marks",
+    "group": "Gece serileri",
+    "count": 5,
+    "names": [
+      "Order Residue",
+      "Euclidean Packing",
+      "Error Escrow",
+      "Series Product",
+      "Nested Span"
+    ],
+    "url": "studies/night-15-procedural-marks.html"
+  },
+  {
+    "id": "bloom-ten-studies",
+    "title": "Bloom · 10 alternatif",
+    "group": "Matrix ve ses",
+    "count": 10,
+    "names": [
+      "Carry Cascade",
+      "Diamond Relay",
+      "Bit Weave",
+      "Phase Shutter",
+      "Binary Tide",
+      "Voxel Lung",
+      "Fault Orchard",
+      "Orbit Register",
+      "XOR Interference",
+      "Sieve Memory"
+    ],
+    "url": "studies/bloom-ten-studies.html"
+  },
+  {
+    "id": "matrix-direction-studies",
+    "title": "Matrix · yönler",
+    "group": "Matrix ve ses",
+    "count": 5,
+    "names": [
+      "Gravity Curtain",
+      "Oblique Relay",
+      "Twin Helix",
+      "Spiral Sink",
+      "Corner Tide"
+    ],
+    "url": "studies/matrix-direction-studies.html"
+  },
+  {
+    "id": "matrix-routes-ten",
+    "title": "Matrix · rotalar",
+    "group": "Matrix ve ses",
+    "count": 10,
+    "names": [
+      "Figure Eight",
+      "Ricochet Register",
+      "Square Circuit",
+      "Pendulum Bank",
+      "Fountain Fold",
+      "Counter Rotors",
+      "Hourglass Drift",
+      "Junction Turn",
+      "Orbital Shells",
+      "Accordion Field"
+    ],
+    "url": "studies/matrix-routes-ten.html"
+  },
+  {
+    "id": "sound-motion-four-series",
+    "title": "Ses ve hareket · 4 × 5",
+    "group": "Matrix ve ses",
+    "count": 20,
+    "names": [
+      "Kick Ricochet",
+      "Snare Prism",
+      "Hat Escapement",
+      "Impact Cage",
+      "Pluck Rebound",
+      "Envelope Orbit",
+      "Band Satellites",
+      "Phase Gyro",
+      "Resonance Petals",
+      "Stereo Sling",
+      "String Bridge",
+      "Fold Bank",
+      "Coupled Frames",
+      "Pulse Louvers",
+      "Spectral Fan",
+      "Echo Chambers",
+      "Memory Loom",
+      "Attack Ledger",
+      "Decay Halo",
+      "Diffusion Bed"
+    ],
+    "url": "studies/sound-motion-four-series.html"
+  },
+  {
+    "id": "cell-memory-ten",
+    "title": "Hücre / iz / hafıza",
+    "group": "Matrix ve ses",
+    "count": 10,
+    "names": [
+      "Echo Orchard",
+      "Halo Cache",
+      "Band Ledger",
+      "Diamond Spill",
+      "Orbital Dust",
+      "Twin Wells",
+      "Spiral Retain",
+      "Pulse Quilt",
+      "Rebound Cloud",
+      "Diagonal Sediment"
+    ],
+    "url": "studies/cell-memory-ten.html"
+  },
+  {
+    "id": "fan-satellites-refined",
+    "title": "Spectral Fan & Band Satellites",
+    "group": "Matrix ve ses",
+    "count": 2,
+    "names": [
+      "Spectral Fan",
+      "Band Satellites"
+    ],
+    "url": "studies/fan-satellites-refined.html"
+  },
+  {
+    "id": "circle-tape-studies",
+    "title": "Circle Tape · ilk seri",
+    "group": "Kayıt arayüzleri",
+    "count": 5,
+    "names": [
+      "Tape Head",
+      "Growing Take",
+      "Stereo Memory",
+      "Punch Window",
+      "Loop Overwrite"
+    ],
+    "url": "studies/circle-tape-studies.html"
+  },
+  {
+    "id": "circle-tape-studies-two",
+    "title": "Circle Tape · ikinci seri",
+    "group": "Kayıt arayüzleri",
+    "count": 5,
+    "names": [
+      "Radial Take",
+      "Folded Tape",
+      "Spool Memory",
+      "Grain Shutter",
+      "Contour Stack"
+    ],
+    "url": "studies/circle-tape-studies-two.html"
+  },
+  {
+    "id": "voice-head-studies",
+    "title": "Voice Head · 10 alternatif",
+    "group": "Ses ve figür",
+    "count": 10,
+    "names": [
+      "Signal Stem",
+      "Twin Folds",
+      "Reed Stack",
+      "Phoneme Prints",
+      "Formant Loom",
+      "Echo Chamber",
+      "Ear Aperture",
+      "Bone Relay",
+      "Breath Bellows",
+      "Duplex Organ"
+    ],
+    "url": "studies/voice-head-studies.html"
+  },
+  {
+    "id": "signal-stem-profile",
+    "title": "Signal Stem · profil",
+    "group": "Ses ve figür",
+    "count": 1,
+    "names": [
+      "Signal Stem"
+    ],
+    "url": "studies/signal-stem-profile.html"
+  },
+  {
+    "id": "playback-creature-lab",
+    "title": "Playback Creature Lab",
+    "group": "Ses ve figür",
+    "count": 10,
+    "names": [
+      "Tape Goblin",
+      "Punch Clock",
+      "Tape Eater",
+      "Eight Arm Dub",
+      "Resonant Bird",
+      "Moonwalk Unit",
+      "Moth Choir",
+      "X-Ray Hound",
+      "Reel Rider",
+      "Ghost Conductor"
+    ],
+    "url": "studies/playback-creature-lab.html"
+  },
+  {
+    "id": "mixtape-monkeys",
+    "title": "Mixtape Monkeys",
+    "group": "Ses ve figür",
+    "count": 5,
+    "names": [
+      "Sleep Tape",
+      "Window Seat",
+      "Deep Listener",
+      "Tail Reception",
+      "Shared Frequency"
+    ],
+    "url": "studies/mixtape-monkeys.html"
+  },
+  {
+    "id": "pocket-listener-nod",
+    "title": "Pocket Listener Nod",
+    "group": "Ses ve figür",
+    "count": 1,
+    "names": [
+      "Pocket Listener"
+    ],
+    "url": "studies/pocket-listener-nod.html"
+  },
+  {
+    "id": "branch-choir",
+    "title": "Branch Choir",
+    "group": "Ses ve figür",
+    "count": 1,
+    "names": [
+      "Branch Solo"
+    ],
+    "url": "studies/branch-choir.html"
+  },
+  {
+    "id": "profile-reference",
+    "title": "Profile Reference",
+    "group": "Referans çizimler",
+    "count": 1,
+    "names": [
+      "Profile Reference"
+    ],
+    "url": "studies/profile-reference.html"
+  },
+  {
+    "id": "twitter-010305",
+    "title": "01–03–05 · kare",
+    "group": "Kare kompozisyonlar",
+    "count": 3,
+    "names": [],
+    "url": "studies/twitter-010305.html"
+  },
+  {
+    "id": "twitter-020406",
+    "title": "02–04–06 · kare",
+    "group": "Kare kompozisyonlar",
+    "count": 3,
+    "names": [],
+    "url": "studies/twitter-020406.html"
+  },
+  {
+    "id": "tweet-square-01-03-05",
+    "title": "Kare · ilk hız",
+    "group": "Kare kompozisyonlar",
+    "count": 3,
+    "names": [],
+    "url": "studies/tweet-square-01-03-05.html"
+  },
+  {
+    "id": "tweet-square-01-03-05-slow",
+    "title": "Kare · yavaş deneme",
+    "group": "Kare kompozisyonlar",
+    "count": 3,
+    "names": [],
+    "url": "studies/tweet-square-01-03-05-slow.html"
+  },
+  {
+    "id": "settings-icons",
+    "title": "Settings · SVG denemeleri",
+    "group": "İkonlar",
+    "count": 12,
+    "names": [],
+    "url": "studies/settings-icons.html"
+  }
+]
