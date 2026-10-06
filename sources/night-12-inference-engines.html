@@ -70,6 +70,9 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),fract=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,mix=(a,b,q)=>a+(b-a)*q;
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   const accent=()=>state.accent?amber:white;
@@ -93,10 +96,10 @@
     return points;
   }
   function ricochet(time) {
-    const recording=state.mode==='record',step=Math.floor(time*.55),phase=fract(time*.55),active=mod(step,3);
+    const recording=state.mode==='record',step=hearing()?strike('kick').n:Math.floor(time*.55),phase=hearing()?clamp(strike('kick').age/.48):fract(time*.55),active=mod(step,3);
     line([[5,8],[w-5,8]],.27);line([[5,36],[w-5,36]],.27);
     for(let i=0;i<3;i++) {
-      const launch=recording?step-mod(step-i,3):i,slope=2.1+mod(launch,6)*.27,start=.3+mod(launch,3)*.1;
+      const launch=recording?step-mod(step-i,3):i,slope=hearing()?1.2+charge(['low','mid','high'][i])*2.3:2.1+mod(launch,6)*.27,start=.3+mod(launch,3)*.1;
       const path=rayPath(slope,start).map(p=>[5+p[0]*(w-10),8+p[1]*28]),live=i===active;
       const shown=recording&&live?partial(path,clamp(phase/.36)):path;
       line(shown,live?.88:.18,recording&&live?accent():white);
@@ -107,6 +110,7 @@
     }
   }
   function identityModel(time,recording) {
+    if(hearing()){const e=strike('note'),u=charge('mid');return {u,gapEnd:.57,lastObserved:.42,age:e.age,lease:.18,status:e.age<.2?'observed':e.age<.6?'predicted':'unresolved',sampleU:u};}
     const period=4.2,cycle=Math.floor(time/period),u=mod(time,period)/period,lastObserved=.42,gapEnd=recording&&mod(cycle,2)? .79:.57;
     const missing=u>=.43&&u<gapEnd,age=Math.max(0,u-lastObserved),lease=.18;
     return {u,gapEnd,lastObserved,age,lease,status:!missing?'observed':age<=lease?'predicted':'unresolved',sampleU:recording?Math.floor(u/.025)*.025:u};
@@ -151,7 +155,7 @@
     const result={threshold:key/50,components,edges};topologyCache.set(key,result);return result;
   }
   function critical(time) {
-    const recording=state.mode==='record',cycle=fract(time/5),level=recording?[.74,.42,.14,.52,.9,1.02][mod(Math.floor(time),6)]:.12+.9*(1-Math.abs(cycle*2-1)),shape=topology(level);
+    const recording=state.mode==='record',cycle=fract(time/5),level=hearing()?.12+charge('amp')*.9:recording?[.74,.42,.14,.52,.9,1.02][mod(Math.floor(time),6)]:.12+.9*(1-Math.abs(cycle*2-1)),shape=topology(level);
     if(lastComponents!==null&&lastComponents!==shape.components)changedAt=time;lastComponents=shape.components;
     for(const [x,y,dx,dy] of[[4,4,1,1],[w-4,4,-1,1],[4,40,1,-1],[w-4,40,-1,-1]])line([[x+dx*5,y],[x,y],[x,y+dy*5]],.35);
     ink(.82);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();
@@ -165,13 +169,14 @@
   ];
   function maturityTime(job) { let budget=0,budgetTime=Infinity;for(const [age,amount] of job.pulses){budget+=amount;if(budget>=job.target){budgetTime=age;break;}}return job.born+Math.max(job.minAge,budgetTime); }
   function jobState(job,time) {
+    if(hearing()){const i=jobs.indexOf(job),e=strike(['kick','snare','note'][i]),value=charge(['low','high','mid'][i],Math.max(0,e.age-.035)),budget=Math.floor(value*4),minimum=.16;return {age:e.age,budget,exists:e.n>0,ageReady:e.age>=minimum,budgetReady:budget>=2,mature:e.n>0&&e.age>=minimum&&budget>=2};}
     const age=Math.max(0,time-job.born),exists=time>=job.born,budget=exists?job.pulses.reduce((sum,[at,amount])=>sum+(age>=at?amount:0),0):0;
     return {age,budget,exists,ageReady:exists&&age>=job.minAge,budgetReady:budget>=job.target,mature:exists&&age>=job.minAge&&budget>=job.target};
   }
   function deferred(time) {
     const recording=state.mode==='record',clock=mod(time,5.4);
     for(let i=0;i<jobs.length;i++) {
-      const job=jobs[i],status=jobState(job,clock),x=w*(.18+i*.32),path=[[x-10,29],[x-10,23],[x-3,23],[x+3,21],[x+10,21],[x+10,15]],readyAt=maturityTime(job);
+      const job=jobs[i],status=jobState(job,clock),x=w*(.18+i*.32),path=[[x-10,29],[x-10,23],[x-3,23],[x+3,21],[x+10,21],[x+10,15]],readyAt=hearing()? .16 : maturityTime(job);
       if(recording) {
         line(path.slice(0,3),status.exists?.82:.18,status.budgetReady?accent():white);line(path.slice(3),status.exists?.82:.18,status.ageReady?accent():white);
         if(status.mature)line(path,.96,accent());
@@ -179,11 +184,11 @@
         for(let tick=0;tick<4;tick++)line([[x-10+tick*6,36],[x-7+tick*6,36]],status.budget>tick?.95:.16,status.budgetReady?accent():white);
       } else {
         line(path,status.mature?.9:.22);
-        if(clock>=readyAt&&clock-readyAt<.45)line(path,1,accent());
+        const readinessAge=hearing()?status.age-readyAt:clock-readyAt;if(status.mature&&readinessAge>=0&&readinessAge<.45)line(path,1,accent());
         line([[x-2,35],[x+2,35]],status.mature?.7:.18);
       }
     }
-    if(!recording){line([[4,40],[w-4,40]],.2);marker(4+clock/5.4*(w-8),40,1,accent(),2);}
+    if(!recording){line([[4,40],[w-4,40]],.2);marker(4+(hearing()?charge('amp'):clock/5.4)*(w-8),40,1,accent(),2);}
   }
   const cohorts=[[.2,.8,.5,.5,.35],[.7,.28,.48,.9,.1]],sampleOffsets=[-8,5,-3,9,0];
   function summary(values) {
@@ -193,7 +198,7 @@
   function range(time) {
     const recording=state.mode==='record',cycle=fract(time/5),collapse=cycle<.15?0:cycle<.4?(cycle-.15)/.25:cycle<.65?1:cycle<.9?1-(cycle-.65)/.25:0,clock=mod(time,6),total=clamp(Math.floor(clock/.45)+1,0,10),cell=(w-16)/2;
     for(let group=0;group<2;group++) {
-      const origin=5+group*(cell+6),count=recording?clamp(total-group*5,0,5):5,values=cohorts[group].slice(0,count),stats=summary(values),x=value=>origin+value*cell;
+      const origin=5+group*(cell+6),count=recording?clamp(total-group*5,0,5):5,values=hearing()?Array.from({length:count},(_,i)=>charge(group?'high':'low',i*.22)):cohorts[group].slice(0,count),stats=summary(values),x=value=>origin+value*cell;
       line([[origin,39],[origin+cell,39]],.19);
       for(let index=0;index<values.length;index++) {
         const y=22+sampleOffsets[index]*(recording?1:1-collapse),current=recording&&index===count-1&&total<=group*5+5;
@@ -217,7 +222,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});

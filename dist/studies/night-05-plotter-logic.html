@@ -70,10 +70,13 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   // Whatever time env() is asked for, answer from the last 3.4 s that was actually heard.
-  const heardEnv=(s,time)=>{const age=Math.abs(t-time)%3.4;return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
+  const heardEnv=(s,time)=>{const age=Math.max(0,t-time);return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
   const mod=(x,n)=>(x%n+n)%n;
   const fract=x=>x-Math.floor(x);
   const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
@@ -90,7 +93,7 @@
     for(let col=0;col<=n;col++)line([[left+col*pitch,4],[left+col*pitch,40]],.24);
     for(let col=0;col<n;col++) {
       const u=col/n,sample=recording?Math.floor(time*.19)*5+u*5:u*5;
-      const a=env(sample),rows=Math.round(a*3.6),height=rows*9+4;
+      const a=env(hearing()?time-(1-u)*3.2:sample),rows=Math.round(a*3.6),height=rows*9+4;
       if(!recording||u<head) {
         ctx.clearRect(left+col*pitch+1,22-height/2,pitch-2,height);
         if(rows>1)ctx.clearRect(left+col*pitch-1,22-(rows-1)*4.5,2,(rows-1)*9);
@@ -101,20 +104,20 @@
     if(recording)line([[x,6],[x,38]],.65,accent());
   }
   function weave(time) {
-    const pitch=12,step=Math.floor(time*3),phase=fract(time*3),recording=state.mode==='record',head=mod(step,4);
+    const pitch=12,step=hearing()?strike('hat').n:Math.floor(time*3),phase=hearing()?clamp(strike('hat').age/.18):fract(time*3),recording=state.mode==='record',head=mod(step,4);
     for(let row=0;row<4;row++) {
       const shift=recording?mod(Math.floor((step-row+4)/4),2)*pitch/2:mod(step+row,4)*pitch/4;
       const baseline=7+row*10,points=[];
       for(let col=-2;col<w/pitch+2;col++) {
         const x=col*pitch+shift;
         if(recording&&row===head&&x>w*phase)break;
-        points.push([x,baseline],[x+pitch/2,baseline],[x+pitch/2,baseline+5],[x+pitch,baseline+5]);
+        points.push([x,baseline],[x+pitch/2,baseline],[x+pitch/2,baseline+(hearing()?1+charge(['low','mid','high','amp'][row])*6:5)],[x+pitch,baseline+(hearing()?1+charge(['low','mid','high','amp'][row])*6:5)]);
       }
       line(points,row===head?.95:.5,row===head?accent():white);
     }
   }
   function courier(time) {
-    const pitch=4,cols=Math.floor((w-4)/pitch),left=(w-cols*pitch)/2,step=Math.floor(time*5),recording=state.mode==='record';
+    const pitch=4,cols=Math.floor((w-4)/pitch),left=(w-cols*pitch)/2,step=hearing()?strike('hat').n:Math.floor(time*5),recording=state.mode==='record';
     for(let x=0;x<cols;x+=3)for(let y=0;y<9;y+=2)rect(left+x*pitch,5+y*pitch,1,1,.14);
     // Four deliberately hand-authored five-cell states: a courier, not a full Game of Life engine.
     const forms=[[[1,0],[2,1],[0,2],[1,2],[2,2]],[[0,0],[2,0],[1,1],[2,1],[1,2]],[[0,0],[1,0],[2,0],[0,1],[1,2]],[[1,0],[0,1],[1,1],[0,2],[2,2]]];
@@ -127,16 +130,16 @@
       rect(left+(write*7+2)*pitch,8,10,1,1,accent());
     } else {
       for(let k=0;k<3;k++) {
-        const x=mod(step+k*Math.floor(cols/3),cols-3),y=[1,3,5][k],shape=forms[mod(step+k,4)];
+        const x=mod(step+k*Math.floor(cols/3),cols-3),y=[1,3,5][k],shape=forms[hearing()?Math.min(3,Math.floor(charge(['low','mid','high'][k])*3.99)):mod(step+k,4)];
         shape.forEach(([cx,cy])=>rect(left+(x+cx)*pitch,5+(y+cy)*pitch,2,2,.85,k===0?accent():white));
       }
     }
   }
   function factors(time) {
-    const groups=3,pitch=w/groups,step=Math.floor(time*1.6),active=mod(step,3),pairs=[[2,3],[2,4],[3,3],[3,4],[3,5],[2,6]],recording=state.mode==='record';
+    const groups=3,pitch=w/groups,step=hearing()?strike('note').n:Math.floor(time*1.6),active=mod(step,3),pairs=[[2,3],[2,4],[3,3],[3,4],[3,5],[2,6]],recording=state.mode==='record';
     for(let g=0;g<groups;g++) {
       const tick=recording?step-mod(step-g,3):step+g*2;
-      const [a,b]=pairs[mod(tick,pairs.length)],cx=pitch*(g+.5),r=11,spin=recording?0:time*.22;
+      const [a,b]=pairs[hearing()?Math.min(pairs.length-1,Math.floor(charge(['low','mid','high'][g])*pairs.length)):mod(tick,pairs.length)],cx=pitch*(g+.5),r=11,spin=recording?0:time*.22;
       for(let i=0;i<a;i++) {
         const theta=i/a*Math.PI*2-Math.PI/2+spin;
         const x=cx+Math.cos(theta)*r,y=22+Math.sin(theta)*r;
@@ -152,9 +155,9 @@
     }
   }
   function fragments(time) {
-    const count=7,pitch=(w-8)/count,recording=state.mode==='record',phase=mod(time*.85,count+1),active=Math.min(count-1,Math.floor(phase));
+    const count=7,pitch=(w-8)/count,recording=state.mode==='record',phase=hearing()?mod(strike('note').n,count)+Math.min(.999,strike('note').age/.3):mod(time*.85,count+1),active=Math.min(count-1,Math.floor(phase));
     for(let i=0;i<count;i++) {
-      const x=4+i*pitch,seed=i+3,y=10+hash(seed)*22;
+      const x=4+i*pitch,seed=i+3,y=10+(hearing()?charge('mid',i*.12):hash(seed))*22;
       const points=[[x,y],[x+pitch*.25,clamp(y+8*(hash(seed+5)-.5),4,40)],[x+pitch*.58,clamp(y+16*(hash(seed+12)-.5),4,40)],[x+pitch*.83,clamp(y+18*(hash(seed+3)-.5),4,40)]];
       if(recording&&i>active)continue;
       const progress=i===active?fract(phase):1;
@@ -178,7 +181,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});

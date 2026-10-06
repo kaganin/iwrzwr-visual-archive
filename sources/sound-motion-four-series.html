@@ -59,6 +59,10 @@ series.forEach((group,g)=>{
 });
 // One original, local stereo sound loop. The silent preview and audible mode
 // read the SAME PCM-derived envelopes, spectra and waveform samples.
+const demo=(()=>{
+ const shared=window.iwrSoundEngine?.demoAnalysis;
+ if(shared)return shared();
+ // Standalone pages retain their original local sample.
 const rate=32000,step=60/108/2,N=Math.round(step*32*rate),duration=N/rate;
 const pcm=[new Float32Array(N),new Float32Array(N)],mono=new Float32Array(N);
 const events={kick:[0,6,8,16,22],snare:[4,12,20],hat:[2,3,6,10,11,14,18,19,22],note:[1,7,9,15,17,23]};
@@ -113,6 +117,11 @@ function signal(t){
 }
 function hit(t,kind){const sequence=events[kind],local=mod(t,duration);let index=-1;for(let i=0;i<sequence.length;i++)if(sequence[i]*step<=local)index=i;return {age:index<0?local+duration-sequence[sequence.length-1]*step:local-sequence[index]*step,n:Math.floor(t/duration)*sequence.length+index+1};}
 function wave(t,u){const at=Math.floor(mod(t-.032+u*.032,duration)*rate);return mono[Math.min(N-1,at)]/(peakRms*3);}
+
+ return Object.freeze({rate,N,step,duration,frameTime,signal,hit,wave,copyToBuffer(buffer){buffer.copyToChannel(pcm[0],0);buffer.copyToChannel(pcm[1],1);}});
+})();
+const {rate,N,duration,signal,hit,wave}=demo;
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),mod=(v,n)=>(v%n+n)%n,frac=v=>v-Math.floor(v),tau=Math.PI*2,tri=v=>1-4*Math.abs(frac(v)-.5);
 const reduced=matchMedia('(prefers-reduced-motion: reduce)'),soundButton=root.querySelector('[data-audio]'),pauseButton=root.querySelector('[data-pause]'),status=root.querySelector('[data-status]');
 let time=1.72,last=0,raf=0,paused=reduced.matches,visible=true,audible=false,context=null,source=null,buffer=null,startTime=0,startOffset=0,audioPending=false;
 // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
@@ -128,7 +137,7 @@ async function startSound(){
   if(!context)context=new AC();await context.resume();
   if(context.state!=='running')throw new Error('audio-blocked');
   if(!root.isConnected)return;
-  if(!buffer){buffer=context.createBuffer(2,N,rate);buffer.copyToChannel(pcm[0],0);buffer.copyToChannel(pcm[1],1);}
+if(!buffer){buffer=context.createBuffer(2,N,rate);demo.copyToBuffer(buffer);}
   source=context.createBufferSource();source.buffer=buffer;source.loop=true;source.connect(context.destination);
   startOffset=time;startTime=context.currentTime;source.start(0,mod(time,duration));audible=true;paused=false;sync();schedule();
  }catch(error){stopSound();status.textContent='Ses burada açılamadı; sessiz önizleme devam ediyor.';}
@@ -149,7 +158,7 @@ function drawPanel(panel,t){
   line([[-.96,-.84],[-.96,.84]],dim);line([[.96,-.84],[.96,.84]],dim);trail(ricochet,.48);
   const point=ricochet(f,t);if(kick.age<.12)ring(...point,.04+f.low*.09,.1+f.low*.3,red,false);
  }else if(id===1){
-  const age=snare.age,reach=clamp(age*1.7),fade=Math.exp(-age*2.7);
+  const age=snare.age,reach=clamp(age*1.7),fade=Math.exp(-age*(live()?1.8:2.7));
   for(const sx of [-1,1])for(const sy of [-1,1])for(let j=0;j<12;j++){const q=Math.max(0,reach-j*.025);dot(sx*q*.9,sy*q*.78,j<2?red:j<5?white:gray,2,fade);}
   box(0,0,.025,.1,f.high>.12?red:dim);
  }else if(id===2){
@@ -206,7 +215,7 @@ function drawPanel(panel,t){
 function draw(){panels.forEach(p=>{if(p.visible)drawPanel(p,time);});}
 function resize(){const dpr=Math.min(devicePixelRatio||1,2);panels.forEach(p=>{p.w=Math.max(1,p.c.getBoundingClientRect().width);p.c.width=Math.round(p.w*dpr);p.c.height=44*dpr;p.ctx.setTransform(dpr,0,0,dpr,0,0);drawPanel(p,time);});}
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(!root.isConnected){stopSound();if(context)context.close();return;}if(paused||!visible||document.hidden)return;if(!last)last=now;const dt=now-last;if(dt>=1000/30){time=audible?clock():live()?live().songTime:time+Math.min(dt/1000,.08);last=now;draw();}raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(!root.isConnected){stopSound();if(context)context.close();return;}if(paused||!visible||document.hidden)return;if(!last)last=now;const dt=now-last;if(dt>=1000/30){time=audible?clock():live()?.source==='demo'?live().songTime:time+Math.min(dt/1000,.08);last=now;draw();}raf=requestAnimationFrame(frame);}
 soundButton.addEventListener('click',()=>audible?stopSound():startSound());
 pauseButton.addEventListener('click',()=>{if(!paused)stopSound();paused=!paused;sync();schedule();});
 reduced.addEventListener('change',e=>{if(e.matches)stopSound();paused=e.matches;sync();schedule();});
