@@ -29,7 +29,7 @@ header{padding:16px max(32px,calc((100% - 1216px)/2));flex-wrap:nowrap}
 main{padding:32px;padding-top:54px}
 .all-grid{gap:32px}
 /* Archive is a gallery; demo transport and recording selectors are hidden. */
-button,[class*="controls"],.viz-controls{display:none!important}
+button:not([data-sound-toggle]),[class*="controls"],.viz-controls{display:none!important}
 .animation-card{min-height:240px;border:.5px solid rgb(255 255 255 / 10%);background:#000;overflow:hidden;contain:layout paint}
 .collection-card{min-height:320px}
 .animation-card:not([data-ready]){visibility:hidden}
