@@ -47,7 +47,7 @@ for(const id of new Set(cards.map(c=>c[1]))){
 }
 assert.equal(originalStudies,152,'all individual drawings match preserved source code');
 // Every gallery series listed here reads the shared live sound signal (guarded, so sound off changes nothing).
-const liveSeries=['soundwave-directions','geek-soundwaves','vector-soundwave-studies','sound-machines','cell-memory-ten','fan-satellites-refined','sound-motion-four-series','night-01-raster-protocol','night-02-causal-instruments','night-03-pocket-machines','night-04-calibration-desk','night-05-plotter-logic','night-06-selective-memory','night-07-signal-translations','night-08-quiet-telemetry','night-09-control-laws','night-10-field-operations','night-11-shared-resources','night-12-inference-engines','night-13-conditional-machines','night-14-visible-invariants','night-15-procedural-marks'];
+const liveSeries=['soundwave-directions','geek-soundwaves','vector-soundwave-studies','sound-machines','cell-memory-ten','fan-satellites-refined','sound-motion-four-series','night-01-raster-protocol','night-02-causal-instruments','night-03-pocket-machines','night-04-calibration-desk','night-05-plotter-logic','night-06-selective-memory','night-07-signal-translations','night-08-quiet-telemetry','night-09-control-laws','night-10-field-operations','night-11-shared-resources','night-12-inference-engines','night-13-conditional-machines','night-14-visible-invariants','night-15-procedural-marks','bloom-ten-studies','matrix-direction-studies','matrix-routes-ten'];
 for(const id of liveSeries){
  const source=fs.readFileSync(path.resolve('sources',id+'.html'),'utf8');
  assert(/typeof iwrSignal!=='undefined'&&iwrSignal\.active/.test(source),'live sound seam: '+id);

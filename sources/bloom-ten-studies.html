@@ -19,6 +19,10 @@ const grid=root.querySelector('.bloom-grid');
 const panels=names.map((name,i)=>{const f=document.createElement('figure'),s=document.createElement('div'),c=document.createElement('canvas'),l=document.createElement('figcaption');s.className='screen';c.setAttribute('role','img');c.setAttribute('aria-label',name+'. '+descriptions[i]);l.textContent=name;s.append(c);f.append(s,l);grid.append(f);return {c,ctx:c.getContext('2d'),w:0};});
 const reduce=matchMedia('(prefers-reduced-motion: reduce)');
 let paused=reduce.matches,mode='play',time=1.1,last=0,raf=0,visible=true;
+// Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+// Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
+const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
 const frac=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,hash=(x,y)=>frac(Math.sin(x*127.1+y*311.7)*43758.5453);
 const pause=root.querySelector('[data-pause]');
 function sync(){pause.textContent=paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(paused));root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));}
@@ -49,7 +53,7 @@ function paint(){
 }
 function resize(){const dpr=Math.min(devicePixelRatio||1,2);panels.forEach(p=>{p.w=p.c.getBoundingClientRect().width;p.c.width=Math.round(p.w*dpr);p.c.height=44*dpr;p.ctx.setTransform(dpr,0,0,dpr,0,0);});paint();}
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;if(now-last>=1000/30){time+=Math.min((now-last)/1000,.08);last=now;paint();}raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;if(now-last>=1000/30){time+=Math.min((now-last)/1000,.08)*conduct();last=now;paint();}raf=requestAnimationFrame(frame);}
 root.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;sync();paint();}));
 pause.addEventListener('click',()=>{paused=!paused;sync();paint();schedule();});
 reduce.addEventListener('change',e=>{paused=e.matches;sync();schedule();});

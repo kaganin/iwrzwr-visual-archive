@@ -35,6 +35,10 @@ const panels=titles.map(([title,direction])=>{
 const reduce=matchMedia('(prefers-reduced-motion: reduce)'),pause=root.querySelector('[data-pause]');
 const tau=2*Math.PI,frac=x=>x-Math.floor(x),mod=(x,m)=>(x%m+m)%m,tri=x=>1-4*Math.abs(frac(x)-.5);
 let paused=reduce.matches,visible=true,time=1.7,last=0,raf=0;
+// Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+// Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
+const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
 function draw(){panels.forEach((panel,id)=>{
  const {ctx,w}=panel,cols=Math.max(12,Math.floor((w-4)/4)),left=(w-cols*4)/2,cells=new Uint8Array(cols*10),p=time/8;
  ctx.clearRect(0,0,w,44);
@@ -109,7 +113,7 @@ function draw(){panels.forEach((panel,id)=>{
 function resize(){const dpr=Math.min(devicePixelRatio||1,2);panels.forEach(p=>{p.w=Math.max(1,p.c.getBoundingClientRect().width);p.c.width=Math.round(p.w*dpr);p.c.height=44*dpr;p.ctx.setTransform(dpr,0,0,dpr,0,0);});draw();}
 function sync(){pause.textContent=paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(paused));}
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const dt=now-last;if(dt>=1000/30){time+=Math.min(dt/1000,.08);last=now;draw();}raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const dt=now-last;if(dt>=1000/30){time+=Math.min(dt/1000,.08)*conduct();last=now;draw();}raf=requestAnimationFrame(frame);}
 pause.addEventListener('click',()=>{paused=!paused;sync();schedule();});
 reduce.addEventListener('change',e=>{paused=e.matches;sync();schedule();});
 document.addEventListener('visibilitychange',schedule);

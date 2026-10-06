@@ -29,6 +29,10 @@ const panels=studies.map(([name,direction,description])=>{
 });
 const reduced=matchMedia('(prefers-reduced-motion: reduce)'),pause=root.querySelector('[data-pause]');
 let paused=reduced.matches,visible=true,time=1.8,last=0,raf=0;
+// Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+// Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
+const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
 const tau=Math.PI*2,mod=(n,d)=>(n%d+d)%d,fract=x=>x-Math.floor(x);
 function draw(){
  panels.forEach((panel,id)=>{
@@ -67,7 +71,7 @@ function draw(){
 function resize(){const dpr=Math.min(devicePixelRatio||1,2);panels.forEach(p=>{p.width=Math.max(1,p.canvas.getBoundingClientRect().width);p.canvas.width=Math.round(p.width*dpr);p.canvas.height=44*dpr;p.ctx.setTransform(dpr,0,0,dpr,0,0);});draw();}
 function sync(){pause.textContent=paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(paused));}
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const delta=now-last;if(delta>=1000/30){time+=Math.min(delta/1000,.08);last=now;draw();}raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const delta=now-last;if(delta>=1000/30){time+=Math.min(delta/1000,.08)*conduct();last=now;draw();}raf=requestAnimationFrame(frame);}
 pause.addEventListener('click',()=>{paused=!paused;sync();schedule();});
 reduced.addEventListener('change',e=>{paused=e.matches;sync();schedule();});
 document.addEventListener('visibilitychange',schedule);
