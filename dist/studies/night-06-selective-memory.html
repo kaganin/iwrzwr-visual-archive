@@ -68,6 +68,10 @@
   const white='#f1f0e8',amber='#FF0000';
   let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+  const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
+  const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   const mod=(x,n)=>(x%n+n)%n;
   const fract=x=>x-Math.floor(x);
   const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
@@ -211,7 +215,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
