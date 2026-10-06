@@ -47,7 +47,7 @@ for(const id of new Set(cards.map(c=>c[1]))){
 }
 assert.equal(originalStudies,152,'all individual drawings match preserved source code');
 // Every gallery series listed here reads the shared live sound signal (guarded, so sound off changes nothing).
-const liveSeries=['soundwave-directions','geek-soundwaves','vector-soundwave-studies','sound-machines'];
+const liveSeries=['soundwave-directions','geek-soundwaves','vector-soundwave-studies','sound-machines','cell-memory-ten','fan-satellites-refined','sound-motion-four-series'];
 for(const id of liveSeries){
  const source=fs.readFileSync(path.resolve('sources',id+'.html'),'utf8');
  assert(/typeof iwrSignal!=='undefined'&&iwrSignal\.active/.test(source),'live sound seam: '+id);
