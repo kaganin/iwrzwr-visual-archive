@@ -2,7 +2,7 @@
  const sources=new Map(),tasks=new Map();let next=0,last=0;
  // Shared read-only sound signal. Without sound-engine.js it stays a silent, fully shaped default.
  const engine=window.iwrSoundEngine;
- const signal=window.iwrSignal||Object.freeze({active:false,source:'off',mode:'play',status:'off',level:0,low:0,mid:0,high:0,pulse:0,hit:0,kickAge:30,snareAge:30,hatAge:30,noteAge:30,beat:0,loopTime:0,songTime:0});
+ const signal=window.iwrSignal||Object.freeze({active:false,source:'off',mode:'play',status:'off',level:0,low:0,mid:0,high:0,pulse:0,hit:0,kickAge:30,snareAge:30,hatAge:30,noteAge:30,beat:0,loopTime:0,songTime:0,levelAt:()=>0,hitAt:()=>0});
  function schedule(owner,callback){const id=++next;tasks.set(id,{owner,callback});return id;}
  function tick(now){
   requestAnimationFrame(tick);if(now-last<1000/30)return;last=now;

@@ -49,8 +49,33 @@
     level: 0, low: 0, mid: 0, high: 0, pulse: 0, hit: 0,
     kickAge: AGE_CAP, snareAge: AGE_CAP, hatAge: AGE_CAP, noteAge: AGE_CAP, beat: 0, loopTime: 0, songTime: 0,
   };
-  const facade = Object.freeze(Object.defineProperties({}, Object.fromEntries(
-    Object.keys(state).map(key => [key, { enumerable: true, get: () => state[key] }]))));
+  // Short history so trail-style studies can read the recent past (about 4 s at the gallery's 30 fps).
+  const HISTORY = 160, histTime = new Float64Array(HISTORY), histLevel = new Float64Array(HISTORY), histHit = new Float64Array(HISTORY);
+  let histHead = -1, histCount = 0;
+  function remember() {
+    histHead = (histHead + 1) % HISTORY; histCount = Math.min(HISTORY, histCount + 1);
+    histTime[histHead] = state.songTime; histLevel[histHead] = state.level; histHit[histHead] = state.hit;
+  }
+  function recall(values, age) {
+    if (!state.active || histCount < 1) return 0;
+    const target = state.songTime - Math.max(0, finite(age, 0));
+    let newer = histHead;
+    for (let i = 0; i < histCount; i++) {
+      const at = (histHead - i + HISTORY) % HISTORY;
+      if (histTime[at] <= target) {
+        const next = i === 0 ? at : (at + 1) % HISTORY, span = histTime[next] - histTime[at];
+        return clamp(span > 1e-6 ? values[at] + (values[next] - values[at]) * ((target - histTime[at]) / span) : values[at]);
+      }
+      newer = at;
+    }
+    return 0;                                         // older than the history: silence
+  }
+  const methods = {
+    levelAt: { value: age => recall(histLevel, age) },
+    hitAt: { value: age => recall(histHit, age) },
+  };
+  const facade = Object.freeze(Object.defineProperties({}, Object.assign(
+    Object.fromEntries(Object.keys(state).map(key => [key, { enumerable: true, get: () => state[key] }])), methods)));
 
   let ctx = null, src = null, analyser = null, gain = null, startedAt = 0, pcm = null, starting = false;
   let freq = null, wave = null, peakRms = .0001, peakBand = [.0001, .0001, .0001];
@@ -60,6 +85,7 @@
   function resetSignal() {
     Object.assign(state, { level: 0, low: 0, mid: 0, high: 0, pulse: 0, hit: 0, kickAge: AGE_CAP, snareAge: AGE_CAP, hatAge: AGE_CAP, noteAge: AGE_CAP, beat: 0, loopTime: 0, songTime: 0 });
     peakRms = .0001; peakBand = [.0001, .0001, .0001];
+    histHead = -1; histCount = 0;
   }
 
   function teardown() {
@@ -151,6 +177,7 @@
       state.hit = clamp(Math.max(state.pulse, .45 * Math.exp(-state.hatAge * 22), .3 * Math.exp(-state.noteAge * 7)));
       // Continuous position in the audible loop (seconds), shifted by the output latency so visuals meet the sound.
       state.songTime = Math.max(0, finite(ctx.currentTime - startedAt - finite(ctx.outputLatency || ctx.baseLatency || 0), 0));
+      remember();
     } catch (error) { console.error('sound update', error); }
   }
 

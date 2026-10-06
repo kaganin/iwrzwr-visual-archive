@@ -75,8 +75,11 @@
   const names={teletext:'Teletext Pulse',scope:'Vector Scope',wireframe:'Wireframe Echo',ascii:'ASCII Stream',spectral:'Spectral Tape'};
   const colors={white:'#f1f1ee',green:'#a0f0b0',amber:'#ffc66c'};
   let w=226,h=44,t=3.2,last=0,level=0.5,recordTime=0;
+  // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+  const live=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  const heard=(s,time)=>{const age=Math.max(0,t-time);return 0.13+0.87*Math.max(s.levelAt(age),s.hitAt(age));};
   function clamp(v,lo=0,hi=1){return Math.min(hi,Math.max(lo,v));}
-  function amp(time){return 0.15+0.52*Math.pow(Math.sin(time*1.65),4)+0.26*Math.pow(Math.sin(time*3.15+0.7),8);}
+  function amp(time){const s=live();if(s)return heard(s,time);return 0.15+0.52*Math.pow(Math.sin(time*1.65),4)+0.26*Math.pow(Math.sin(time*3.15+0.7),8);}
   function audio(time){return Math.sin(time*15)*0.55+Math.sin(time*24.3+0.8)*0.28+Math.sin(time*37.7)*0.17;}
   function tint(alpha=1){ctx.fillStyle=colors[state.tone];ctx.strokeStyle=colors[state.tone];ctx.globalAlpha=alpha;}
   function line(points,alpha=1,width=1){

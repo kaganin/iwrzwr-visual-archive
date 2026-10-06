@@ -72,6 +72,8 @@
   const names={sand:'Resonance Sand',motor:'Harmonic Motor',spring:'Spring Rail',pendulum:'Pendulum Choir',grains:'Grain Conveyor'};
   const white='#eeeeeb',orange='#ff893b';
   let w=226,h=44,dpr=2,time=2.1,last=0,level=0.55,recordTime=0,visible=true;
+  // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+  const live=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
   const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
   const mod=(a,b)=>((a%b)+b)%b;
   function envelope(t){return 0.14+0.55*Math.pow(Math.sin(t*1.65),4)+0.25*Math.pow(Math.sin(t*3.15+0.7),8);}
@@ -232,7 +234,8 @@
     const dt=last?Math.min((now-last)/1000,0.05):0;last=now;
     if(!state.paused&&!document.hidden&&visible){
       time+=dt;recordTime+=dt;
-      const target=clamp(envelope(time)*state.gain/0.8);
+      const heardNow=live();
+      const target=clamp((heardNow?0.13+0.87*Math.max(heardNow.level,heardNow.hit):envelope(time))*state.gain/0.8);
       level+=(target-level)*(1-Math.exp(-dt/(target>level?0.08:0.24)));
       draw();const n=Math.floor(recordTime);
       clock.textContent=String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
