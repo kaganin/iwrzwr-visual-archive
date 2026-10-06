@@ -8,6 +8,9 @@ const duration=20,tau=Math.PI*2,white='#FFFFFF',accent='#FF0000';
 const frac=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n;
 const grayAlpha=a=>a<=0?0:[.16,.32,.56,1].reduce((best,v)=>Math.abs(v-a)<Math.abs(best-a)?v:best);
 let time=1.72,paused=reduced.matches,visible=true,last=0,raf=0;
+// Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+// This composition draws the demo loop's own sample, so with sound on its clock is the audible song position.
 
 // Three matrix studies on the same sharp 2px / 4px lattice as the gallery cards.
 function drawMatrixStudy(w,style,t){
@@ -80,7 +83,7 @@ function paint(seconds=time){
   ctx.globalAlpha=1;
 }
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(last)time+=Math.min((now-last)/1000,.1);last=now;paint();raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;const heard=hearing();if(heard)time=heard.songTime;else if(last)time+=Math.min((now-last)/1000,.1);last=now;paint();raf=requestAnimationFrame(frame);}
 reduced.addEventListener('change',e=>{paused=e.matches;schedule();});
 document.addEventListener('visibilitychange',()=>{last=0;schedule();});
 new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;last=0;schedule();}).observe(root);
