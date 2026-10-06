@@ -53,6 +53,7 @@ for(const id of liveSeries){
  assert(/typeof iwrSignal!=='undefined'&&iwrSignal\.active/.test(source),'live sound seam: '+id);
  assert(source.includes('Without it, or with sound off, nothing changes'),'seam keeps the sound-off path: '+id);
 }
+for(const id of ['signal-assembly','phase-mechanics','orbital-memory']){const source=fs.readFileSync(path.join('sources/latest-site/public',id+'.js'),'utf8');assert(/typeof iwrSignal!=='undefined'&&iwrSignal\.active/.test(source)&&source.includes('nothing changes'),'live sound seam: '+id);}
 for(const id of ['signal-assembly','phase-mechanics','orbital-memory'])assert.equal(fs.readFileSync(path.join(root,id+'.js'),'utf8'),fs.readFileSync(path.join('sources/latest-site/public',id+'.js'),'utf8'),'composition source: '+id);
 for(const name of ['inline-gallery.js','single-page.css','typography.css','sound.css','sound-engine.js','sound-controls.js'])assert(fs.existsSync(path.join(root,name)),name);
 for(const name of ['sound-engine.js','sound-controls.js'])new vm.Script(fs.readFileSync(path.join(root,name),'utf8'),{filename:name});

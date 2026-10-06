@@ -10,6 +10,10 @@ const fract=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n;
 const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
 const grayAlpha=a=>a<=0?0:[.16,.32,.56,1].reduce((best,v)=>Math.abs(v-a)<Math.abs(best-a)?v:best);
 let time=.7,paused=reduced.matches,visible=true,last=0,raf=0;
+// Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+// The composition moves on the beat and rests between hits; its own dt clamp still applies first.
+const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
 function ink(alpha=1,color=white){ctx.globalAlpha=color===white?grayAlpha(alpha):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color;}
 function rect(x,y,w,h,alpha=1,color=white){ink(alpha,color);ctx.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,w,h);}
 function line(points,alpha=1,color=white){ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke();}
@@ -72,7 +76,7 @@ function paint(seconds=time){
   ctx.globalAlpha=1;
 }
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(last)time=mod(time+Math.min((now-last)/1000,.1),duration);last=now;paint();raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(last)time=mod(time+Math.min((now-last)/1000,.1)*conduct(),duration);last=now;paint();raf=requestAnimationFrame(frame);}
 reduced.addEventListener('change',e=>{paused=e.matches;schedule();});
 document.addEventListener('visibilitychange',()=>{last=0;schedule();});
 new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;last=0;schedule();}).observe(root);
