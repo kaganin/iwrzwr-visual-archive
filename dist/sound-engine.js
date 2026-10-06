@@ -46,7 +46,7 @@
 
   const state = {
     active: false, source: 'off', mode: 'play', status: 'off',
-    level: 0, low: 0, mid: 0, high: 0, pulse: 0, hit: 0,
+    level: 0, low: 0, mid: 0, high: 0, pulse: 0, hit: 0, travel: 0, lowPhase: 0, midPhase: 0, highPhase: 0,
     kickAge: AGE_CAP, snareAge: AGE_CAP, hatAge: AGE_CAP, noteAge: AGE_CAP, beat: 0, loopTime: 0, songTime: 0,
   };
   // Short history so trail-style studies can read the recent past (about 4 s at the gallery's 30 fps).
@@ -73,17 +73,32 @@
   const methods = {
     levelAt: { value: age => recall(histLevel, age) },
     hitAt: { value: age => recall(histHit, age) },
+    bandAt: { value: (band, age = 0) => state.active && state.source === 'demo' && state.songTime >= Math.max(0, finite(age)) ? clamp(demoAnalysis().value(band,state.songTime - Math.max(0, finite(age)))) : 0 },
+    spectrumAt: { value: (position, age = 0) => {
+      if(!state.active || state.source!=='demo' || state.songTime<Math.max(0,finite(age)))return 0;
+      return clamp(demoAnalysis().spectrum(state.songTime-Math.max(0,finite(age)),position));
+    } },
+    sampleAt: { value: (age = 0, channel = 'mono') => state.active && state.source === 'demo' && state.songTime >= Math.max(0, finite(age)) ? demoAnalysis().sample(state.songTime - Math.max(0, finite(age)), channel) : 0 },
+    eventAt: { value: (kind, age = 0) => Object.freeze(state.active && state.source === 'demo' && state.songTime >= Math.max(0, finite(age)) ? demoAnalysis().hit(state.songTime - Math.max(0, finite(age)), kind) : { age: AGE_CAP, n: 0 }) },
   };
   const facade = Object.freeze(Object.defineProperties({}, Object.assign(
     Object.fromEntries(Object.keys(state).map(key => [key, { enumerable: true, get: () => state[key] }])), methods)));
 
   let ctx = null, src = null, analyser = null, gain = null, startedAt = 0, pcm = null, starting = false;
+  let analysis = null;
+  function demoAnalysis() {
+    if (!analysis) {
+      if (!pcm) pcm = synth();
+      analysis = window.iwrCreateDemoAnalysis(pcm, RATE, BPM, EVENTS);
+    }
+    return analysis;
+  }
   let freq = null, wave = null, peakRms = .0001, peakBand = [.0001, .0001, .0001];
   const listeners = new Set();
   const emit = () => listeners.forEach(fn => { try { fn(facade); } catch (error) { console.error('sound listener', error); } });
 
   function resetSignal() {
-    Object.assign(state, { level: 0, low: 0, mid: 0, high: 0, pulse: 0, hit: 0, kickAge: AGE_CAP, snareAge: AGE_CAP, hatAge: AGE_CAP, noteAge: AGE_CAP, beat: 0, loopTime: 0, songTime: 0 });
+    Object.assign(state, { level: 0, low: 0, mid: 0, high: 0, pulse: 0, hit: 0, travel: 0, lowPhase: 0, midPhase: 0, highPhase: 0, kickAge: AGE_CAP, snareAge: AGE_CAP, hatAge: AGE_CAP, noteAge: AGE_CAP, beat: 0, loopTime: 0, songTime: 0 });
     peakRms = .0001; peakBand = [.0001, .0001, .0001];
     histHead = -1; histCount = 0;
   }
@@ -150,7 +165,9 @@
   function update() {
     if (!state.active || !ctx || !analyser) return;
     try {
-      const t = (((ctx.currentTime - startedAt) % LOOP) + LOOP) % LOOP;
+      // All event ages and history share the same audible position.
+      const audible = Math.max(0, finite(ctx.currentTime - startedAt - finite(ctx.outputLatency || ctx.baseLatency || 0), 0));
+      const t = ((audible % LOOP) + LOOP) % LOOP;
       const kickAge = ageOf('kick', t), snareAge = ageOf('snare', t), hatAge = ageOf('hat', t), noteAge = ageOf('note', t);
       analyser.getFloatTimeDomainData(wave); analyser.getByteFrequencyData(freq);
       let sum = 0;
@@ -167,7 +184,7 @@
         peakBand[b] = Math.max(peakBand[b] * .9995, mean, .0001);
         return clamp(mean / (peakBand[b] * .9));
       });
-      state.loopTime = finite(t); state.beat = Math.floor(finite(t) / BEAT);
+      state.loopTime = finite(t); state.beat = Math.floor(audible / BEAT);
       state.kickAge = finite(kickAge, AGE_CAP); state.snareAge = finite(snareAge, AGE_CAP); state.hatAge = finite(hatAge, AGE_CAP);
       state.level = clamp(follow(state.level, rms / (peakRms * .9)));
       state.low = clamp(follow(state.low, normalized[0])); state.mid = clamp(follow(state.mid, normalized[1])); state.high = clamp(follow(state.high, normalized[2]));
@@ -176,7 +193,9 @@
       // Any event, decaying: the clock that makes time-driven studies move on the beat and rest between.
       state.hit = clamp(Math.max(state.pulse, .45 * Math.exp(-state.hatAge * 22), .3 * Math.exp(-state.noteAge * 7)));
       // Continuous position in the audible loop (seconds), shifted by the output latency so visuals meet the sound.
-      state.songTime = Math.max(0, finite(ctx.currentTime - startedAt - finite(ctx.outputLatency || ctx.baseLatency || 0), 0));
+      state.songTime = audible;
+      const measured=demoAnalysis().signal(audible),phases=demoAnalysis().softSignal(audible).phase;
+      state.travel=finite(measured.travel);state.lowPhase=finite(phases[0]);state.midPhase=finite(phases[1]);state.highPhase=finite(phases[2]);
       remember();
     } catch (error) { console.error('sound update', error); }
   }
@@ -186,5 +205,5 @@
   window.addEventListener('pagehide', stop);
 
   window.iwrSignal = facade;
-  window.iwrSoundEngine = Object.freeze({ signal: facade, supported: !!AC, start, stop, toggle, update, subscribe, loopSeconds: LOOP, bpm: BPM });
+  window.iwrSoundEngine = Object.freeze({ signal: facade, supported: !!AC, start, stop, toggle, update, subscribe, demoAnalysis, loopSeconds: LOOP, bpm: BPM });
 })();

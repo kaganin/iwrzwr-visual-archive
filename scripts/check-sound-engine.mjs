@@ -3,15 +3,16 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const code = fs.readFileSync(new URL('../dist/sound-engine.js', import.meta.url), 'utf8');
+const analysisCode = fs.readFileSync(new URL('../dist/demo-analysis.js', import.meta.url), 'utf8');
 
-function boot({ audio = true, resumeTo = 'running', wave = 'silence' } = {}) {
+function boot({ audio = true, resumeTo = 'running', wave = 'silence', latency = 0 } = {}) {
   const listeners = {};
   const made = { contexts: [], wave };
   class FakeContext {
-    constructor() { this.state = 'suspended'; this.currentTime = 0; this.sampleRate = 48000; this.closed = false; this.onstatechange = null; made.contexts.push(this); }
+    constructor() { this.state = 'suspended'; this.currentTime = 0; this.sampleRate = 48000; this.closed = false; this.onstatechange = null; this.outputLatency = latency; made.contexts.push(this); }
     resume() { this.state = resumeTo; return Promise.resolve(); }
     close() { this.closed = true; this.state = 'closed'; return Promise.resolve(); }
-    createBuffer(channels, length) { return { length, copyToChannel() {} }; }
+    createBuffer(channels, length) { return { length, copyToChannel(data, channel) { (made.channels ||= [])[channel] = data.slice(); } }; }
     createBufferSource() { return { connect() {}, disconnect() {}, start() {}, stop() {}, loop: false, buffer: null }; }
     createGain() { return { gain: { value: 1 }, connect() {}, disconnect() {} }; }
     createAnalyser() {
@@ -25,7 +26,9 @@ function boot({ audio = true, resumeTo = 'running', wave = 'silence' } = {}) {
   }
   const window = { AudioContext: audio ? FakeContext : undefined, addEventListener: (name, fn) => { listeners[name] = fn; } };
   const document = { hidden: false, addEventListener: (name, fn) => { listeners['document:' + name] = fn; } };
-  vm.runInNewContext(code, { window, document, navigator: {}, console, Math, Number, Object, Set, Float32Array, Uint8Array, Promise, Error }, { filename: 'sound-engine.js' });
+  const sandbox = vm.createContext({ window, document, navigator: {}, console, Math, Number, Object, Set, Float32Array, Uint8Array, Promise, Error });
+  vm.runInContext(analysisCode, sandbox, { filename: 'demo-analysis.js' });
+  vm.runInContext(code, sandbox, { filename: 'sound-engine.js' });
   return { engine: window.iwrSoundEngine, signal: window.iwrSignal, made, listeners, window, document };
 }
 const everyFinite = signal => Object.entries(signal).every(([key, value]) => typeof value === 'string' || typeof value === 'boolean' || Number.isFinite(value));
@@ -116,4 +119,33 @@ for (const wave of ['nan', 'loud', 'silence']) {
   assert(signal.levelAt(1.4) > signal.levelAt(0) + .2, 'one second ago was louder than now: ' + signal.levelAt(1.4) + ' vs ' + signal.levelAt(0));
   assert(Math.abs(signal.levelAt(0) - signal.level) < .05, 'age 0 is the current level');
 }
-console.log(JSON.stringify({ soundEngine: 'pass' }));
+// 5. All demo consumers share one analysis, and event ages match audible time.
+{
+ const {engine,signal,made}=boot({wave:'tone',latency:.2});
+ const first=engine.demoAnalysis();assert(Object.isFrozen(first));
+ assert.equal(engine.demoAnalysis(),first,'one cached analysis');
+ await engine.start();made.contexts[0].currentTime=.21;engine.update();
+ assert(Math.abs(signal.songTime-.01)<1e-8,'output latency applied to transport');
+ assert(Math.abs(signal.kickAge-signal.songTime)<1e-8,'kick and transport aligned');
+ assert(Math.abs(signal.eventAt('kick').age-signal.kickAge)<1e-8,'event and facade aligned');
+ assert(signal.pulse>.9,'the audible kick is still fresh');
+ for(const key of ['bandAt','spectrumAt','sampleAt','eventAt'])assert(!Object.keys(signal).includes(key),'method is not a signal field');
+ made.contexts[0].currentTime=4.3;engine.update();
+ for(const age of [0,.1,1,-5,NaN,Infinity,500]){
+  for(const band of ['amp','low','mid','high','unknown']){const v=signal.bandAt(band,age);assert(Number.isFinite(v)&&v>=0&&v<=1);}
+  for(const position of [0,.2,1,-4,5,NaN,Infinity]){const v=signal.spectrumAt(position,age);assert(Number.isFinite(v)&&v>=0&&v<=1);}
+  for(const channel of ['mono','left','right','unknown'])assert(Math.abs(signal.sampleAt(age,channel))<=1);
+  for(const kind of ['kick','snare','hat','note','unknown']){const e=signal.eventAt(kind,age);assert(Object.isFrozen(e));assert(Number.isFinite(e.n)&&Number.isFinite(e.age)&&e.age>=0);}
+ }
+ for(const t of [0,.017,.5,3.6,8.88887,9,35]){
+  const f=first.signal(t);
+  for(const key of ['amp','low','mid','high'])assert.equal(first.value(key,t),f[key],'allocation-free feature equals original analysis');
+  for(let i=0;i<8;i++)assert(Math.abs(first.spectrum(t,i/7)-f.bins[i])<1e-12);
+  const copied=first.signal(t);copied.bins[0]=-100;assert(first.signal(t).bins[0]>=0,'returned bins cannot mutate cache');
+ }
+ const sample=first.sample(.05,'left');first.copyToBuffer({copyToChannel(data){data.fill(99);}});assert.equal(first.sample(.05,'left'),sample,'buffer copying cannot leak mutable PCM');
+ for(const bad of [NaN,Infinity,undefined])assert(Number.isFinite(first.wave(bad,bad)));
+ engine.stop();for(const method of ['bandAt','spectrumAt','sampleAt'])assert.equal(signal[method](0),0);
+ await engine.start();assert.equal(engine.demoAnalysis(),first,'restart keeps cache');engine.stop();
+}
+console.log(JSON.stringify({ soundEngine: 'pass', sharedAnalysis: 'pass', latency: 'pass', featureAPI: 'pass' }));
