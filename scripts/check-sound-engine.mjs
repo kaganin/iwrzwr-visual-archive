@@ -6,7 +6,7 @@ const code = fs.readFileSync(new URL('../dist/sound-engine.js', import.meta.url)
 
 function boot({ audio = true, resumeTo = 'running', wave = 'silence' } = {}) {
   const listeners = {};
-  const made = { contexts: [] };
+  const made = { contexts: [], wave };
   class FakeContext {
     constructor() { this.state = 'suspended'; this.currentTime = 0; this.sampleRate = 48000; this.closed = false; this.onstatechange = null; made.contexts.push(this); }
     resume() { this.state = resumeTo; return Promise.resolve(); }
@@ -17,8 +17,8 @@ function boot({ audio = true, resumeTo = 'running', wave = 'silence' } = {}) {
     createAnalyser() {
       const analyser = {
         fftSize: 1024, frequencyBinCount: 512, smoothingTimeConstant: 0, connect() {}, disconnect() {},
-        getFloatTimeDomainData(array) { for (let i = 0; i < array.length; i++) array[i] = wave === 'nan' ? NaN : wave === 'loud' ? (i % 2 ? 4 : -4) : wave === 'tone' ? Math.sin(i / 4) * .2 : 0; },
-        getByteFrequencyData(array) { for (let i = 0; i < array.length; i++) array[i] = wave === 'loud' ? 255 : wave === 'tone' ? (i < 40 ? 180 : 20) : 0; },
+        getFloatTimeDomainData(array) { for (let i = 0; i < array.length; i++) { const kind = made.wave; array[i] = kind === 'nan' ? NaN : kind === 'loud' ? (i % 2 ? 4 : -4) : kind === 'tone' ? Math.sin(i / 4) * .2 : 0; } },
+        getByteFrequencyData(array) { for (let i = 0; i < array.length; i++) array[i] = made.wave === 'loud' ? 255 : made.wave === 'tone' ? (i < 40 ? 180 : 20) : 0; },
       };
       return analyser;
     }
@@ -38,6 +38,7 @@ const everyFinite = signal => Object.entries(signal).every(([key, value]) => typ
   assert.equal(signal.active, false); assert.equal(signal.source, 'off'); assert.equal(signal.mode, 'play');
   assert.equal(signal.kickAge, 30); assert.equal(engine.supported, true);
   assert.equal(signal.hit, 0); assert.equal(signal.songTime, 0); assert.equal(signal.noteAge, 30);
+  assert.equal(signal.levelAt(1), 0); assert.equal(signal.hitAt(0), 0); assert.equal(Object.keys(signal).includes('levelAt'), false, 'methods are not enumerable fields');
   try { signal.level = 1; } catch (error) { /* strict mode may throw */ }
   assert.equal(signal.level, 0, 'facade cannot be written to');
   engine.update();                                   // inactive update is a no-op
@@ -59,6 +60,10 @@ const everyFinite = signal => Object.entries(signal).every(([key, value]) => typ
   assert(signal.pulse < .5, 'pulse decays between events, got ' + signal.pulse);
   for (let t = 0; t < 40; t += .033) { made.contexts[0].currentTime = t; engine.update(); assert(everyFinite(signal), 'finite at t=' + t); assert(signal.level >= 0 && signal.level <= 1); assert(signal.kickAge <= 30 && signal.snareAge <= 30 && signal.hatAge <= 30); }
   assert(signal.beat >= 0 && signal.loopTime >= 0 && signal.loopTime < engine.loopSeconds + .001);
+  // history: levelAt / hitAt stay finite in [0,1], look back in time, and are silent beyond what was heard
+  assert.equal(signal.levelAt(0) >= 0 && signal.levelAt(0) <= 1, true);
+  for (const age of [0, .1, 1, 3.9, 50, -5, NaN, Infinity, undefined]) { const v = signal.levelAt(age), h = signal.hitAt(age); assert(Number.isFinite(v) && v >= 0 && v <= 1 && Number.isFinite(h) && h >= 0 && h <= 1, 'history finite for age ' + age); }
+  assert.equal(signal.levelAt(500), 0, 'older than history is silent');
   engine.stop();
   assert.equal(signal.active, false); assert.equal(signal.status, 'off'); assert.equal(signal.level, 0);
   assert.equal(made.contexts[0].closed, true, 'context released on stop');
@@ -98,5 +103,17 @@ for (const wave of ['nan', 'loud', 'silence']) {
   const pending = engine.toggle(); assert.equal(await pending, false); assert.equal(signal.active, false);
   const racing = engine.start(); engine.stop(); await racing;
   assert.equal(signal.active, false, 'stop while starting wins'); assert.equal(signal.status, 'off');
+}
+// 4. history returns what was heard earlier, not what is heard now
+{
+  const { engine, signal, made } = boot({ wave: 'tone' });
+  await engine.start();
+  for (let t = .033; t < 1.5; t += .033) { made.contexts[0].currentTime = t; engine.update(); }
+  const heardNow = signal.levelAt(0);
+  made.wave = 'silence';
+  for (let t = 1.5; t < 3; t += .033) { made.contexts[0].currentTime = t; engine.update(); }
+  assert(signal.level < heardNow, 'level fell after the tone stopped');
+  assert(signal.levelAt(1.4) > signal.levelAt(0) + .2, 'one second ago was louder than now: ' + signal.levelAt(1.4) + ' vs ' + signal.levelAt(0));
+  assert(Math.abs(signal.levelAt(0) - signal.level) < .05, 'age 0 is the current level');
 }
 console.log(JSON.stringify({ soundEngine: 'pass' }));

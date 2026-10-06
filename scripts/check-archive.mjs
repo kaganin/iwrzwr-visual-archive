@@ -46,6 +46,13 @@ for(const id of new Set(cards.map(c=>c[1]))){
  }
 }
 assert.equal(originalStudies,152,'all individual drawings match preserved source code');
+// Every gallery series listed here reads the shared live sound signal (guarded, so sound off changes nothing).
+const liveSeries=['soundwave-directions','geek-soundwaves','vector-soundwave-studies','sound-machines'];
+for(const id of liveSeries){
+ const source=fs.readFileSync(path.resolve('sources',id+'.html'),'utf8');
+ assert(/typeof iwrSignal!=='undefined'&&iwrSignal\.active/.test(source),'live sound seam: '+id);
+ assert(source.includes('Without it, or with sound off, nothing changes'),'seam keeps the sound-off path: '+id);
+}
 for(const id of ['signal-assembly','phase-mechanics','orbital-memory'])assert.equal(fs.readFileSync(path.join(root,id+'.js'),'utf8'),fs.readFileSync(path.join('sources/latest-site/public',id+'.js'),'utf8'),'composition source: '+id);
 for(const name of ['inline-gallery.js','single-page.css','typography.css','sound.css','sound-engine.js','sound-controls.js'])assert(fs.existsSync(path.join(root,name)),name);
 for(const name of ['sound-engine.js','sound-controls.js'])new vm.Script(fs.readFileSync(path.join(root,name),'utf8'),{filename:name});

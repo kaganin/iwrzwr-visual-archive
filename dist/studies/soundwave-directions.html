@@ -74,6 +74,8 @@
   };
   const names = {ribbon:'Spectrum Ribbon',mono:'Mono Wave',silk:'Silk Layers',liquid:'Liquid Wave',spectrum:'Fine Spectrum'};
   let w=226, h=44, elapsed=0, last=0, smoothLevel=0.5, drawTime=0;
+  // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+  const live=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
   const palette=['#47cfff','#6f72ff','#cb65ff','#ff789f'];
   function sync() {
     root.querySelectorAll('[data-style]').forEach(b => b.setAttribute('aria-pressed',String(b.dataset.style===state.style)));
@@ -160,7 +162,8 @@
     const dt=last?Math.min(0.05,(now-last)/1000):0;last=now;
     if(!state.paused&&!document.hidden) {
       elapsed+=dt;
-      const target=signal(elapsed)*state.intensity/0.75;
+      const heard=live();
+      const target=(heard?0.13+0.87*Math.max(heard.level,heard.hit):signal(elapsed))*state.intensity/0.75;
       const response=target>smoothLevel?0.08:0.24;
       smoothLevel+=(target-smoothLevel)*(1-Math.exp(-dt/response));
       drawTime=elapsed;draw(drawTime);
