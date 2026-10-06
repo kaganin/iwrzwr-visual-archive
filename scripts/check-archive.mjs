@@ -55,8 +55,9 @@ for(const id of liveSeries){
 }
 for(const id of ['signal-assembly','phase-mechanics','orbital-memory']){const source=fs.readFileSync(path.join('sources/latest-site/public',id+'.js'),'utf8');assert(/typeof iwrSignal!=='undefined'&&iwrSignal\.active/.test(source)&&source.includes('nothing changes'),'live sound seam: '+id);}
 for(const id of ['signal-assembly','phase-mechanics','orbital-memory'])assert.equal(fs.readFileSync(path.join(root,id+'.js'),'utf8'),fs.readFileSync(path.join('sources/latest-site/public',id+'.js'),'utf8'),'composition source: '+id);
-for(const name of ['inline-gallery.js','single-page.css','typography.css','sound.css','sound-engine.js','sound-controls.js'])assert(fs.existsSync(path.join(root,name)),name);
-for(const name of ['sound-engine.js','sound-controls.js'])new vm.Script(fs.readFileSync(path.join(root,name),'utf8'),{filename:name});
+for(const name of ['inline-gallery.js','single-page.css','typography.css','sound.css','demo-analysis.js','sound-engine.js','sound-controls.js'])assert(fs.existsSync(path.join(root,name)),name);
+for(const name of ['demo-analysis.js','sound-engine.js','sound-controls.js'])new vm.Script(fs.readFileSync(path.join(root,name),'utf8'),{filename:name});
+assert(html.indexOf('demo-analysis.js')>-1&&html.indexOf('demo-analysis.js')<html.indexOf('sound-engine.js'),'shared analysis loads before engine');
 assert(html.indexOf('sound-engine.js')>-1&&html.indexOf('sound-engine.js')<html.indexOf('inline-gallery.js'),'sound engine loads before the gallery');
 assert(html.includes('data-sound-toggle')&&html.includes('>play sound<'),'sound toggle in the introduction');
 assert(fs.readFileSync(path.join(root,'inline-gallery.js'),'utf8').includes("'iwrSignal'"),'gallery exposes the shared signal');
