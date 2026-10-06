@@ -14,10 +14,10 @@ const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++next;pe
 async function evaluate(expression){const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;}
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 try{
- await call('Runtime.enable');await call('Page.enable');
+ await call('Runtime.enable');await call('Page.enable');await call('Page.bringToFront');
  await call('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
- await call('Page.navigate',{url});await wait(1000);
- await evaluate(`window.__card=document.querySelector('[data-series="sound-motion-four-series"][data-item="0"]');__card.scrollIntoView({block:'center'});`);
+ await call('Page.navigate',{url});await call('Page.bringToFront');await wait(1000);
+ await evaluate(`window.__card=document.querySelector('[data-series="${process.env.LIFECYCLE_SERIES||'sound-motion-four-series'}"][data-item="0"]');__card.scrollIntoView({block:'center'});`);
  for(let i=0;i<100;i++){if(await evaluate(`__card.dataset.ready==='true'`))break;await wait(100);}
  await wait(500);
  const desktop=await evaluate(`(()=>{window.__art=__card.shadowRoot.querySelector('.direct-surface canvas');window.__counts=new Map();const proto=CanvasRenderingContext2D.prototype,original=proto.clearRect;proto.clearRect=function(...args){__counts.set(this.canvas,(__counts.get(this.canvas)||0)+1);return original.apply(this,args)};return {width:__art.width,cssWidth:__art.getBoundingClientRect().width};})()`);
@@ -32,5 +32,5 @@ try{
  await evaluate(`__card.scrollIntoView({block:'center'});__counts.clear()`);await wait(600);
  const resumed=await evaluate(`__counts.get(__art)||0`);assert(resumed>0,'returning study must resume');
  assert.equal(errors.length,0,'browser runtime errors');
- console.log(JSON.stringify({url,desktop,mobile,activity,offscreenDraws:stopped,resumedDraws:resumed,errors,status:'pass'}));
+ console.log(JSON.stringify({url,series:process.env.LIFECYCLE_SERIES||'sound-motion-four-series',desktop,mobile,activity,offscreenDraws:stopped,resumedDraws:resumed,errors,status:'pass'}));
 }finally{socket.close();await fetch('http://127.0.0.1:9224/json/close/'+tab.id);}

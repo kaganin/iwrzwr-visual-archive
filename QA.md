@@ -1,3 +1,11 @@
+# local demo sound verification — 2026-10-06
+
+local branch `sound-demo-fixes` fixes the per-study demo-audio connections; production has not been updated. the detailed [fix report and 155-card checklist](plans/demo-sound-fixes.md) preserves the [pre-fix audit](plans/demo-sound-audit.md) separately.
+
+`npm run check:sound-responses` passes for all 161 renderers (152 individual drawings plus nine rows in three square cards): changing band/onset input changes drawing commands at a fixed clock, and silent command traces match `1887709`. the browser sweep passes 310/310 desktop/mobile-layout cards with zero permanently blank cards and zero captured errors; all 32 contact sheets were visually reviewed. the final matrix routes were additionally retested at both widths.
+
+six normal-viewport lifecycle checks confirm zero hidden-sibling and offscreen draws, successful resize/resume, and no horizontal overflow. sound-engine unit checks cover shared analysis identity, protected PCM, finite feature methods and one audible latency clock. these are connection/liveness checks, not a claim of uniform polish, actual iPhone testing or measured headphone synchronization. no microphone work was started.
+
 # verification — 2026-10-05
 
 ## current production recheck
