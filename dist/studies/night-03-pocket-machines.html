@@ -68,12 +68,18 @@
   const white='#f1f0e8',amber='#FF0000';
   let w=226,dpr=1,t=2.4,last=0,raf=0,visible=true;
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+  // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
+  const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
+  const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
+  // Whatever time env() is asked for, answer from the last 3.4 s that was actually heard.
+  const heardEnv=(s,time)=>{const age=Math.abs(t-time)%3.4;return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
   const mod=(x,n)=>(x%n+n)%n;
   const fract=x=>x-Math.floor(x);
   const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
   const accent=()=>state.accent?amber:white;
   // Synthetic energy and transport clocks. No compressor, spectral or pitch measurement.
-  function env(time) { return clamp((.15+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.28*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
+  function env(time) { const s=hearing(); if(s)return clamp(heardEnv(s,time)*state.gain); return clamp((.15+.55*Math.pow(Math.max(0,Math.sin(time*2.7)),6)+.28*Math.pow(Math.max(0,Math.sin(time*6.1+1)),12))*state.gain); }
   function ink(alpha=1,color=white) { ctx.globalAlpha=clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
   function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
   function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
@@ -184,7 +190,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07);last=now;draw();}raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});
