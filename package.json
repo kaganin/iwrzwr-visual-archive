@@ -7,7 +7,8 @@
     "check": "node scripts/check-archive.mjs",
     "verify:gallery": "node scripts/verify-gallery.mjs",
     "export:thermal-core": "node export-thermal-core.mjs",
-    "check:sound": "node scripts/check-sound-engine.mjs"
+    "check:sound": "node scripts/check-sound-engine.mjs",
+    "check:sound-responses": "node scripts/check-demo-responses.mjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"
