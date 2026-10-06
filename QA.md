@@ -82,7 +82,7 @@ COMPOSITION_URL=http://localhost:8000/studies/orbital-memory.html node scripts/c
 - Repository is still private. The MIT license documents permitted reuse; it does not itself make a private repository publicly accessible.
 - Vercel production deployment works through the authenticated CLI. Automatic Git deployments still need the owner's repository-specific Vercel GitHub App grant; do not make the repository public as a workaround.
 - No source media, unique changes, or prior iterations were deleted. No new dependency installation or duplicate clone was needed.
-- Browser frame sampling proves liveness in the tested environment, not a perfect loop, real audio reactivity, universal browser support, or sustained mobile FPS.
+- Browser frame sampling proves liveness in the tested environment, not a perfect loop, universal browser support, sustained mobile FPS, or that every card reacts visibly to sound. the sound engine has unit checks (`npm run check:sound`); per-card reaction was measured manually and has not been tested on a real iphone.
 - Header count 164 is editorial: 152 studies + 12 composition-assigned alternatives. Actual live cards: 155. Visible collections: 28.
 
 ## individual checklist

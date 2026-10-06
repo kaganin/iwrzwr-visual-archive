@@ -2,7 +2,7 @@
 
 155 experimental sound and music visualizer studies built with javascript and html canvas. explore waveform animations, spectrum-inspired displays, matrix patterns, particle fields, rhythm, memory, and mechanical motion — with drawing code and live examples to study and adapt for creative-coding projects. all gallery animations run from code, with no video playback or iframes.
 
-signals are simulated. this is a visual archive, not a real audio-analysis engine or the native iwrzwr app.
+tap **play sound** to run a built-in 108 bpm demo loop and the studies follow it live. studies with a level or hit signal read it directly, time-driven machines move on the beat. with sound off the original simulated signals run unchanged. sound starts only after a tap, there is no microphone input, and nothing is uploaded. this is a visual archive, not a real audio-analysis engine or the native iwrzwr app.
 
 like it? [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive) — it helps others discover these experiments.
 
@@ -38,12 +38,13 @@ python3 -m http.server 8000 --directory dist
 
 open [localhost:8000](http://localhost:8000/). use an http server; opening `index.html` directly won't work because the gallery fetches study files.
 
-no dependency installation is needed for the gallery build. `npm run build` and `npm run check` are equivalent shortcuts. you can also serve the checked-in `dist/` without rebuilding.
+no dependency installation is needed for the gallery build. `npm run build` and `npm run check` are equivalent shortcuts, and `npm run check:sound` runs the sound engine unit checks. you can also serve the checked-in `dist/` without rebuilding.
 
 ## layout
 
 - `sources/` — original drawing code and preserved iterations.
 - `build-archive.mjs` — assembles the gallery and study payloads.
+- `dist/sound-engine.js` — the shared demo loop and the read-only `iwrSignal` the studies read.
 - `dist/` — static site, gallery runtime, styles, and generated payloads.
 - `scripts/` — static checks and browser verification.
 - `vercel.json` — static build and subpath routing.
