@@ -1,8 +1,12 @@
 (() => {
  const sources=new Map(),tasks=new Map();let next=0,last=0;
+ // Shared read-only sound signal. Without sound-engine.js it stays a silent, fully shaped default.
+ const engine=window.iwrSoundEngine;
+ const signal=window.iwrSignal||Object.freeze({active:false,source:'off',mode:'play',status:'off',level:0,low:0,mid:0,high:0,pulse:0,hit:0,kickAge:30,snareAge:30,hatAge:30,noteAge:30,beat:0,loopTime:0,songTime:0});
  function schedule(owner,callback){const id=++next;tasks.set(id,{owner,callback});return id;}
  function tick(now){
   requestAnimationFrame(tick);if(now-last<1000/30)return;last=now;
+  try{engine?.update()}catch(e){console.error('sound',e)}
   for(const [id,t] of [...tasks])if(t.owner.active&&!document.hidden){tasks.delete(id);try{t.callback(now)}catch(e){console.error('Animation frame',t.owner.host.dataset.series,e)}}
  }
  requestAnimationFrame(tick);
@@ -24,6 +28,7 @@
    }});
    const raf=fn=>schedule(owner,fn),cancel=id=>tasks.delete(id);
    const scopedWindow=new Proxy(window,{get(target,key){
+    if(key==='iwrSignal')return signal;
     if(key==='requestAnimationFrame')return raf;if(key==='cancelAnimationFrame')return cancel;
     if(key==='ResizeObserver')return CardResizeObserver;
     if(key==='addEventListener')return(name,fn)=>{if(name==='resize')owner.resize=fn};
@@ -42,7 +47,7 @@
     disconnect(){for(const observer of this.targets.values())observer.disconnect();this.targets.clear()}
    }
    for(const script of scripts){const code=script.src?await fetch(new URL(script.getAttribute('src'),'https://local.invalid/studies/').pathname.slice(1)).then(r=>r.text()):script.textContent;
-    new Function('document','window','requestAnimationFrame','cancelAnimationFrame','IntersectionObserver','ResizeObserver',code)(scopedDocument,scopedWindow,raf,cancel,CardIntersectionObserver,CardResizeObserver);
+    new Function('document','window','requestAnimationFrame','cancelAnimationFrame','IntersectionObserver','ResizeObserver','iwrSignal',code)(scopedDocument,scopedWindow,raf,cancel,CardIntersectionObserver,CardResizeObserver,signal);
    }
    const item=owner.host.dataset.item;
    if(item!==undefined){

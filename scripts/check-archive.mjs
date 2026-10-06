@@ -47,7 +47,11 @@ for(const id of new Set(cards.map(c=>c[1]))){
 }
 assert.equal(originalStudies,152,'all individual drawings match preserved source code');
 for(const id of ['signal-assembly','phase-mechanics','orbital-memory'])assert.equal(fs.readFileSync(path.join(root,id+'.js'),'utf8'),fs.readFileSync(path.join('sources/latest-site/public',id+'.js'),'utf8'),'composition source: '+id);
-for(const name of ['inline-gallery.js','single-page.css','typography.css'])assert(fs.existsSync(path.join(root,name)),name);
+for(const name of ['inline-gallery.js','single-page.css','typography.css','sound.css','sound-engine.js','sound-controls.js'])assert(fs.existsSync(path.join(root,name)),name);
+for(const name of ['sound-engine.js','sound-controls.js'])new vm.Script(fs.readFileSync(path.join(root,name),'utf8'),{filename:name});
+assert(html.indexOf('sound-engine.js')>-1&&html.indexOf('sound-engine.js')<html.indexOf('inline-gallery.js'),'sound engine loads before the gallery');
+assert(html.includes('data-sound-toggle')&&html.includes('>play sound<'),'sound toggle in the introduction');
+assert(fs.readFileSync(path.join(root,'inline-gallery.js'),'utf8').includes("'iwrSignal'"),'gallery exposes the shared signal');
 new vm.Script(fs.readFileSync(path.join(root,'inline-gallery.js'),'utf8'),{filename:'inline-gallery.js'});
 const config=JSON.parse(fs.readFileSync('vercel.json','utf8'));
 assert.equal(config.outputDirectory,'dist');
