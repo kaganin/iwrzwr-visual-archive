@@ -150,7 +150,8 @@
       ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.lineCap='butt';
       for(let col=0;col<count;col++) {
         const x=col/(count-1);
-        const sample=state.phase==='recording'?signal(motion-(1-x)*2.4):gain*(0.3+0.7*Math.abs(wave(x,motion,0)));
+        const heard=live();
+        const sample=heard?.spectrumAt?heard.spectrumAt(x):state.phase==='recording'?signal(motion-(1-x)*2.4):gain*(0.3+0.7*Math.abs(wave(x,motion,0)));
         const size=1+Math.min(18,sample*18)*(0.28+0.72*envelope(x));
         ctx.globalAlpha=0.9;ctx.beginPath();ctx.moveTo(1+x*(w-2),22-size);ctx.lineTo(1+x*(w-2),22+size);ctx.stroke();
       }

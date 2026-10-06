@@ -70,19 +70,22 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   const fract=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,mix=(a,b,p)=>a+(b-a)*p;
   const accent=()=>state.accent?amber:white;
   // Silent deterministic timing, not microphone input or a physical simulation.
-  function pulse(time,period=1.8,length=.95) { const s=hearing(); if(s){const heard=Math.abs(t-time)%3.4;return Math.max(s.hitAt(heard),.8*s.levelAt(heard));} const age=mod(time,period);return age>=length?0:Math.pow(Math.sin(Math.PI*age/length),2); }
+  function pulse(time,period=1.8,length=.95) { const s=hearing(); if(s){const heard=Math.max(0,t-time);return Math.max(s.hitAt(heard),.8*s.levelAt(heard));} const age=mod(time,period);return age>=length?0:Math.pow(Math.sin(Math.PI*age/length),2); }
   function ink(alpha=1,color=white) { ctx.globalAlpha=clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
   function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
   function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke(); }
   function area(points,alpha=.12,color=white) { if(points.length<3)return;ink(alpha,color);ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill(); }
   function marker(x,y,alpha=1,color=white,size=2) { rect(x-size/2,y-size/2,size,size,alpha,color); }
   function project(x,y,z) { return [10+x*(w-30)+z*10,22-y*12-z*6]; }
-  function sectionCurve(x,z,take=0) { return .48*Math.sin(x*5.5+take*.7)+.24*Math.cos(z*4.4+x*2.1+take*.4); }
+  function sectionCurve(x,z,take=0) { if(hearing())return .7*((charge('low',x*.35)-.5)*Math.sin(z*4.4)+charge('mid',x*.35)*Math.sin(x*5.5));return .48*Math.sin(x*5.5+take*.7)+.24*Math.cos(z*4.4+x*2.1+take*.4); }
   function section(time) {
     const recording=state.mode==='record',step=Math.floor(time*.85),phase=fract(time*.85),active=mod(step,6),cut=recording?(active+.5)/6:.08+fract(time*.18)*.84;
     for(const z of[0,1])line([project(0,-1,z),project(1,-1,z),project(1,1,z),project(0,1,z),project(0,-1,z)],.24);
@@ -149,7 +152,7 @@
     }
   }
   function atlas(time) {
-    const recording=state.mode==='record',step=Math.floor(time*.8),phase=fract(time*.8),active=mod(step,5),epoch=Math.floor(step/5),cell=(w-8)/5;
+    const recording=state.mode==='record',step=hearing()?strike('note').n:Math.floor(time*.8),phase=hearing()?clamp(strike('note').age/.24):fract(time*.8),active=mod(step,5),epoch=Math.floor(step/5),cell=(w-8)/5;
     for(let i=0;i<5;i++) {
       const origin=4+i*cell,width=cell-3;
       line([[origin,40],[origin+width,40]],i===active?.8:.2,i===active?accent():white);
@@ -160,7 +163,7 @@
           const target=atlasPosition(i+epoch,index,width);
           a=rack;b=target;q=i<active?1:i>active?0:clamp(phase/.38);
         } else {
-          const pattern=i+epoch+(i<active?1:0);a=atlasPosition(pattern,index,width);b=atlasPosition(pattern+1,index,width);q=i===active?phase:0;
+          const pattern=i+epoch+(i<active?1:0);a=atlasPosition(pattern,index,width);b=atlasPosition(pattern+1,index,width);q=hearing()?charge(['low','mid','high','amp','mid'][i]):i===active?phase:0;
         }
         const x=origin+mix(a[0],b[0],q),y=mix(a[1],b[1],q);
         marker(x,y,i===active?.96:recording&&i>active?.38:.7,i===active?accent():white,2);
@@ -186,7 +189,8 @@
     const recording=state.mode==='record',units=16,cursor=mod(time*2.2,units),pitch=(w-8)/units,base=37;
     line([[4,base],[w-4,base]],.25);
     for(let i=0;i<=units;i++)line([[4+i*pitch,39],[4+i*pitch,41]],.18);
-    for(const phrase of slotPhrases) {
+    for(const fixedPhrase of slotPhrases) {
+      const phrase=hearing()?{start:fixedPhrase.start,length:1+Math.floor(charge('amp',(15-fixedPhrase.start)*.15)*3)}:fixedPhrase;
       const elapsed=recording?clamp(cursor-phrase.start,0,phrase.length):phrase.length;
       if(elapsed<=0)continue;
       const start=4+phrase.start*pitch,top=[[start,base]],live=cursor>=phrase.start&&cursor<phrase.start+phrase.length;
@@ -214,7 +218,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});

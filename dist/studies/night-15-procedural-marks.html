@@ -70,6 +70,9 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),mod=(x,n)=>(x%n+n)%n,mix=(a,b,q)=>a+(b-a)*q;
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   function phaseAt(time,period) { const cycle=Math.floor((time+1e-10)/period);return {cycle,clock:Math.max(0,time-cycle*period)}; }
@@ -87,6 +90,7 @@
   function orderedResults(input,shift) { const first=[intersect(input),translate(input,shift)],final=[translate(first[0],shift),intersect(first[1])];return {first,final,difference:[subtract(final[0],final[1]),subtract(final[1],final[0])]}; }
   const orderInputs=[[-.8,-.3,.08,.62,.8],[-.42,-.21,.06,.2,.41],[-.65,-.24,.02,.18,.45]],orderShifts=[.3,0,-.25];
   function orderModel(time,recording) {
+    if(hearing()){const e=strike('note'),values=Array.from({length:5},(_,i)=>(charge('amp',i*.12)-.5)*1.5),input=[Math.min(...values),Math.max(...values)],shift=(charge('high')-charge('low'))*.35,result=orderedResults(input,shift);return {clock:e.age,phrase:mod(e.n,3),count:5,input,shift,stage:2,intake:false,...result,shown:result.final};}
     const period=recording?5.2:3.2,{cycle,clock}=phaseAt(time,period),phrase=mod(cycle,3),samples=orderInputs[phrase];
     const count=recording?Math.min(5,Math.floor((clock+1e-10)/.4)+1):5,intake=recording&&clock<2,values=samples.slice(0,count),input=[Math.min(...values),Math.max(...values)],shift=orderShifts[phrase],result=orderedResults(input,shift);
     const stage=recording?(clock<2?0:clock<2.7?1:2):(clock<.55?0:clock<1.2?1:2);
@@ -106,6 +110,7 @@
   function balancedSlots(slots,count) { return Array.from({length:count},(_,i)=>Math.floor(i*slots/count)); }
   function circularGaps(positions,slots) { return positions.map((position,i)=>i+1<positions.length?positions[i+1]-position:slots+positions[0]-position); }
   function packingModel(time,recording) {
+    if(hearing()){const e=strike('hat'),count=1+Math.floor(charge('amp')*7),source=Array.from({length:count},(_,i)=>mod(i*3+Math.floor(charge('high',i*.1)*3),16)).sort((a,b)=>a-b),target=balancedSlots(16,count),amount=clamp(e.age/.22),events=source.map((slot,i)=>({id:String(i),source:slot,target:target[i],position:mix(slot,target[i],amount)}));return {clock:e.age,phrase:e.n,count,source,target,events,amount,packing:amount>0&&amount<1};}
     const period=recording?6:4.8,{cycle,clock}=phaseAt(time,period),phrase=mod(cycle,2),source=packingCohorts[phrase],target=balancedSlots(16,source.length);
     const count=recording?Math.min(source.length,Math.floor((clock+1e-10)/.4)+1):source.length,begin=recording?3:.7,duration=recording?.9:1.2,amount=clamp((clock-begin)/duration);
     const events=source.slice(0,count).map((slot,index)=>({id:phrase+':'+index,source:slot,target:target[index],position:mix(slot,target[index],amount)}));
@@ -127,6 +132,7 @@
   }
   const quantizedRequests=quantizeSeries(requests);
   function escrowModel(time,recording) {
+    if(hearing()){const e=strike('note'),records=quantizeSeries(Array.from({length:12},(_,i)=>2+charge('amp',(11-i)*.14)*14));return {clock:e.age,active:mod(e.n,12),count:12,records,residual:records.at(-1).residual};}
     const {clock}=phaseAt(time,6),reading=clock<4.8,active=reading?Math.min(11,Math.floor((clock+1e-10)/.4)):-1,count=recording?(reading?active+1:12):12;
     return {clock,active,count,records:quantizedRequests.slice(0,count),residual:count?quantizedRequests[count-1].residual:0};
   }
@@ -143,6 +149,7 @@
   const recordedGains=[];let gainSeed=[1,1];for(const [index,value] of gainEdits){gainSeed=[...gainSeed];gainSeed[index]=value;recordedGains.push(gainSeed);}
   function seriesProduct(input,gains) { const intermediate=input*gains[0],output=intermediate*gains[1];return [input,intermediate,output]; }
   function productModel(time,recording) {
+    if(hearing()){const e=strike('kick'),gains=[.4+charge('low')*1.3,.4+charge('high')*1.3];return {gains,lengths:seriesProduct(2+charge('amp')*8,gains),changed:e.age<.25?0:-1,age:e.age};}
     const period=recording?.9:1.4,{cycle:step,clock:age}=phaseAt(time,period),index=mod(step,recording?8:6),gains=recording?recordedGains[index]:gainPairs[index],changed=recording?gainEdits[index][0]:-1;
     return {gains,lengths:seriesProduct(8,gains),changed,age};
   }
@@ -176,6 +183,7 @@
     roots.forEach(node=>visit(node));return nodes;
   }
   function nestedModel(time,recording) {
+    if(hearing()){const span=[.035+charge('low')*.14,.35+charge('mid')*.3],e=strike('note');return {span,changed:e.age<.25?1:-1,age:e.age,nodes:mapNested(treeTemplate,span)};}
     let span,changed=-1,age=0;
     if(recording){const phase=phaseAt(time,.8),index=mod(phase.cycle,6);span=recordedSpans[index];changed=spanEdits[index][0];age=phase.clock;}
     else {const phase=phaseAt(time,1.4),index=mod(phase.cycle,4),previous=savedSpans[mod(index-1,4)];span=previous.map((value,i)=>mix(value,savedSpans[index][i],clamp(phase.clock/.65)));}
@@ -200,7 +208,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});

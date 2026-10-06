@@ -70,10 +70,13 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   // Whatever time is asked for, answer from the last 3.4 s that was actually heard.
-  const heardEnv=(s,time)=>{const age=Math.abs(t-time)%3.4;return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
+  const heardEnv=(s,time)=>{const age=Math.max(0,t-time);return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
   const mod=(x,n)=>(x%n+n)%n;
   const fract=x=>x-Math.floor(x);
   const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
@@ -92,7 +95,7 @@
       const points=[];
       const active=mod(step,18),head=mod(step+panel*2,6),recording=state.mode==='record';
       const cycle=recording?Math.floor(step/18)-(panel*6>active?1:0):0;
-      for(let i=0;i<7;i++)points.push([origin+width*(.16+hash(panel*31+i+cycle*13)*.69),7+i*5]);
+      for(let i=0;i<7;i++)points.push([origin+width*(.16+(hearing()?charge(['low','mid','high'][panel],i*.12):hash(panel*31+i+cycle*13))*.69),7+i*5]);
       if(recording) {
         const count=active>=panel*6+6?7:active<panel*6?7:active-panel*6+1;
         line(points.slice(0,count),active>=panel*6&&active<panel*6+6?1:.4);
@@ -110,6 +113,19 @@
   const starts=[];let phraseLength=0;
   durations.forEach((duration,i)=>{starts.push(phraseLength);phraseLength+=duration+gaps[i];});
   function receipt(time) {
+    if(hearing()){
+      const span=3.2,steps=40,pitch=(w-12)/steps;
+      for(let row=0;row<2;row++){
+        const y=13+row*19;let start=-1;
+        for(let i=0;i<=steps;i++){
+          const on=i<steps&&charge(row?'high':'low',span-i*span/steps)>.13;
+          if(on&&start<0)start=i;
+          if(!on&&start>=0){line([[6+start*pitch,y],[6+i*pitch,y]],.9,row?accent():white);start=-1;}
+        }
+        line([[2,y-4],[2,y+4]],.24);line([[w-2,y-4],[w-2,y+4]],.24);
+      }
+      return;
+    }
     const phase=mod(time,phraseLength),activeLane=mod(Math.floor(time/phraseLength),2),scale=(w-12)/phraseLength,recording=state.mode==='record';
     for(let row=0;row<2;row++) {
       const y=13+row*19,live=row===activeLane;
@@ -147,7 +163,7 @@
   }
   function shear(time) {
     const recording=state.mode==='record',columns=Math.max(14,Math.floor(w/9)),rows=5,pitch=(w-12)/columns;
-    const step=Math.floor(time*2.5),phase=fract(time*2.5),shape=recording?step*.67:time*.8;
+    const step=Math.floor(time*2.5),phase=fract(time*2.5),shape=hearing()?charge('low')*Math.PI*2:recording?step*.67:time*.8;
     function point(col,row,form) {
       const u=col/(columns-1),y=(row-2)*4.7;
       const bend=Math.sin(u*Math.PI*1.4-form)*(.4+.6*Math.sin(u*Math.PI));
@@ -175,8 +191,8 @@
     for(let window=0;window<2;window++) {
       const phase=time*.55+window*Math.PI;
       const center=recording?w*(window===0?.3:.7):w*(.5+Math.sin(phase)*.25);
-      const signal=energy(time-window*.31),half=recording?3+signal*w*.14:w*(.105+.045*Math.cos(phase));
-      const amplitude=recording?5+signal*11:4+12*(.5+.5*Math.cos(phase));
+      const signal=energy(time-window*.31),heard=hearing(),half=recording||heard?3+signal*w*.14:w*(.105+.045*Math.cos(phase));
+      const amplitude=recording||heard?5+signal*11:4+12*(.5+.5*Math.cos(phase));
       const left=Math.max(2,center-half),right=Math.min(w-2,center+half),points=[];
       for(let x=left;x<=right;x+=1) {
         const relative=(x-center)/half,envelope=Math.pow(Math.max(0,1-relative*relative),1.4);
@@ -198,7 +214,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});

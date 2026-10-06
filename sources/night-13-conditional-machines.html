@@ -70,6 +70,9 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   const mod=(x,n)=>(x%n+n)%n;
@@ -80,6 +83,7 @@
   // Synthetic observations and schedules only. No audio analysis or device access.
   const observations=[-.45,.3,-.12,.07,.1,.08,.58,.13,.11,.1,-.35,.08];
   function confidenceState(time,recording){
+    if(hearing()){const e=strike('note'),previous=[.18,.36,.54].map(age=>charge('mid',age)-.5),prediction=previous.reduce((a,b)=>a+b,0)/3,actual=charge('mid')-.5,candidates=[prediction,actual],center=(prediction+actual)/2;return {event:e.n,age:e.age,center,radius:Math.max(.075,Math.abs(actual-prediction)/2+.04),candidates,prediction,actual,revealed:true};}
     const phase=mod(time,9.6),event=Math.min(11,Math.floor((phase+1e-10)/.8)),age=Math.max(0,phase-event*.8);
     const previous=[2,1,0].map(offset=>observations[mod(event-1-offset,12)]),prediction=previous.reduce((a,b)=>a+b,0)/3;
     const actual=observations[event],revealed=recording||age>=.2;
@@ -100,7 +104,7 @@
   function closureState(time,recording){
     const phase=mod(time,3.6),stage=Math.min(2,Math.floor((phase+1e-10)/1.2));
     const sample=recording?Math.floor(time/3.6)*.91:time*.65;
-    const a=[w*(.34+.08*Math.sin(sample*.7)),11*Math.sin(sample)],sum=[w*.14*Math.sin(sample*1.7),12*Math.sin(sample*.8)];
+    const a=hearing()?[w*(.26+.16*charge('low')),(charge('mid')-.5)*22]:[w*(.34+.08*Math.sin(sample*.7)),11*Math.sin(sample)],sum=hearing()?[w*.14*(charge('high')-charge('low')),(charge('amp')-.5)*24]:[w*.14*Math.sin(sample*1.7),12*Math.sin(sample*.8)];
     const b=[sum[0]-a[0],sum[1]-a[1]],origin=[w*.24,22];
     return {a,b,sum,origin,stage};
   }
@@ -112,7 +116,7 @@
     if(!recording||stage>=1){line([p,q],1);line([[q[0]-2,q[1]+2],[q[0]+2,q[1]-2]],1);}
     if(!recording||stage>=2){line([q,o],.9,accent());if(Math.hypot(...sum)<3)rect(o[0]-1,o[1]-1,2,2,1,accent());}
   }
-  function escapementState(time,n){const beat=Math.floor((time+1e-10)/.52);return {beat,remainder:beat%n,carry:Math.floor(beat/n),age:Math.max(0,time-beat*.52)};}
+  function escapementState(time,n){if(hearing()){const e=strike('kick');return {beat:e.n,remainder:mod(e.n,n),carry:Math.floor(e.n/n),age:e.age};}const beat=Math.floor((time+1e-10)/.52);return {beat,remainder:beat%n,carry:Math.floor(beat/n),age:Math.max(0,time-beat*.52)};}
   function escapement(time){
     const recording=state.mode==='record',n=recording?3:4,s=escapementState(time,n),pitch=7;
     for(let i=0;i<n;i++){const x=7+i*7,y=12+i*5;line([[x,y],[x+5,y],[x+5,y+3]],.35);}
@@ -125,6 +129,7 @@
   const references=[[-2,-10,7,-4,3],[5,-5,-9,8,-2],[-7,6,10,-6,2]];
   const edits=[[0,5,-4,0,0],[0,0,5,-7,0],[0,-4,0,5,0]];
   function detourState(time,recording){
+    if(hearing()){const e=strike('snare'),reference=references[mod(e.n,3)].slice(),active=e.age<.5,current=reference.map((v,i)=>v+(active?(charge(['low','mid','high','mid','low'][i])-.5)*10:0));return {cycle:e.n,phase:e.age,reference,current,active,restored:!active};}
     const cycle=Math.floor((time+1e-10)/4.8),phase=Math.max(0,time-cycle*4.8),reference=references[mod(cycle,3)].slice();
     const active=phase>=.8&&phase<3.2,change=active?Math.min(3,Math.floor((phase+1e-10)/.8)):0;
     const current=reference.slice();
@@ -141,6 +146,7 @@
   }
   const mutationSeed=[0,1,2,0,2,1,0];
   function mutationState(time,recording){
+    if(hearing()){const e=strike('hat'),values=mutationSeed.map((v,i)=>mod(v+Math.floor(charge(['low','mid','high'][i%3],i*.08)*3),3));return {values,pass:e.n,age:e.age,period:.28,changed:mod(e.n,7),pending:false,reader:clamp(e.age/.2),editsDone:e.n};}
     const period=recording?1.4:1.12,cycle=period*63,phase=mod(time,cycle),pass=Math.min(62,Math.floor((phase+1e-10)/period)),age=Math.max(0,phase-pass*period),editsDone=Math.floor(pass/3);
     const values=mutationSeed.slice();for(let e=0;e<editsDone;e++){const slot=e*3%7;values[slot]=(values[slot]+1)%3;}
     const changed=pass%3===0?mod((editsDone-1)*3,7):-1,pending=pass%3===2&&age>=period*.65;
@@ -166,7 +172,7 @@
   }
   function resize(){w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw();}
   function schedule(){if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-  function frame(now){raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame);}
+  function frame(now){raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame);}
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});

@@ -70,10 +70,13 @@
   const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   // Whatever time env() is asked for, answer from the last 3.4 s that was actually heard.
-  const heardEnv=(s,time)=>{const age=Math.abs(t-time)%3.4;return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
+  const heardEnv=(s,time)=>{const age=Math.max(0,t-time);return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
   const fract=n=>n-Math.floor(n);
   const mod=(n,m)=>(n%m+m)%m;
   const mix=(a,b,p)=>a+(b-a)*p;
@@ -121,7 +124,7 @@
   }
   function vernier(time) {
     const recording=state.mode==='record',center=w/2,pitch=8,lowerPitch=9;
-    const step=Math.floor(time*2.4),shift=recording?(Math.floor(env(step/2.4)*8)-3)*2:Math.sin(time*.7)*18;
+    const step=Math.floor(time*2.4),shift=hearing()?(charge('high')-charge('low'))*18:recording?(Math.floor(env(step/2.4)*8)-3)*2:Math.sin(time*.7)*18;
     line([[2,17],[w-2,17]],.3);line([[2,27],[w-2,27]],.3);
     for(let i=-Math.ceil(w/pitch);i<=Math.ceil(w/pitch);i++) {
       const x=center+i*pitch;if(x<2||x>w-2)continue;
@@ -181,7 +184,7 @@
         if(newest)points.forEach((p,j)=>marker(p[0],p[1],fade,j===0?accent():white,3));
       }
     } else {
-      const position=2+(1+Math.sin(time*.65))*3+level*2;
+      const position=hearing()?2+charge('low')*7:2+(1+Math.sin(time*.65))*3+level*2;
       for(let i=4;i>=0;i--) {
         const points=pursuitShape(position+i*3);
         line([...points,points[0]],i===0?.8:.13+(4-i)*.08);
@@ -223,7 +226,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw(); }raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30) { const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw(); }raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});

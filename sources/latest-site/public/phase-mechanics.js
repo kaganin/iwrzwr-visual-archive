@@ -11,6 +11,8 @@ const grayAlpha=a=>a<=0?0:[.16,.32,.56,1].reduce((best,v)=>Math.abs(v-a)<Math.ab
 let time=.7,paused=reduced.matches,visible=true,last=0,raf=0;
 // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
 const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+const charge=(band='amp',age=0)=>{const s=hearing();return s?Math.max(0,Math.min(1,s.bandAt?s.bandAt(band,age):(s[band]??s.level??0))):0;};
+const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
 // The composition moves on the beat and rests between hits; its own dt clamp still applies first.
 const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
 function ink(alpha=1,color=white){ctx.globalAlpha=color===white?grayAlpha(clamp(alpha)):clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color;}
@@ -21,7 +23,7 @@ function marker(x,y,alpha=1,color=white,size=2){rect(x-size/2,y-size/2,size,size
 
 function pulse(time,period=1.8,length=.95){const age=mod(time,period);return age>=length?0:Math.pow(Math.sin(Math.PI*age/length),2);}
 function flare(time){
-  const w=412,opening=1.2+pulse(time,2.4,1.65)*6,throat=w*.2,shoulder=w*.38,rim=w*.76;
+  const w=412,opening=1.2+(hearing()?Math.max(charge('low'),Math.exp(-strike('kick').age*9)):pulse(time,2.4,1.65))*6,throat=w*.2,shoulder=w*.38,rim=w*.76;
   line([[4,22],[throat,22]],.85);
   line([[throat-3,18],[throat-3,26]],.36);
   for(let track=0;track<5;track++){
@@ -37,7 +39,7 @@ function strainPoint(u,v,locus,w){
   return [5+(u+(locus.u-u)*.38*influence)*(w-10),5+(v+locus.pull*.32*influence)*34];
 }
 function strain(time){
-  const w=412,motionTime=time*1.2*48/Math.max(24,(w-10)*.7),travel=fract(motionTime/2.4),locus={u:travel,v:.5,pull:Math.sin(travel*Math.PI*6)};
+  const w=412,motionTime=time*1.2*48/Math.max(24,(w-10)*.7),travel=fract(motionTime/2.4),locus={u:travel,v:.5,pull:hearing()?(charge('high')-charge('low'))*.9:Math.sin(travel*Math.PI*6)};
   ctx.save();ctx.beginPath();ctx.rect(5,5,w-10,34);ctx.clip();
   for(let row=1;row<4;row++){const points=[];for(let j=0;j<=42;j++)points.push(strainPoint(j/42,row/4,locus,w));line(points,row===2?1:.31);}
   for(let col=1;col<8;col++){const points=[];for(let j=0;j<=20;j++)points.push(strainPoint(col/8,j/20,locus,w));line(points,.32);}
@@ -46,7 +48,7 @@ function strain(time){
   ctx.restore();
 }
 
-function sectionCurve(x){return .48*Math.sin(x*5.5)+.06*Math.cos(x*2.1);}
+function sectionCurve(x){if(hearing())return .7*(charge('mid',x*.35)-.5)+.25*charge('low',x*.35)*Math.sin(x*5.5);return .48*Math.sin(x*5.5)+.06*Math.cos(x*2.1);}
 function section(time){
   const w=412,project=(x,y,z)=>[10+x*(w-30)+z*10,26-y*10-z*12],cut=fract(time*.4675/2.4);
   const plane=[project(cut,-1,0),project(cut,-1,1),project(cut,1,1),project(cut,1,0),project(cut,-1,0)];
@@ -72,7 +74,7 @@ function paint(seconds=time){
   ctx.globalAlpha=1;
 }
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(last)time=mod(time+Math.min((now-last)/1000,.1)*conduct(),duration);last=now;paint();raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;const heard=hearing();if(heard?.source==='demo')time=heard.songTime;else if(last)time=mod(time+Math.min((now-last)/1000,.1)*conduct(),duration);last=now;paint();raf=requestAnimationFrame(frame);}
 reduced.addEventListener('change',e=>{paused=e.matches;schedule();});
 document.addEventListener('visibilitychange',()=>{last=0;schedule();});
 new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;last=0;schedule();}).observe(root);

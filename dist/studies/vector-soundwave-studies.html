@@ -165,20 +165,21 @@
     }
     ctx.globalAlpha=1;
   }
-  function contourPoint(u,z,time,gain){
+  function contourPoint(u,z,time,gain,heardLevel){
     const stamp=time-(7-z)*0.32;
     const taper=Math.pow(Math.sin(Math.PI*u),1.8);
     const base=11+z*3.9;
     const ridge=Math.abs(wave(u*0.65-stamp*0.35))*taper;
-    const height=(4+11*amplitude(stamp)*state.gain/0.8)*(0.6+z*0.06);
+    const height=(4+11*(heardLevel??amplitude(stamp))*state.gain/0.8)*(0.6+z*0.06);
     const span=(w-4)*(0.61+z*0.055);
     return [w/2+(u-0.5)*span,base-ridge*Math.min(height,base-2)];
   }
   function contour(time,gain){
     const timeScale=state.mode==='record'?1:0.72;
     for(let z=0;z<8;z++){
+      const s=live(),age=(7-z)*.32,heardLevel=s? .13+.87*Math.max(s.levelAt(age),s.hitAt(age)):undefined;
       const points=[];
-      for(let i=0;i<=105;i++)points.push(contourPoint(i/105,z,time*timeScale,gain));
+      for(let i=0;i<=105;i++)points.push(contourPoint(i/105,z,time*timeScale,gain,heardLevel));
       ctx.beginPath();ctx.moveTo(points[0][0],43);
       points.forEach(p=>ctx.lineTo(p[0],p[1]));ctx.lineTo(points[points.length-1][0],43);ctx.closePath();
       ctx.globalAlpha=1;ctx.fillStyle='#000';ctx.fill();

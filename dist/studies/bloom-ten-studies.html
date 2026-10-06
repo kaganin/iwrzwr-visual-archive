@@ -16,35 +16,39 @@ const root=document.getElementById('bloom-ten');
 const names=['01 · Carry Cascade','02 · Diamond Relay','03 · Bit Weave','04 · Phase Shutter','05 · Binary Tide','06 · Voxel Lung','07 · Fault Orchard','08 · Orbit Register','09 · XOR Interference','10 · Sieve Memory'];
 const descriptions=['İkili elde zinciri merkezden dışa yayılır.','İç içe elmas kabuklar sırayla açılır.','İki bit dokusu birbirinin arasından geçer.','Kaydırılmış hücre şeritleri bir açıklık oluşturur.','Basamaklı dalga hücreleri doldurup geri çekilir.','Dikdörtgen bir çekirdek katmanlar halinde nefes alır.','Dallanan ayrık izler hücre alanına yayılır.','İki noktasal uydu kesikli yörüngelerde döner.','İki kare dalganın XOR kesişimleri değişir.','Bir tarama sınırı hücreleri yazıp siler.'];
 const grid=root.querySelector('.bloom-grid');
-const panels=names.map((name,i)=>{const f=document.createElement('figure'),s=document.createElement('div'),c=document.createElement('canvas'),l=document.createElement('figcaption');s.className='screen';c.setAttribute('role','img');c.setAttribute('aria-label',name+'. '+descriptions[i]);l.textContent=name;s.append(c);f.append(s,l);grid.append(f);return {c,ctx:c.getContext('2d'),w:0};});
+const panels=names.map((name,i)=>{const f=document.createElement('figure'),s=document.createElement('div'),c=document.createElement('canvas'),l=document.createElement('figcaption');s.className='screen';c.setAttribute('role','img');c.setAttribute('aria-label',name+'. '+descriptions[i]);l.textContent=name;s.append(c);f.append(s,l);grid.append(f);return {c,figure:f,ctx:c.getContext('2d'),w:0,visible:true};});
 const reduce=matchMedia('(prefers-reduced-motion: reduce)');
 let paused=reduce.matches,mode='play',time=1.1,last=0,raf=0,visible=true;
 // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
 const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+const charge=(band='amp',age=0)=>{const s=hearing();return s?Math.max(0,Math.min(1,s.bandAt?s.bandAt(band,age):(s[band]??s.level??0))):0;};
+const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
 // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
 const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
 const frac=x=>x-Math.floor(x),mod=(x,n)=>(x%n+n)%n,hash=(x,y)=>frac(Math.sin(x*127.1+y*311.7)*43758.5453);
 const pause=root.querySelector('[data-pause]');
 function sync(){pause.textContent=paused?'Devam et':'Duraklat';pause.setAttribute('aria-pressed',String(paused));root.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));}
 function paint(){
- const p=frac(time/5),phase=time/5,beat=.5-.5*Math.cos(p*Math.PI*2),rec=mode==='record';
- panels.forEach(({ctx,w},index)=>{
+ const p=frac(time/5),phase=time/5,rec=mode==='record';
+ panels.forEach(({ctx,w,visible},index)=>{
+  if(!visible)return;
+  const heard=hearing(),beat=heard?charge(['low','mid','high','amp','low','mid','high','amp','low','mid'][index]):.5-.5*Math.cos(p*Math.PI*2);
   ctx.clearRect(0,0,w,44);
   const cols=Math.max(16,Math.floor((w-4)/4)),half=(cols-1)/2,left=(w-cols*4)/2;
   for(let col=0;col<cols;col++)for(let row=0;row<10;row++){
    const x=col-half,y=row-4.5,u=x/half,v=y/4.5,a=Math.abs(u),b=Math.abs(v),d=Math.abs(x)+Math.abs(y)*3;
    let on=false,hot=false,level=.56;
    switch(index){
-    case 0:{const stage=Math.floor(phase*16),k=Math.floor(Math.abs(x)/2),bits=(stage+k)^(stage+k>>1);on=((bits>>Math.floor(Math.abs(y)))&1)!==0&&a<.18+beat*.82;hot=on&&mod(k-stage,8)===0;break;}
-    case 1:{const radius=mod(d-phase*20,13);on=radius<3.6&&a+b*.28<1.2;hot=radius<1.2;break;}
-    case 2:{const dx=Math.floor(phase*8),warp=mod(col+dx,7)<2,weft=mod(row+Math.floor(col/7)-dx,5)<2;on=warp!==weft;hot=warp&&mod(row+dx,5)===0;level=warp?.56:.32;break;}
-    case 3:{const aperture=.12+beat*.72,shift=Math.sin(row*.85+phase*6.28)*.22;on=Math.abs(u-shift)>aperture&&mod(col+row,3)!==0;hot=on&&Math.abs(Math.abs(u-shift)-aperture)<.06;level=.32;break;}
+    case 0:{const stage=heard?strike('hat').n:Math.floor(phase*16),k=Math.floor(Math.abs(x)/2),bits=(stage+k)^(stage+k>>1);on=((bits>>Math.floor(Math.abs(y)))&1)!==0&&a<.18+beat*.82;hot=on&&mod(k-stage,8)===0;break;}
+    case 1:{const radius=mod(d-(heard?Math.min(1.1,strike('snare').age)*26:phase*20),13);on=radius<3.6&&a+b*.28<1.2;hot=radius<1.2;break;}
+    case 2:{const dx=heard?strike('hat').n:Math.floor(phase*8),warp=mod(col+dx,7)<2,weft=mod(row+Math.floor(col/7)-dx,5)<2;on=warp!==weft;hot=warp&&mod(row+dx,5)===0;level=warp?.56:.32;break;}
+    case 3:{const aperture=.12+beat*.72,shift=heard?(charge('high',row*.04)-.5)*.44:Math.sin(row*.85+phase*6.28)*.22;on=Math.abs(u-shift)>aperture&&mod(col+row,3)!==0;hot=on&&Math.abs(Math.abs(u-shift)-aperture)<.06;level=.32;break;}
     case 4:{const ridge=Math.round(Math.sin(u*4-phase*6.28)*3),height=2+Math.floor(beat*2);on=Math.abs(y-ridge)<height&&mod(col+row,3)!==0;hot=on&&Math.abs(y-ridge)<.7;break;}
     case 5:{const r=Math.max(a,b*.7),edge=.18+beat*.78;on=r<edge&&mod(Math.floor(a*24)+Math.floor(b*8),3)!==0;hot=on&&edge-r<.09;break;}
-    case 6:{const generation=Math.floor(phase*9),cx=Math.floor(Math.abs(x)),cy=Math.floor(Math.abs(y));on=((cx&((cy+generation)%16))===0)&&a<.2+beat*.8;hot=on&&mod(cx+cy-generation,11)===0;level=.56;break;}
-    case 7:{const angle=phase*6.28,ax=Math.cos(angle)*.7,ay=Math.sin(angle)*.75,bx=-ax,by=-ay;const da=Math.hypot((u-ax)*1.5,v-ay),db=Math.hypot((u-bx)*1.5,v-by),ring=Math.hypot(u/.72,v/.78);hot=da<.16||db<.16;on=hot||(Math.abs(ring-1)<.11&&mod(col+row,3)===0)||((da<.48||db<.48)&&mod(col+row,2)===0);level=.32;break;}
-    case 8:{const q=Math.floor(phase*10),one=mod(Math.abs(col-half)+row+q,9)<4,two=mod(Math.abs(col-half)-row-q,11)<5;on=one!==two;hot=on&&mod(col+row+q,13)<2;level=.56;break;}
-    case 9:{const sweep=frac(phase)*cols,age=mod(sweep-col,cols)/cols,seed=Math.floor(phase),value=hash(col,row+seed);on=age<.65&&value>.35+age*.55;hot=on&&age<.045;level=age<.2?.56:.32;break;}
+    case 6:{const generation=heard?strike('note').n:Math.floor(phase*9),cx=Math.floor(Math.abs(x)),cy=Math.floor(Math.abs(y));on=((cx&((cy+generation)%16))===0)&&a<.2+beat*.8;hot=on&&mod(cx+cy-generation,11)===0;level=.56;break;}
+    case 7:{const angle=phase*6.28,ax=Math.cos(angle)*(heard?.25+charge('low')*.45:.7),ay=Math.sin(angle)*(heard?.25+charge('high')*.5:.75),bx=-ax,by=-ay;const da=Math.hypot((u-ax)*1.5,v-ay),db=Math.hypot((u-bx)*1.5,v-by),ring=Math.hypot(u/.72,v/.78);hot=da<.16||db<.16;on=hot||(Math.abs(ring-1)<.11&&mod(col+row,3)===0)||((da<.48||db<.48)&&mod(col+row,2)===0);level=.32;break;}
+    case 8:{const q=heard?strike('hat').n:Math.floor(phase*10),one=mod(Math.abs(col-half)+row+q,9)<(heard?1+charge('low')*6:4),two=mod(Math.abs(col-half)-row-q,11)<(heard?1+charge('high')*7:5);on=one!==two;hot=on&&mod(col+row+q,13)<2;level=.56;break;}
+    case 9:{const sweep=frac(phase)*cols,age=mod(sweep-col,cols)/cols,seed=Math.floor(phase),value=heard?charge(['low','mid','high'][Math.floor(row/4)%3],(cols-1-col)*.035):hash(col,row+seed);on=age<.65&&value>.35+age*.55;hot=on&&age<.045;level=age<.2?.56:.32;break;}
    }
    if(rec){const front=p*cols;on=on&&col<=front;hot=on&&(front-col<2||hot);}
    if(on){ctx.fillStyle=hot?'#FF0000':level===.32?'#525252':'#8F8F8F';if(!hot&&hash(col,index+row)>.88)ctx.fillStyle='#FFFFFF';ctx.fillRect(left+col*4,3+row*4,2,2);}
@@ -53,12 +57,14 @@ function paint(){
 }
 function resize(){const dpr=Math.min(devicePixelRatio||1,2);panels.forEach(p=>{p.w=p.c.getBoundingClientRect().width;p.c.width=Math.round(p.w*dpr);p.c.height=44*dpr;p.ctx.setTransform(dpr,0,0,dpr,0,0);});paint();}
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;if(now-last>=1000/30){time+=Math.min((now-last)/1000,.08)*conduct();last=now;paint();}raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;if(now-last>=1000/30){const heard=hearing();if(heard?.source==='demo')time=heard.songTime;else time+=Math.min((now-last)/1000,.08)*conduct();last=now;paint();}raf=requestAnimationFrame(frame);}
 root.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;sync();paint();}));
 pause.addEventListener('click',()=>{paused=!paused;sync();paint();schedule();});
 reduce.addEventListener('change',e=>{paused=e.matches;sync();schedule();});
 document.addEventListener('visibilitychange',schedule);
 new ResizeObserver(resize).observe(grid);
+const panelObserver=new IntersectionObserver(entries=>{for(const e of entries){const p=panels.find(p=>p.figure===e.target);if(p)p.visible=e.isIntersecting;}},{rootMargin:'240px'});
+panels.forEach(p=>panelObserver.observe(p.figure));
 new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;schedule();}).observe(root);
 sync();resize();schedule();
 })();

@@ -70,6 +70,9 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   const mod=(x,n)=>(x%n+n)%n;
@@ -86,6 +89,10 @@
   // All schedules are deterministic examples, not microphone, MIDI or instrument analysis.
   const chokeEvents=[[.1,0,0],[.38,2,0],[.65,0,1],[.92,1,0],[1.13,3,1],[1.46,2,1],[1.77,1,1],[2.01,0,0],[2.32,3,0],[2.65,0,1],[2.94,2,0],[3.18,3,1],[3.55,1,0],[3.89,1,1],[4.2,2,1],[4.55,0,0]];
   function chokeState(time) {
+    if(hearing()){
+      const pairs=Array.from({length:4},(_,group)=>{const a=strike(group%2?'note':'kick'),b=strike(group%2?'hat':'snare'),e=a.age<b.age?a:b;return {at:time-e.age,end:time-e.age+.65,member:a.age<b.age?0:1,group};});
+      return {phase:time,pairs,cuts:[]};
+    }
     const phase=mod(time,6),pairs=Array(4).fill(null),cuts=[];
     chokeEvents.forEach(([at,group,member],id)=>{if(at>phase)return;const old=pairs[group];if(old&&old.end>at&&old.member!==member)cuts.push({at,group,member:old.member});pairs[group]={at,group,member,id,end:at+1.24};});
     return {phase,pairs,cuts};
@@ -107,6 +114,14 @@
   const starts=[.08,.3,.56,.81,1.05,1.3,1.59,1.89,2.2,2.46,3.2,3.43,4.51];
   const voiceEvents=starts.map((at,id)=>({at,id,duration:2.9+.3*((id*3)%4)}));
   function voiceState(time) {
+    if(hearing()){
+      const seats=Array(8).fill(null),seen=new Set();let back=0;
+      for(let i=0;i<8;i++){const e=hearing().eventAt?.('note',back)??strike('note'),at=time-back-e.age;
+        if(e.n>0&&!seen.has(e.n)){const duration=.4+charge('mid',Math.max(0,time-at-.035))*1.4;seen.add(e.n);if(time<at+duration)seats[mod(e.n,8)]={at,id:e.n,duration,end:at+duration};}
+        back+=e.age+.001;
+      }
+      return {phase:time,seats,actions:[]};
+    }
     const phase=mod(time,8),seats=Array(8).fill(null),actions=[];
     for(const event of voiceEvents) {
       if(event.at>phase)break;
@@ -135,6 +150,7 @@
   const pieces=[[[0,0],[26,0],[26,8],[34,8],[34,22],[0,22]],[[26,0],[60,0],[60,22],[34,22],[34,8],[26,8]],[[60,0],[84,0],[84,10],[92,10],[92,22],[60,22]],[[84,0],[112,0],[112,22],[92,22],[92,10],[84,10]]];
   const seams=[[[26,0],[26,8],[34,8],[34,22]],[[60,0],[60,22]],[[84,0],[84,10],[92,10],[92,22]]];
   function dockGeometry(time,recording) {
+    if(hearing())return {phase:strike('snare').age,offsets:pieces.map((_,i)=>[0,(.5-charge(['low','mid','high','amp'][i]))*4]),common:0};
     const phase=mod(time,5.2),offsets=pieces.map((_,i)=>{
       if(!recording)return i===3&&phase>3.5?[5*clamp((phase-3.5)/.16),-4*clamp((phase-3.5)/.16)]:[0,0];
       const pending=1-clamp((phase-i*.8)/.14);return [i*7*pending,(i%2?-5:5)*pending*(i?1:0)];
@@ -160,6 +176,7 @@
   }
   const routes=[[0,8,-5],[8,-6,4],[-6,5,9],[4,-9,-3],[9,2,-8],[-3,7,3]];
   function recallState(time) {
+    if(hearing()){const e=strike('note');return {event:e.n,values:['low','mid','high'].map((b,i)=>Math.round((charge(b,i*.22)-.5)*18)),protectedIndex:mod(e.n,3),age:e.age};}
     // Twelve complete scenes; seed is the previous cycle's terminal state.
     const phase=mod(time,9.6),event=Math.min(11,Math.floor((phase+1e-10)/.8)),values=[-3,7,4];let protectedIndex=0;
     for(let scene=0;scene<=event;scene++) {protectedIndex=Math.floor(scene/4)%3;for(let i=0;i<3;i++)if(i!==protectedIndex)values[i]=routes[scene%routes.length][i];}
@@ -180,7 +197,7 @@
   }
   const routeMasks=[1,5,37,2,6,22];
   function routing(time) {
-    const recording=state.mode==='record',step=Math.floor(time/.76),age=mod(time,.76),source=recording?Math.floor(step/3)%2:step%2,mask=recording?routeMasks[step%6]:(source?22:37);
+    const recording=state.mode==='record',step=hearing()?strike('hat').n:Math.floor(time/.76),age=hearing()?strike('hat').age:mod(time,.76),source=recording?Math.floor(step/3)%2:step%2,mask=hearing()?Array.from({length:6},(_,i)=>charge(['low','mid','high'][i%3],Math.floor(i/3)*.18)>.16?1<<i:0).reduce((a,b)=>a|b,0):recording?routeMasks[step%6]:(source?22:37);
     const previous=recording&&step%3?routeMasks[(step-1)%6]:0,hold=age<.42,alpha=hold?1:.45;
     for(let i=0;i<2;i++){const y=i?32:12;line([[4,y-4],[4,y+4],[10,y+4]],i===source?alpha:.17,i===source?accent():white);}
     for(let i=0;i<6;i++) {
@@ -201,7 +218,7 @@
   }
   function resize(){w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw();}
   function schedule(){if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-  function frame(now){raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame);}
+  function frame(now){raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame);}
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});reduced.addEventListener('change',()=>{state.paused=reduced.matches;sync();});

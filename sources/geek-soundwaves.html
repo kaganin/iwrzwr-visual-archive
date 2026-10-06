@@ -157,6 +157,7 @@
     ctx.globalAlpha=1;
   }
   function spectrumAt(time,freq){
+    const s=live();if(s?.spectrumAt)return s.spectrumAt(freq,Math.max(0,t-time));
     const f1=0.24+0.1*Math.sin(time*0.7),f2=0.6+0.18*Math.sin(time*1.3);
     const a=Math.exp(-Math.pow((freq-f1)/0.14,2));
     const b=Math.exp(-Math.pow((freq-f2)/0.095,2));

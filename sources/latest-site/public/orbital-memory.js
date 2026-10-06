@@ -10,6 +10,8 @@ const grayAlpha=a=>a<=0?0:[.16,.32,.56,1].reduce((best,v)=>Math.abs(v-a)<Math.ab
 let time=1.72,paused=reduced.matches,visible=true,last=0,raf=0;
 // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
 const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+const charge=(band='amp',age=0)=>{const s=hearing();return s?Math.max(0,Math.min(1,s.bandAt?s.bandAt(band,age):(s[band]??s.level??0))):0;};
+const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
 // This composition draws the demo loop's own sample, so with sound on its clock is the audible song position.
 
 // Three matrix studies on the same sharp 2px / 4px lattice as the gallery cards.
@@ -29,6 +31,7 @@ function drawMatrixStudy(w,style,t){
     const step=60/108/2,span=Math.round(step*32*32000)/32000;
     const snare=[4,12,20].map(s=>s*step);
     const ageAt=u=>{
+      const heard=hearing();if(heard?.eventAt)return heard.eventAt('snare',Math.max(0,t-u)).age;
       const local=mod(u,span);
       for(let i=snare.length-1;i>=0;i--)if(local>=snare[i])return local-snare[i];
       return local+span-snare[snare.length-1];
@@ -50,7 +53,7 @@ function drawMatrixStudy(w,style,t){
       if(level)cell(c,r,level,hot);
     }
   }else if(style==='orbit-register'){
-    const phase=t/5,angle=phase*6.28,ax=Math.cos(angle)*.7,ay=Math.sin(angle)*.75;
+    const heard=hearing(),phase=t/5,angle=heard?(heard.lowPhase??phase*6.28):phase*6.28,ax=Math.cos(angle)*(heard?.25+charge('low')*.45:.7),ay=Math.sin(angle)*(heard?.25+charge('high')*.5:.75);
     const hash=(x,y)=>frac(Math.sin(x*127.1+y*311.7)*43758.5453);
     for(let c=0;c<cols;c++)for(let r=0;r<10;r++){
       const u=c/(cols-1)*2-1,v=r/9*2-1;
@@ -62,8 +65,8 @@ function drawMatrixStudy(w,style,t){
       cell(c,r,hash(c,7+r)>.88?1:.32,hot);
     }
   }else if(style==='parity-bloom'){
-    const half=Math.floor(cols/2),step=Math.floor(t/2.4);
-    const gain=Math.sin(Math.PI*frac(t/2.4))**2;
+    const half=Math.floor(cols/2),heard=hearing(),step=heard?strike('kick').n:Math.floor(t/2.4);
+    const gain=heard?Math.max(charge('low'),Math.exp(-strike('kick').age*9)):Math.sin(Math.PI*frac(t/2.4))**2;
     const radius=5+gain*half;
     for(let c=0;c<cols;c++)for(let r=0;r<9;r++){
       const x=Math.abs(c-half),y=Math.abs(r-4),band=x+y*2;
@@ -83,7 +86,7 @@ function paint(seconds=time){
   ctx.globalAlpha=1;
 }
 function schedule(){if(!raf&&!paused&&visible&&!document.hidden&&root.isConnected){last=0;raf=requestAnimationFrame(frame);}}
-function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;const heard=hearing();if(heard)time=heard.songTime;else if(last)time+=Math.min((now-last)/1000,.1);last=now;paint();raf=requestAnimationFrame(frame);}
+function frame(now){raf=0;if(paused||!visible||document.hidden||!root.isConnected)return;const heard=hearing();if(heard?.source==='demo')time=heard.songTime;else if(last)time+=Math.min((now-last)/1000,.1);last=now;paint();raf=requestAnimationFrame(frame);}
 reduced.addEventListener('change',e=>{paused=e.matches;schedule();});
 document.addEventListener('visibilitychange',()=>{last=0;schedule();});
 new IntersectionObserver(entries=>{visible=entries[entries.length-1].isIntersecting;last=0;schedule();}).observe(root);

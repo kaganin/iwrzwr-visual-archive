@@ -70,6 +70,9 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   const mod=(x,n)=>(x%n+n)%n;
@@ -85,7 +88,7 @@
   const move=x=>bezier(x,.77,0,.175,1);
   const accent=()=>state.accent?amber:white;
   // Deterministic silent event sequence, not note analysis or hardware emulation.
-  function clock(time,period=.86) { return {step:Math.floor(time/period),phase:mod(time,period)/period}; }
+  function clock(time,period=.86) { if(hearing()){const e=strike(state.style==='exchange'?'snare':'kick');return {step:e.n,phase:clamp(e.age/period)};}return {step:Math.floor(time/period),phase:mod(time,period)/period}; }
   function ink(alpha=1,color=white) { ctx.globalAlpha=clamp(alpha);ctx.fillStyle=color;ctx.strokeStyle=color; }
   function rect(x,y,width,height,alpha=1,color=white) { ink(alpha,color);ctx.fillRect(Math.round(x*dpr)/dpr,Math.round(y*dpr)/dpr,width,height); }
   function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
@@ -98,7 +101,7 @@
   }
   function sieve(time) {
     const {step,phase}=clock(time,.7),n=7,pitch=(w-12)/n,order=[3,0,5,2,6,1,4];
-    const cycle=mod(step,9),keep=state.mode==='play'?Math.max(2,7-cycle):Math.min(7,2+cycle);
+    const cycle=mod(step,9),keep=hearing()?Math.max(2,Math.ceil(charge('amp')*7)):state.mode==='play'?Math.max(2,7-cycle):Math.min(7,2+cycle);
     const latest=state.mode==='play'?order[Math.min(cycle,4)]:order[Math.min(keep-1,6)];
     for(let i=0;i<n;i++) {
       const rank=order.indexOf(i),on=state.mode==='play'?rank>=7-keep:rank<keep;
@@ -131,7 +134,7 @@
   function imprint(x,id,alpha=1,color=white) {
     const cuts=1+mod(id,3);
     for(let i=0;i<cuts;i++) {
-      const at=x-4+i*4,height=4+hash(id*13+i)*7;
+      const at=x-4+i*4,height=4+(hearing()?charge('mid',i*.12):hash(id*13+i))*7;
       line([[at,32-height],[at,32]],alpha,color);
     }
     line([[x-6,34],[x+6,34]],alpha*.5,color);
@@ -148,7 +151,8 @@
       if(phase>.12)imprint(head-shift,step,1,phase<.3?accent():white);
       if(descent>.95)line([[head-10,24],[head+10,24]],.9,accent());
     } else {
-      box(head-8,9,16,5,.24);line([[head,5],[head,9]],.24);
+      const pressY=hearing()?9+Math.exp(-strike('kick').age*12)*10:9;
+      box(head-8,pressY,16,5,hearing()?.8:.24,hearing()?accent():white);line([[head,5],[head,pressY]],.24);
       const index=mod(step,5);
       for(let i=0;i<5;i++)imprint(head-i*pitch,i,i===index?1:.48,i===index?accent():white);
       const x=head-index*pitch;
@@ -166,7 +170,7 @@
     line([[8,28],[left,33]],.16);line([[w-8,28],[right,33]],.16);
     box(left,33,right-left,10,.7,accent());
     for(let i=0;i<17;i++) {
-      const position=(i+.35+hash(i)*.25)/17,amplitude=.35+hash(i*5)*.65;
+      const position=(i+.35+hash(i)*.25)/17,amplitude=hearing()?.1+.9*charge('amp',(16-i)*.13):.35+hash(i*5)*.65;
       const written=!recording||position<=writer;
       const selected=position>=start&&position<=end&&written;
       if(written)line([[overview(position),38-amplitude*2],[overview(position),38+amplitude*2]],selected?1:.4,selected?accent():white);
@@ -180,7 +184,7 @@
     if(recording)rect(overview(writer)-1,35,2,6,1,accent());
   }
   function seal(time) {
-    const {step,phase}=clock(time,.62),stage=mod(step,8),cx=w/2,spread=Math.min(76,w*.55);
+    const {step,phase}=clock(time,.62),stage=mod(step,8),cx=w/2,spread=Math.min(hearing()?20+charge('low')*56:76,w*.55);
     const paths=[
       [[-.5,-11],[.12,-11],[.5,11],[-.12,11],[-.5,-11]],
       [[-.5,5],[-.1,-14],[.5,-5],[.1,14],[-.5,5]],
@@ -188,7 +192,7 @@
       [[-.5,0],[.5,0]],
       [[-.22,-15],[.22,15]]
     ];
-    const count=state.mode==='record'?(stage<5?stage+1:stage===5?5:stage===6?3:1):5;
+    const count=hearing()?Math.max(1,Math.ceil(charge('amp')*5)):state.mode==='record'?(stage<5?stage+1:stage===5?5:stage===6?3:1):5;
     paths.forEach((points,i)=>{
       if(i>=count)return;
       const selected=state.mode==='play'?i===mod(step,5):i===count-1&&stage<5;
@@ -215,7 +219,7 @@
   }
   function resize() { w=Math.max(1,canvas.getBoundingClientRect().width);dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=44*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw(); }
   function schedule() { if(!raf&&!state.paused&&visible&&!document.hidden&&root.isConnected) { last=0;raf=requestAnimationFrame(frame); } }
-  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
+  function frame(now) { raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;if(!last)last=now;const elapsed=now-last;if(elapsed>=1000/30){const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw();}raf=requestAnimationFrame(frame); }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));
   root.querySelectorAll('[data-mode]').forEach(el=>el.addEventListener('click',()=>{state.mode=el.dataset.mode;sync();}));
   pause.addEventListener('click',()=>{state.paused=!state.paused;sync();});

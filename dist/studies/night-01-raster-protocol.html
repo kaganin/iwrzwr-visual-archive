@@ -70,10 +70,13 @@
   const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
   // Live sound seam: iwrSignal exists only inside the archive gallery. Without it, or with sound off, nothing changes.
   const hearing=()=>typeof iwrSignal!=='undefined'&&iwrSignal.active?iwrSignal:null;
+  // Geometry reads audio features. Transport and history have separate clocks.
+  const charge=(band='amp',age=0)=>{const s=hearing();return s?clamp(s.bandAt?s.bandAt(band,age):(s[band]??s.level??0)):0;};
+  const strike=(kind='kick')=>{const s=hearing();return s?.eventAt?s.eventAt(kind):{n:Math.floor(s?.beat??0),age:s?.[kind+'Age']??30};};
   // Time-driven machines move on the beat and rest between hits; the studies' own dt clamps still apply first.
   const conduct=()=>{const s=hearing();return s?0.25+4.2*s.hit:1;};
   // Whatever time env() is asked for, answer from the last 3.4 s that was actually heard.
-  const heardEnv=(s,time)=>{const age=Math.abs(t-time)%3.4;return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
+  const heardEnv=(s,time)=>{const age=Math.max(0,t-time);return 0.12+0.88*Math.max(s.levelAt(age),s.hitAt(age));};
   const mod=(x,n)=>(x%n+n)%n;
   const fract=x=>x-Math.floor(x);
   const hash=n=>fract(Math.sin(n*127.1+43.7)*43758.5453);
@@ -85,10 +88,10 @@
   function line(points,alpha=1,color=white) { if(!points.length)return;ink(alpha,color);ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.stroke(); }
   function box(x,y,width,height,alpha=1,color=white) { line([[x,y],[x+width,y],[x+width,y+height],[x,y+height],[x,y]],alpha,color); }
   function register(time) {
-    const n=Math.max(6,Math.min(14,Math.floor(w/14))),pitch=(w-4)/n,cell=Math.max(3,pitch-4),step=Math.floor(time*3.6),phase=fract(time*3.6);
+    const n=Math.max(6,Math.min(14,Math.floor(w/14))),pitch=(w-4)/n,cell=Math.max(3,pitch-4),step=hearing()?strike('hat').n:Math.floor(time*3.6),phase=hearing()?clamp(strike('hat').age/.18):fract(time*3.6);
     for(let col=0;col<n;col++) {
       const sample=state.mode==='record'?step-n+col:col;
-      const bits=Math.floor(hash(sample+8)*127),x=2+col*pitch;
+      const bits=hearing()?Math.round(charge('amp',(n-1-col)*.14)*127):Math.floor(hash(sample+8)*127),x=2+col*pitch;
       for(let row=0;row<7;row++) {
         const on=(bits>>row)&1;
         rect(x,8+row*4,cell,2,on?0.85:0.09,col===n-1&&state.mode==='record'?accent():white);
@@ -102,7 +105,7 @@
     line([[0,22],[w,22]],.13);
     for(let i=-2;i<Math.ceil(w/spacing)+2;i++) {
       const index=i+Math.floor(time*speed/spacing),x=i*spacing-offset;
-      const v=hash(index+23),size=12+v*17,height=6+Math.round(v*6)*2;
+      const v=hearing()?charge(i%2?'high':'low',Math.abs(i)*.08):hash(index+23),size=12+v*17,height=6+Math.round(v*6)*2;
       const active=x<=head&&x+size>=head;
       box(x,22-height/2,size,height,active?1:.55,active?accent():white);
       for(let k=3;k<size-2;k+=4)rect(x+k,20,1,4,.3+hash(index+k)*.6);
@@ -127,7 +130,7 @@
     if(state.mode==='record')rect(scan,3,1,38,.55,accent());
   }
   function parity(time) {
-    const pitch=4,cols=Math.floor((w-8)/pitch),half=Math.floor(cols/2),rows=9,step=Math.floor(time*3),gain=env(time),radius=state.mode==='record'?2+fract(time*1.5)*(half+8):5+gain*half;
+    const pitch=4,cols=Math.floor((w-8)/pitch),half=Math.floor(cols/2),rows=9,step=hearing()?strike('kick').n:Math.floor(time*3),gain=env(time),radius=state.mode==='record'?2+fract(time*1.5)*(half+8):5+gain*half;
     const left=(w-cols*pitch)/2;
     for(let col=0;col<cols;col++)for(let row=0;row<rows;row++) {
       const x=Math.abs(col-half),y=Math.abs(row-4),band=x+y*2;
@@ -145,12 +148,12 @@
       const knee=w*(.25+i*.13),points=[[start,22],[knee,22],[knee,y],[end,y]];
       line(points,.18);
       box(end-2,y-2,4,4,.35);
-      const phase=fract(time*(.37+i*.05)+i*.23),length=end-start+Math.abs(y-22),dist=phase*length;
+      const phase=hearing()?clamp(strike(['kick','snare','hat','note'][i]).age/.42):fract(time*(.37+i*.05)+i*.23),length=end-start+Math.abs(y-22),dist=phase*length;
       const horizontal=knee-start,vertical=Math.abs(y-22);
       let x,py;
       if(dist<horizontal){x=start+dist;py=22;}else if(dist<horizontal+vertical){x=knee;py=22+Math.sign(y-22)*(dist-horizontal);}else{x=knee+dist-horizontal-vertical;py=y;}
       const emitting=state.mode==='record';
-      rect(x-1,py-1,3,3,1,i===mod(Math.floor(time*2),4)?accent():white);
+      rect(x-1,py-1,3,3,hearing()?.25+.75*charge(['low','mid','high','amp'][i]):1,i===mod(Math.floor(time*2),4)?accent():white);
       if(emitting&&phase<.22)line([[start,22],[Math.min(x,knee),22]],.8,accent());
       if(!emitting&&phase>.8)rect(end-3,y-3,6,6,(phase-.8)*4,accent());
     });
@@ -173,7 +176,7 @@
     raf=0;if(state.paused||!visible||document.hidden||!root.isConnected)return;
     if(!last)last=now;
     const elapsed=now-last;
-    if(elapsed>=1000/30) { t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw(); }
+    if(elapsed>=1000/30) { const heard=hearing();if(heard?.source==='demo')t=heard.songTime;else t+=Math.min(elapsed/1000,.07)*conduct();last=now;draw(); }
     raf=requestAnimationFrame(frame);
   }
   root.querySelectorAll('[data-style]').forEach(el=>el.addEventListener('click',()=>{state.style=el.dataset.style;sync();}));

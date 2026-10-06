@@ -101,7 +101,7 @@
       const x0=left+panel*(side+12),y0=(44-side)/2;
       const [m,note]=modes[panel];
       const phase=t*0.9+panel*1.3;
-      const balance=1+0.55*Math.sin(phase)+gain*0.08;
+      const heard=live(),balance=heard?.5+1.2*(heard.bandAt?heard.bandAt(['low','mid','high','amp'][panel]):heard.level):1+0.55*Math.sin(phase)+gain*0.08;
       const driftX=0.055*Math.sin(phase),driftY=0.055*Math.cos(phase*0.8);
       const cells=37,pitch=side/cells;
       for(let y=0;y<cells;y++)for(let x=0;x<cells;x++){
@@ -175,7 +175,8 @@
     for(let i=0;i<count;i++){
       const x=left+i*pitch,L=32-i/(count-1)*9;
       const phase=(t+8)*baseFrequency*Math.sqrt(32/L);
-      const angle=(3+gain*5)/L*Math.cos(phase);
+      const heard=live(),kick=heard?.eventAt?.('kick');
+      const angle=kick?(3+gain*7)/L*Math.sin((kick.age+i*.035)*12)*Math.exp(-kick.age*2.5):(3+gain*5)/L*Math.cos(phase);
       const bobX=x+L*Math.sin(angle),bobY=6+L*Math.cos(angle);
       const current=i===Math.floor(count/2);
       point(x-0.5,4.5,1,0.5);
@@ -193,7 +194,8 @@
       if(start+length<0||start>w)continue;
       const active=head>=start&&head<=start+length;
       const y=22+Math.sin(index*4.6)*3;
-      const height=4+envelope(index*0.39)*9*(0.6+gain*0.4);
+      const heard=live(),energy=heard?(heard.bandAt?heard.bandAt('mid',Math.abs(i)*.18):heard.level):envelope(index*.39);
+      const height=4+energy*9*(0.6+gain*0.4);
       const points=[];
       for(let p=0;p<=38;p++){
         const u=p/38;
