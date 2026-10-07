@@ -5,6 +5,7 @@
   "buildCommand": "IWRZWR_BASE_PATH=/iwrzwr/visual-archive/ node build-archive.mjs",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/iwrzwr/visual-archive/analytics/:path*", "destination": "https://iwrzwr-visual-archive.vercel.app/_vercel/insights/:path*" },
     { "source": "/iwrzwr/visual-archive", "destination": "/index.html" },
     { "source": "/iwrzwr/visual-archive/", "destination": "/index.html" },
     { "source": "/iwrzwr/visual-archive/:path*", "destination": "/:path*" }
