@@ -1,9 +1,9 @@
 /* Sound controls. Nothing here applies while sound is off. */
 .archive-intro p.archive-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px;margin-bottom:0}
-.archive-intro .sound-toggle{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:8px 16px;border-radius:100px;font:inherit;font-size:15px;line-height:20px;cursor:pointer}
-.archive-intro .sound-toggle[aria-pressed="true"]{background:rgb(255 255 255 / 8%)}
+.sound-toggle{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:8px 16px;border-radius:100px;font:inherit;font-size:15px;line-height:20px;white-space:nowrap;cursor:pointer}
+.sound-toggle[aria-pressed="true"]{background:rgb(255 255 255 / 8%)}
 .sound-status{color:var(--muted);font-size:15px;line-height:20px;min-height:20px}
-.sound-toggle:focus-visible,.sound-dock:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
-.sound-dock{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:20;display:inline-flex;align-items:center;gap:10px;background:rgb(0 0 0 / 85%);color:var(--ink);padding:8px 16px;border-radius:100px;font:inherit;font-size:15px;line-height:20px;white-space:nowrap;cursor:pointer;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
-.sound-dock[hidden]{display:none!important}
-.sound-dot{width:6px;height:6px;border-radius:50%;background:#f00;opacity:1}
+.sound-toggle:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
+.sound-toggle[hidden]{display:none!important}
+.header-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
+@media(max-width:620px){body>header{flex-wrap:wrap}.header-actions{margin-left:auto}}
