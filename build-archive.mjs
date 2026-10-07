@@ -102,8 +102,8 @@ for(const s of [...originals,...extra])fs.writeFileSync(path.join(out,'studies',
 // Count the three compositions as 12 alternatives, following the archive's editorial convention.
 const compositionAlternatives=12;
 const canonical='https://www.kagan.in/iwrzwr/visual-archive/';
-const pageTitle='sound & music visualizer experiments — iwrzwr/visual archive';
-const description='explore 155 sound and music visualizer drafts in javascript: waveform animations, matrix displays and particle studies. explore the drawing code and live experiments.';
+const pageTitle='iwrzwr/visual archive - sound & music visualizer experiments';
+const description='160+ sound visualization experiments across 25+ categories. explore waveform animations, spectrum-inspired patterns, matrix displays, particles, rhythm and memory.';
 const structuredData=JSON.stringify({'@context':'https://schema.org','@type':'CollectionPage',name:pageTitle,url:canonical,description,inLanguage:'en',about:[{'@type':'Thing',name:'sound visualization'},{'@type':'Thing',name:'music visualization'},{'@type':'Thing',name:'creative coding'}]}).replaceAll('<','\\u003c');
 const metadata=`<title>${esc(pageTitle)}</title><meta name="description" content="${esc(description)}"><link rel="canonical" href="${canonical}"><meta name="robots" content="index,follow"><meta property="og:type" content="website"><meta property="og:title" content="${esc(pageTitle)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${canonical}"><meta property="og:site_name" content="iwrzwr/visual archive"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(pageTitle)}"><meta name="twitter:description" content="${esc(description)}"><script type="application/ld+json">${structuredData}</script>`;
 const repoLink='view github repo';
