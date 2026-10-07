@@ -16,7 +16,7 @@ header h1.brand{margin:0}
 .archive-intro a,.header-repo{color:var(--ink);text-decoration:none;text-underline-offset:3px}
 .repo-button,.archive-intro a.repo-button{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:#000;height:36px;box-sizing:border-box;padding:8px 16px;border:1px solid transparent;border-radius:980px;font-family:var(--type-family);font-size:14px;line-height:18px;font-weight:var(--type-weight);letter-spacing:var(--type-tracking);white-space:nowrap;text-decoration:none}
 .archive-intro a.repo-button{font-size:var(--type-small)}
-.repo-button.secondary-button,.archive-intro a.secondary-button{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 calc(var(--stroke-width)/2) var(--stroke-color),0 0 0 calc(var(--stroke-width)/2) var(--stroke-color)}
+.repo-button.secondary-button,.archive-intro a.secondary-button{background:rgb(255 255 255 / 10%);color:var(--ink);box-shadow:none}
 .secondary-button:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
 .header-repo:focus-visible,.intro-repo:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
 header>span:last-child{line-height:var(--type-leading)}
