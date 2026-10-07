@@ -1,5 +1,5 @@
 /* Sound controls. Nothing here applies while sound is off. */
-.archive-intro p.archive-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px;margin-bottom:0}
+.archive-intro p.archive-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:0}
 .sound-toggle{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--ink);padding:8px 16px;border-radius:100px;font:inherit;font-size:15px;line-height:20px;white-space:nowrap;cursor:pointer}
 .sound-toggle[aria-pressed="true"]{background:rgb(255 255 255 / 8%)}
 .sound-status{color:var(--muted);font-size:15px;line-height:20px;min-height:20px}
