@@ -2,11 +2,11 @@
 
 160+ experimental visualization studies across 25+ categories, built with javascript. explore waveform animations, spectrum-inspired displays, matrix patterns, particle fields, rhythm, memory, and mechanical motion. study the drawing code and adapt the live examples for your own creative-coding projects.
 
-like it? [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive): it helps others discover these experiments.
+like it? [🌟 leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive): it helps others discover these experiments.
 
 ## examples
 
-[explore all studies on the website](https://www.kagan.in/iwrzwr/visual-archive/).
+[🔗 explore all studies on the website](https://www.kagan.in/iwrzwr/visual-archive/).
 
 video examples: 20 seconds, 1080 × 1080, 30 fps, silent.
 
