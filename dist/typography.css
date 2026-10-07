@@ -42,6 +42,17 @@ body>header{display:flex!important;position:fixed;top:0;left:0;right:0;z-index:1
 body>header[data-visible]{visibility:visible;transform:translateY(0);transition-timing-function:cubic-bezier(.23,1,.32,1),linear;transition-delay:0s}
 @media(prefers-reduced-motion:reduce){body>header{transform:none;transition:none}}
 @media(max-width:620px){header{gap:12px}.archive-intro p:not(.archive-actions){max-width:100%}}
+/* Mobile-only text links and extra gallery spacing. */
+@media(max-width:620px){
+  body>header{display:flex!important;flex-wrap:nowrap!important;gap:12px;padding:12px 18px;align-items:center}
+  body>header .brand{font-size:15px;line-height:22.5px;min-width:0;overflow-wrap:anywhere}
+  body>header .header-actions{margin-left:0;gap:6px;min-width:0;align-items:center}
+  body>header .header-actions::before{content:none}
+  body>header .header-actions>a+a::before{content:"/";margin-right:6px;color:var(--muted)}
+  body>header .repo-button{font-size:13px;line-height:22.5px;height:auto;padding:0;border:0;border-radius:0;background:transparent;color:var(--ink);box-shadow:none}
+  body>header .repo-button.secondary-button{box-shadow:none}
+  .all-grid{row-gap:56px}
+}
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:var(--stroke-width)!important;border-color:var(--stroke-color)!important}
 
 :root[data-font-preview="fallback"]{--type-tracking:normal}
