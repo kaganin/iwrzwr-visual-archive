@@ -1,7 +1,6 @@
 /* Two shared text styles: regular 15/22.5 and 20/30. */
 @font-face{font-family:"Archive SF Text Light";font-style:normal;font-weight:300;src:local("SFProText-Light"),local("SF Pro Text Light")}
-:root{--type-family:"SF Pro Text","SF Pro","ABC Areal",sans-serif;--type-small:15px;--type-title:20px;--type-leading:1.5;--type-weight:400;--type-tracking:-.016em}
-@font-face{font-family:"ABC Areal";font-style:normal;font-weight:var(--type-weight);font-display:swap;src:url("fonts/ABCAreal-Regular.ttf") format("truetype")}
+:root{--type-family:"SF Pro Text","SF Pro",system-ui,sans-serif;--type-small:15px;--type-title:20px;--type-leading:1.5;--type-weight:400;--type-tracking:-.016em}
 :root{font-family:var(--type-family);font-size:var(--type-small);font-weight:var(--type-weight);line-height:var(--type-leading);letter-spacing:var(--type-tracking);font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 :root{--page:#000;--ink:#f7f7f4;--muted:#777671;--stroke-width:.5px;--stroke-color:rgb(255 255 255 / 10%);background:var(--page);color:var(--ink)}
 body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
@@ -46,7 +45,7 @@ body>header[data-visible]{visibility:visible;transform:translateY(0);transition-
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:var(--stroke-width)!important;border-color:var(--stroke-color)!important}
 
 :root[data-font-preview="fallback"]{--type-tracking:normal}
-/* SF titles use Light; the regular-only Areal preview retains its supplied weight. */
-:root:not([data-font-preview="fallback"]) .brand,:root:not([data-font-preview="fallback"]) header .brand{font-family:"Archive SF Text Light","SF Pro Text","SF Pro","ABC Areal",sans-serif!important;font-weight:300}
+/* SF titles use Light; the system preview retains Regular. */
+:root:not([data-font-preview="fallback"]) .brand,:root:not([data-font-preview="fallback"]) header .brand{font-family:"Archive SF Text Light","SF Pro Text","SF Pro",system-ui,sans-serif!important;font-weight:300}
 /* Reset inherited browser and legacy styles to the shared small style. */
 body,header,button,input,select,textarea,.sound-toggle,.sound-status{font-family:var(--type-family);font-size:var(--type-small);font-weight:var(--type-weight);line-height:var(--type-leading);letter-spacing:var(--type-tracking)}

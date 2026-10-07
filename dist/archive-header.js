@@ -5,8 +5,8 @@
     document.documentElement.dataset.fontPreview = previewFont;
     const style = document.createElement('style');
     style.textContent = previewFont === 'sf'
-      ? ':root,.repo-button,.archive-intro a.repo-button{font-family:"SF Pro Text","SF Pro",sans-serif!important}.brand,header .brand{font-family:"SF Pro Text Light","SF Pro Text","SF Pro",sans-serif!important}'
-      : ':root,.brand,header .brand,.repo-button,.archive-intro a.repo-button{font-family:"ABC Areal",sans-serif!important}';
+      ? ':root,.repo-button,.archive-intro a.repo-button{font-family:"SF Pro Text","SF Pro",system-ui,sans-serif!important}.brand,header .brand{font-family:"SF Pro Text Light","SF Pro Text","SF Pro",system-ui,sans-serif!important}'
+      : ':root,.brand,header .brand,.repo-button,.archive-intro a.repo-button{font-family:system-ui,sans-serif!important}';
     document.head.append(style);
   }
   const header = document.querySelector('body > header');

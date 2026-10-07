@@ -8,7 +8,7 @@ const cards=[...html.matchAll(/class="animation-card[^"\n]*"[^>]*data-series="([
 assert.equal(cards.length,155,'visible card count');
 assert.equal(new Set(cards.map(c=>c[1])).size,28,'visible collections');
 assert(!/<(?:iframe|video)\b/i.test(html),'main gallery must run code');
-assert(html.includes('164 sound visualization experiments'),'editorial count');
+assert(html.includes('160+ sound visualization experiments across 25+ categories.'),'editorial introduction');
 assert(html.includes('class="header-repo repo-button"'),'persistent repository link');
 assert(!html.includes('data-sound-toggle'),'no public audio controls');
 assert(!html.includes('class="sound-dock"'),'header control replaces bottom dock');
