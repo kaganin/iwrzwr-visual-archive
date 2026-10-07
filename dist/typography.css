@@ -2,7 +2,7 @@
 @font-face{font-family:"Archive SF Text Light";font-style:normal;font-weight:300;src:local("SFProText-Light"),local("SF Pro Text Light")}
 :root{--type-family:"SF Pro Text","SF Pro",system-ui,sans-serif;--type-small:15px;--type-title:20px;--type-leading:1.5;--type-weight:400;--type-tracking:-.016em}
 :root{font-family:var(--type-family);font-size:var(--type-small);font-weight:var(--type-weight);line-height:var(--type-leading);letter-spacing:var(--type-tracking);font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-:root{--page:#000;--ink:#f7f7f4;--muted:#777671;--stroke-width:.5px;--stroke-color:rgb(255 255 255 / 10%);background:var(--page);color:var(--ink)}
+:root{--page:#000;--ink:#f7f7f4;--muted:#777671;--stroke-width:.5px;--stroke-color:rgb(255 255 255 / 12%);background:var(--page);color:var(--ink)}
 body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
 body{background:var(--page);color:var(--ink)}
 .brand,header .brand{font-family:var(--type-family);font-size:var(--type-title);line-height:var(--type-leading);font-weight:var(--type-weight);letter-spacing:var(--type-tracking);color:var(--muted)}
