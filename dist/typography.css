@@ -10,7 +10,7 @@ body{background:var(--page);color:var(--ink)}
 .archive-intro h1{margin:0 0 16px}
 header h1.brand{margin:0}
 .archive-intro{max-width:none;margin-bottom:72px}
-.archive-intro p:not(.archive-actions){max-width:592px}
+.archive-intro p:not(.archive-actions){max-width:calc((100% - 32px)/2)}
 .archive-intro p{color:var(--muted);margin:0 0 32px;font-weight:var(--type-weight)}
 .archive-intro p:last-child{display:flex;margin-bottom:0}
 .archive-intro a,.header-repo{color:var(--ink);text-decoration:none;text-underline-offset:3px}
@@ -41,7 +41,7 @@ button:not([data-sound-toggle]),[class*="controls"],.viz-controls{display:none!i
 body>header{display:flex!important;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--page);visibility:hidden;transform:translateY(-100%);opacity:1;transition:transform 220ms cubic-bezier(.68,0,.77,0),visibility 0s linear 220ms;border-color:var(--stroke-color)}
 body>header[data-visible]{visibility:visible;transform:translateY(0);transition-timing-function:cubic-bezier(.23,1,.32,1),linear;transition-delay:0s}
 @media(prefers-reduced-motion:reduce){body>header{transform:none;transition:none}}
-@media(max-width:620px){header{gap:12px}}
+@media(max-width:620px){header{gap:12px}.archive-intro p:not(.archive-actions){max-width:100%}}
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:var(--stroke-width)!important;border-color:var(--stroke-color)!important}
 
 :root[data-font-preview="fallback"]{--type-tracking:normal}
