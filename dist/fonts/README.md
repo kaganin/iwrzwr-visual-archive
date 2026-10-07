@@ -1,0 +1,1 @@
+ABC Areal is a third-party font supplied separately for local preview. It is not covered by this repository's MIT code license. Its binary is excluded from Git and must not be redistributed through the public repository. The supplied WOFF2 and web-hosting follow-up are deferred; see plans/areal-follow-up.md and https://abcdinamo.com/licenses.
