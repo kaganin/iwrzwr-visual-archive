@@ -1,3 +1,9 @@
+# silent public gallery — 2026-10-07
+
+playback controls were removed from the intro and scrolling header at the owner's request. the public entry no longer loads `sound-controls.js`. audio stays off; shared demo analysis and experimental drawing connections are preserved for later work rather than discarded. the readme and search description no longer advertise live audio playback.
+
+`node scripts/check-archive.mjs` verifies that the public entry has no sound toggle. `node scripts/verify-silent-gallery.mjs` checks desktop/mobile silent animation, inactive audio, the repository header and overflow in a dedicated debugging browser. the previous header-playback test was replaced because that interface no longer exists. prior sound audit results below are historical, not a public feature promise.
+
 # local demo sound verification — 2026-10-06
 
 local branch `sound-demo-fixes` fixes the per-study demo-audio connections; production has not been updated. the detailed [fix report and 155-card checklist](plans/demo-sound-fixes.md) preserves the [pre-fix audit](plans/demo-sound-audit.md) separately.

@@ -10,7 +10,7 @@ assert.equal(new Set(cards.map(c=>c[1])).size,28,'visible collections');
 assert(!/<(?:iframe|video)\b/i.test(html),'main gallery must run code');
 assert(html.includes('164 sound visualization experiments'),'editorial count');
 assert(html.includes('class="header-repo repo-button"'),'persistent repository link');
-assert(/<header[\s\S]*class="header-sound sound-toggle"[\s\S]*<\/header>/.test(html),'play sound in scrolling header');
+assert(!html.includes('data-sound-toggle'),'no public audio controls');
 assert(!html.includes('class="sound-dock"'),'header control replaces bottom dock');
 const numberedHeadings=[...html.matchAll(/<h2>(\d{2}) — /g)];
 assert.equal(numberedHeadings.length,28,'numbered collections');
@@ -61,7 +61,7 @@ for(const name of ['inline-gallery.js','single-page.css','typography.css','sound
 for(const name of ['demo-analysis.js','sound-engine.js','sound-controls.js'])new vm.Script(fs.readFileSync(path.join(root,name),'utf8'),{filename:name});
 assert(html.indexOf('demo-analysis.js')>-1&&html.indexOf('demo-analysis.js')<html.indexOf('sound-engine.js'),'shared analysis loads before engine');
 assert(html.indexOf('sound-engine.js')>-1&&html.indexOf('sound-engine.js')<html.indexOf('inline-gallery.js'),'sound engine loads before the gallery');
-assert(html.includes('data-sound-toggle')&&html.includes('>play sound<'),'sound toggle in the introduction');
+assert(!html.includes('sound-controls.js'),'public gallery does not load playback controls');
 assert(fs.readFileSync(path.join(root,'inline-gallery.js'),'utf8').includes("'iwrSignal'"),'gallery exposes the shared signal');
 new vm.Script(fs.readFileSync(path.join(root,'inline-gallery.js'),'utf8'),{filename:'inline-gallery.js'});
 const config=JSON.parse(fs.readFileSync('vercel.json','utf8'));
