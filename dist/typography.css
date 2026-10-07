@@ -1,35 +1,37 @@
-/* Apple HIG SF Pro tracking values; no additional EtEyo tracking. */
-@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:swap;src:url("https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf") format("truetype")}
-@font-face{font-family:Inter;font-style:normal;font-weight:300;font-display:swap;src:url("https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf") format("truetype")}
-:root{font-family:"SF Pro",-apple-system,BlinkMacSystemFont,Inter,sans-serif;font-size:15px;font-weight:400;line-height:24px;letter-spacing:-.23px;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* Two shared text styles: regular 15/22.5 and 20/30. */
+@font-face{font-family:"Archive SF Text Light";font-style:normal;font-weight:300;src:local("SFProText-Light"),local("SF Pro Text Light")}
+:root{--type-family:"SF Pro Text","SF Pro","ABC Areal",sans-serif;--type-small:15px;--type-title:20px;--type-leading:1.5;--type-weight:400;--type-tracking:-.016em}
+@font-face{font-family:"ABC Areal";font-style:normal;font-weight:var(--type-weight);font-display:swap;src:url("fonts/ABCAreal-Regular.ttf") format("truetype")}
+:root{font-family:var(--type-family);font-size:var(--type-small);font-weight:var(--type-weight);line-height:var(--type-leading);letter-spacing:var(--type-tracking);font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 :root{--page:#000;--ink:#f7f7f4;--muted:#777671;--stroke-width:.5px;--stroke-color:rgb(255 255 255 / 10%);background:var(--page);color:var(--ink)}
 body,button,input,select,textarea{font-family:inherit;letter-spacing:inherit}
 body{background:var(--page);color:var(--ink)}
-.brand,header .brand{font-size:20px;line-height:24px;font-weight:300;letter-spacing:-.45px;color:var(--muted)}
+.brand,header .brand{font-family:var(--type-family);font-size:var(--type-title);line-height:var(--type-leading);font-weight:var(--type-weight);letter-spacing:var(--type-tracking);color:var(--muted)}
 .brand span{color:var(--ink)}
 .archive-intro h1{margin:0 0 16px}
 header h1.brand{margin:0}
 .archive-intro{max-width:none;margin-bottom:72px}
 .archive-intro p:not(.archive-actions){max-width:592px}
-.archive-intro p{color:var(--muted);margin:0 0 32px;font-weight:400}
+.archive-intro p{color:var(--muted);margin:0 0 32px;font-weight:var(--type-weight)}
 .archive-intro p:last-child{display:flex;margin-bottom:0}
 .archive-intro a,.header-repo{color:var(--ink);text-decoration:none;text-underline-offset:3px}
-.repo-button,.archive-intro a.repo-button{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:#000;padding:7.5px 16px 8.5px;border-radius:100px;font-size:15px;line-height:20px;font-weight:400;letter-spacing:-.23px;white-space:nowrap;text-decoration:none}
+.repo-button,.archive-intro a.repo-button{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:#000;height:36px;box-sizing:border-box;padding:8px 16px;border:1px solid transparent;border-radius:980px;font-family:var(--type-family);font-size:14px;line-height:18px;font-weight:var(--type-weight);letter-spacing:var(--type-tracking);white-space:nowrap;text-decoration:none}
+.archive-intro a.repo-button{font-size:var(--type-small)}
 .repo-button.secondary-button,.archive-intro a.secondary-button{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 var(--stroke-width) var(--stroke-color)}
 .secondary-button:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
 .header-repo:focus-visible,.intro-repo:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
-header>span:last-child{line-height:24px}
-.series h2,figcaption{font-size:15px;line-height:24px;font-weight:400;letter-spacing:-.23px}
+header>span:last-child{line-height:var(--type-leading)}
+.series h2,figcaption{font-size:var(--type-small);line-height:var(--type-leading);font-weight:var(--type-weight);letter-spacing:var(--type-tracking)}
 .series h2{color:var(--muted);margin-bottom:16px}
 figcaption{color:var(--ink);margin-top:10px}
-header .brand{color:var(--muted);font-weight:300}
+header .brand{color:var(--muted);font-weight:var(--type-weight)}
 header{color:var(--muted)}
 header .brand span{color:var(--ink)}
 /* Shared hairlines for the archive chrome and study frames. */
 header{border-bottom:var(--stroke-width) solid var(--stroke-color)}
 iframe{border:var(--stroke-width) solid var(--stroke-color)}
 header{padding:16px max(32px,calc((100% - 1216px)/2));flex-wrap:nowrap}
-main{padding:32px;padding-top:54px}
+main{padding:32px;padding-top:48px}
 .all-grid{gap:32px}
 /* Archive is a gallery; demo transport and recording selectors are hidden. */
 button:not([data-sound-toggle]),[class*="controls"],.viz-controls{display:none!important}
@@ -42,3 +44,9 @@ body>header[data-visible]{visibility:visible;transform:translateY(0);transition-
 @media(prefers-reduced-motion:reduce){body>header{transform:none;transition:none}}
 @media(max-width:620px){header{gap:12px}}
 button,.btn,[class*="controls"] button,canvas,svg.vh-scene{border-width:var(--stroke-width)!important;border-color:var(--stroke-color)!important}
+
+:root[data-font-preview="fallback"]{--type-tracking:normal}
+/* SF titles use Light; the regular-only Areal preview retains its supplied weight. */
+:root:not([data-font-preview="fallback"]) .brand,:root:not([data-font-preview="fallback"]) header .brand{font-family:"Archive SF Text Light","SF Pro Text","SF Pro","ABC Areal",sans-serif!important;font-weight:300}
+/* Reset inherited browser and legacy styles to the shared small style. */
+body,header,button,input,select,textarea,.sound-toggle,.sound-status{font-family:var(--type-family);font-size:var(--type-small);font-weight:var(--type-weight);line-height:var(--type-leading);letter-spacing:var(--type-tracking)}

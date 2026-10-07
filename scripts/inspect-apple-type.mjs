@@ -1,0 +1,13 @@
+const tab=await fetch('http://127.0.0.1:9224/json/new?about:blank',{method:'PUT'}).then(r=>r.json());
+const ws=new WebSocket(tab.webSocketDebuggerUrl),pending=new Map();let n=0;
+ws.onmessage=e=>{const d=JSON.parse(e.data);if(d.id){pending.get(d.id)?.(d.result);pending.delete(d.id);}};
+await new Promise(r=>ws.onopen=r);
+const call=(method,params={})=>new Promise(r=>{pending.set(++n,r);ws.send(JSON.stringify({id:n,method,params}));});
+await call('Page.enable');
+await call('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+await call('Page.navigate',{url:'https://www.apple.com/'});
+await new Promise(r=>setTimeout(r,6000));
+await call('Runtime.evaluate',{expression:'window.scrollTo(0,document.body.scrollHeight)'});
+await new Promise(r=>setTimeout(r,3000));
+const data=await call('Runtime.evaluate',{expression:`JSON.stringify({url:location.href,buttons:[...document.querySelectorAll('a,button')].filter(e=>/^(Watch now|Play now)$/i.test(e.textContent.trim())).map(e=>{const s=getComputedStyle(e);return {text:e.textContent.trim(),class:e.className,font:s.fontFamily,size:s.fontSize,weight:s.fontWeight,lineHeight:s.lineHeight,tracking:s.letterSpacing,padding:s.padding,border:s.border,borderRadius:s.borderRadius,height:e.getBoundingClientRect().height,width:e.getBoundingClientRect().width,html:e.outerHTML};})})`,returnByValue:true});
+console.log(data.result?.value);ws.close();await fetch('http://127.0.0.1:9224/json/close/'+tab.id);

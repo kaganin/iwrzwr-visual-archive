@@ -10,3 +10,5 @@ node_modules/
 frames/
 .vercel
 .env*
+# Third-party font: local preview only until redistribution rights are verified.
+dist/fonts/ABCAreal-Regular.ttf
