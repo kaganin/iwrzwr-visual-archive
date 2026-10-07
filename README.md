@@ -1,20 +1,16 @@
 # iwrzwr / visual archive
 
-155 experimental sound and music visualizer studies built with javascript and html canvas. explore waveform animations, spectrum-inspired displays, matrix patterns, particle fields, rhythm, memory, and mechanical motion — with drawing code and live examples to study and adapt for creative-coding projects. all gallery animations run from code, with no video playback or iframes.
+160+ experimental sound and music visualizer studies built with javascript. explore waveform animations, spectrum-inspired displays, matrix patterns, particle fields, rhythm, memory, and mechanical motion. study the drawing code and adapt the live examples for your own creative-coding projects.
 
-tap **play sound** to run a built-in 108 bpm demo loop and the studies follow it live. studies with a level or hit signal read it directly, time-driven machines move on the beat. with sound off the original simulated signals run unchanged. sound starts only after a tap, there is no microphone input, and nothing is uploaded. this is a visual archive, not a real audio-analysis engine or the native iwrzwr app.
+the gallery uses simulated signals and runs silently. audio recording and sample playback are not available yet. there is no microphone input or audio upload. this is a visual archive, not a real-time audio analyzer or the native iwrzwr app.
 
-like it? [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive) — it helps others discover these experiments.
-
-## what's inside
-
-155 coded animation studies across 28 study collections, built with javascript and html canvas.
+like it? [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive): it helps others discover these experiments.
 
 ## examples
 
 [explore all studies on the website](https://www.kagan.in/iwrzwr/visual-archive/).
 
-video examples — 20 seconds, 1080 × 1080, 30 fps, silent.
+video examples: 20 seconds, 1080 × 1080, 30 fps, silent.
 
 https://github.com/user-attachments/assets/3c562edf-f039-4f97-9b2b-23967390c4df
 
@@ -38,19 +34,30 @@ python3 -m http.server 8000 --directory dist
 
 open [localhost:8000](http://localhost:8000/). use an http server; opening `index.html` directly won't work because the gallery fetches study files.
 
-no dependency installation is needed for the gallery build. `npm run build` and `npm run check` are equivalent shortcuts, and `npm run check:sound` runs the sound engine unit checks. you can also serve the checked-in `dist/` without rebuilding.
+no dependency installation is needed for the gallery build. `npm run build` and `npm run check` are equivalent shortcuts, and `npm run check:sound` checks the retained experimental sound engine. you can also serve the checked-in `dist/` without rebuilding.
 
 ## layout
 
-- `sources/` — original drawing code and preserved iterations.
-- `build-archive.mjs` — assembles the gallery and study payloads.
-- `dist/sound-engine.js` — the shared demo loop and the read-only `iwrSignal` the studies read.
-- `dist/` — static site, gallery runtime, styles, and generated payloads.
-- `scripts/` — static checks and browser verification.
-- `vercel.json` — static build and subpath routing.
-- [qa.md](QA.md) — verification scope, results, and limitations.
+- `sources/`: original drawing code and preserved iterations.
+- `build-archive.mjs`: assembles the gallery and study payloads.
+- `dist/demo-analysis.js` and `dist/sound-engine.js`: retained experimental analysis and audio code; these files do not provide recording or sample playback in the public gallery.
+- `dist/`: static site, gallery runtime, styles, and generated payloads.
+- `scripts/`: static checks and browser verification.
+- `vercel.json`: static build and subpath routing.
+- [qa.md](QA.md): verification scope, results, and limitations.
 
 ## browser verification
+
+### typography previews
+
+the gallery uses SF Pro Text when available locally, with ABC Areal as the configured fallback. the Areal font binary is excluded from this repository; the fallback preview requires a separately supplied local font asset. neither third-party font is covered by the MIT license for this project's code.
+
+- `?font=sf`: SF Pro Text; main and scroll titles use the locally available Light face.
+- `?font=fallback`: ABC Areal Regular with its native spacing (`letter-spacing: normal`).
+
+both previews share the same sizes and line heights: titles 20px / 30px, body and captions 15px / 22.5px. buttons are 36px high with 8px vertical and 16px horizontal padding and an 18px line height. introductory buttons use 15px text; scroll-header buttons use 14px text. SF tracking is -0.016em.
+
+### gallery checks
 
 start a chromium-based browser with `--remote-debugging-port=9224`, run the local server, then:
 
@@ -64,7 +71,7 @@ this checks every card at desktop and mobile sizes, saves three frames per previ
 GALLERY_URL=http://localhost:8000/ node scripts/verify-gallery-lifecycle.mjs
 ```
 
-the separate lifecycle check confirms offscreen pausing, resuming, hidden-panel isolation, and canvas resizing without a page reload. both checks require a dedicated debugging browser, not your everyday browser session.
+the separate lifecycle check confirms offscreen pausing, resuming, hidden-panel isolation, and preview resizing without a page reload. both checks require a dedicated debugging browser, not your everyday browser session.
 
 ## license
 
