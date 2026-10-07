@@ -4,10 +4,10 @@
   window.va = window.va || function () {
     (window.vaq = window.vaq || []).push(arguments);
   };
-  const origin = 'https://iwrzwr-visual-archive.vercel.app';
+  const endpoint = new URL('analytics', document.baseURI).href;
   const script = document.createElement('script');
   script.defer = true;
-  script.src = `${origin}/_vercel/insights/script.js`;
-  script.dataset.endpoint = `${origin}/_vercel/insights`;
+  script.src = `${endpoint}/script.js`;
+  script.dataset.endpoint = endpoint;
   document.head.append(script);
 })();
