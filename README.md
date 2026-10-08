@@ -4,6 +4,8 @@
 
 like it? 🌟 [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive): it helps others discover these experiments.
 
+want to follow my journey? [find me on x](https://x.com/kaganin).
+
 ## examples
 
 🔗 [explore all studies on the website](https://www.kagan.in/iwrzwr/visual-archive/).
