@@ -4,7 +4,7 @@
 
 like it? 🌟 [leave a star on github](https://github.com/kaganin/iwrzwr-visual-archive): it helps others discover these experiments.
 
-🔗 want to follow my journey? [find me on x](https://x.com/kaganin).
+want to follow my journey? 🔗 [find me on x](https://x.com/kaganin).
 
 ## examples
 
